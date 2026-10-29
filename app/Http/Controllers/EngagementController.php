@@ -126,7 +126,7 @@ class EngagementController extends Controller
     {
         $this->active($request);
 
-        return view('engagement.notifications', ['notifications' => $request->user()->notifications()->paginate(20), 'preferences' => NotificationPreference::firstOrNew(['user_id' => $request->user()->id], ['announcements' => true, 'support' => true])]);
+        return view('engagement.notifications', ['notifications' => $request->user()->notifications()->paginate(20), 'preferences' => NotificationPreference::firstOrNew(['user_id' => $request->user()->id], ['announcements' => true, 'support' => true, 'learning' => true])]);
     }
 
     public function read(Request $request, string $notification): RedirectResponse
@@ -140,7 +140,7 @@ class EngagementController extends Controller
     public function preferences(Request $request): RedirectResponse
     {
         $this->active($request);
-        $data = $request->validate(['announcements' => ['required', 'boolean'], 'support' => ['required', 'boolean']]);
+        $data = $request->validate(['announcements' => ['required', 'boolean'], 'support' => ['required', 'boolean'], 'learning' => ['sometimes', 'boolean']]);
         NotificationPreference::updateOrCreate(['user_id' => $request->user()->id], $data);
 
         return back()->with('status', 'Notification preferences saved.');
@@ -201,10 +201,10 @@ class EngagementController extends Controller
     {
         $this->ticketAccess($request, $ticket);
         $data = $request->validate(['status' => ['required', Rule::in(['open', 'closed'])]]);
-        DB::transaction(function () use ($ticket,$data) {
+        DB::transaction(function () use ($ticket, $data) {
             SupportTicket::whereKey($ticket->id)->lockForUpdate()->firstOrFail()->update($data);
         });
 
-        return back()->with('status','Ticket status updated.');
+        return back()->with('status', 'Ticket status updated.');
     }
 }

@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class NotificationPreference extends Model
 {
-    protected $fillable = ['user_id', 'announcements', 'support'];
+    protected $fillable = ['user_id', 'announcements', 'support', 'learning'];
 
     protected function casts(): array
     {
-        return ['announcements' => 'boolean', 'support' => 'boolean'];
+        return ['announcements' => 'boolean', 'support' => 'boolean', 'learning' => 'boolean'];
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PasswordController;
 use App\Models\Course;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -34,6 +35,6 @@ Route::middleware('auth')->group(function () {
     })->middleware('throttle:3,1,verification.send')->name('verification.send');
 });
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/instructor', fn () => view('instructor.index', ['courses' => Course::with('category')->when(auth()->user()->role !== 'admin', fn ($query) => $query->where('instructor_id', auth()->id()))->latest()->paginate(12)]))->middleware('can:instructor')->name('instructor.dashboard');
 });

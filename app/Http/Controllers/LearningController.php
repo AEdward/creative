@@ -7,6 +7,9 @@ use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonNote;
 use App\Models\LessonProgress;
+use App\Models\NotificationPreference;
+use App\Models\RecentlyViewed;
+use App\Notifications\EngagementNotification;
 use App\Services\Media\MediaStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -30,10 +33,13 @@ class LearningController extends Controller
     {
         abort_unless(Course::published()->whereKey($course->id)->exists(), 404);
         abort_unless($course->is_free, 403, 'Paid enrollment requires a verified payment.');
-        DB::transaction(function () use ($course) {
-            Enrollment::firstOrCreate(['user_id' => auth()->id(), 'course_id' => $course->id], ['status' => 'active', 'source' => 'free', 'enrolled_at' => now()]);
+        $createdEnrollment = DB::transaction(function () use ($course) {
+            return Enrollment::firstOrCreate(['user_id' => auth()->id(), 'course_id' => $course->id], ['status' => 'active', 'source' => 'free', 'enrolled_at' => now()]);
         });
         abort_unless($this->enrollment($course), 403, 'This enrollment cannot be reactivated automatically.');
+        if ($createdEnrollment->wasRecentlyCreated && NotificationPreference::where('user_id', auth()->id())->value('learning') !== false) {
+            auth()->user()->notify(new EngagementNotification(['title' => 'Your course is ready', 'body' => $course->title, 'url' => route('learning.index')]));
+        }
 
         return redirect()->route('learning.index')->with('status', 'You’re enrolled. Your next creative step is ready.');
     }
@@ -56,6 +62,9 @@ class LearningController extends Controller
         }
         $enrollment = $this->enrollment($course);
         abort_unless($lesson->is_preview || $enrollment, 403, 'Enroll in this course to access this lesson.');
+        if ($enrollment) {
+            RecentlyViewed::updateOrCreate(['user_id' => auth()->id(), 'lesson_id' => $lesson->id], ['viewed_at' => now()]);
+        }
         $course->load(['modules.lessons' => fn ($query) => $query->where('published', true)]);
         $lessons = $course->modules->flatMap->lessons;
         $position = $lessons->search(fn ($item) => $item->id === $lesson->id);

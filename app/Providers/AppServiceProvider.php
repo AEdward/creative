@@ -26,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::define('administer-academy', fn (User $user) => $user->role === 'admin' && $user->status === 'active' && $user->hasVerifiedEmail());
         Gate::define('instructor', fn (User $user) => $user->status === 'active' && in_array($user->role, ['instructor', 'admin']));
     }
 }

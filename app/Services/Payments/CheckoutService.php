@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\CouponService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -15,7 +16,7 @@ class CheckoutService
 {
     public function __construct(private PaymentGateway $gateway) {}
 
-    public function create(User $user, Course $course, string $key): Order
+    public function create(User $user, Course $course, string $key, ?string $coupon = null): Order
     {
         $actor = $user->fresh();
         abort_unless($actor && $actor->status === 'active' && $actor->hasVerifiedEmail(), 403);
@@ -41,7 +42,7 @@ class CheckoutService
         if (Enrollment::where('user_id', $actor->id)->where('course_id', $course->id)->exists()) {
             throw ValidationException::withMessages(['course' => 'An enrollment already exists. Existing access must be reviewed before another purchase.']);
         }
-        $order = DB::transaction(function () use ($actor, $course, $checkoutKey) {
+        $order = DB::transaction(function () use ($actor, $course, $checkoutKey, $coupon) {
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
             if (Enrollment::where('user_id', $actor->id)->where('course_id', $course->id)->exists()) {
                 throw ValidationException::withMessages(['course' => 'An enrollment already exists.']);
@@ -57,6 +58,9 @@ class CheckoutService
             $order = Order::firstOrCreate(['checkout_key' => $checkoutKey], ['user_id' => $actor->id, 'reference' => (string) Str::uuid(), 'currency' => $course->currency, 'subtotal_minor' => $course->price_minor, 'discount_minor' => 0, 'total_minor' => $course->price_minor, 'status' => 'pending']);
             if ($order->wasRecentlyCreated) {
                 $order->items()->create(['course_id' => $course->id, 'title_snapshot' => $course->title, 'unit_price_minor' => $course->price_minor]);
+                if (filled($coupon)) {
+                    app(CouponService::class)->reserve($order, $coupon);
+                }
                 Payment::create(['order_id' => $order->id, 'provider' => $this->gateway->name(), 'idempotency_key' => (string) Str::uuid(), 'amount_minor' => $order->total_minor, 'currency' => $order->currency, 'status' => 'initiated']);
             }
 

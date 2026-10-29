@@ -7,6 +7,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -32,6 +33,12 @@ class AdminPanelProvider extends PanelProvider
             ->emailVerification()
             ->colors([
                 'primary' => Color::Violet,
+            ])
+            ->navigationItems([
+                NavigationItem::make('Academy operations')->url(fn () => route('academy-admin'))->icon('heroicon-o-chart-bar'),
+                NavigationItem::make('Review moderation')->url(fn () => route('admin.reviews'))->icon('heroicon-o-star'),
+                NavigationItem::make('Support queue')->url(fn () => route('admin.support'))->icon('heroicon-o-chat-bubble-left-right'),
+                NavigationItem::make('Certificates')->url(fn () => route('certificates.index'))->icon('heroicon-o-academic-cap'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

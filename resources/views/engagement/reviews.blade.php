@@ -1,4 +1,4 @@
-<x-layout :title="$course->title.' reviews'"><section class="section"><div class="container"><h1>{{ $course->title }} reviews</h1>
+<x-layout :title="$course->title.' reviews'"><section class="section"><div class="container feature-page"><h1>{{ $course->title }} reviews</h1>
 @include('engagement.status')
 @if($average !== null)<p>Average rating: {{ number_format($average,1) }} / 5 — approved learner reviews only.</p>@else<p>No approved reviews yet.</p>@endif
 @foreach($reviews as $review)<article class="learning-card"><h2>{{ $review->rating }} / 5</h2><p>{{ $review->body }}</p><p>{{ $review->user->name }} · {{ $review->created_at->format('M j, Y') }}</p></article>@endforeach

@@ -1,4 +1,4 @@
-<x-layout :title="$course->title.' assessments'"><section class="section"><div class="container"><p class="eyebrow">Practice and progress</p><h1>{{ $course->title }}</h1>
+<x-layout :title="$course->title.' assessments'"><section class="section"><div class="container feature-page"><p class="eyebrow">Practice and progress</p><h1>{{ $course->title }}</h1>
 @if(session('status'))<p class="notice" role="status">{{ session('status') }}</p>@endif
 @if($errors->any())<div class="notice" role="alert">{{ $errors->first() }}</div>@endif
 @forelse($assessments as $assessment)<article class="learning-card"><h2>{{ $assessment->title }}</h2><p>{{ $assessment->instructions }}</p><p>{{ $assessment->required ? 'Required for certificate' : 'Optional practice' }}</p>

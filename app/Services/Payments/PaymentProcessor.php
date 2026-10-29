@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Models\AuditLog;
+use App\Models\CouponRedemption;
 use App\Models\Enrollment;
 use App\Models\Order;
 use App\Models\Payment;
@@ -52,6 +53,7 @@ class PaymentProcessor
             }
             $payment->update(['status' => $receipt->success ? 'verified_success' : 'verified_failure', 'verified_at' => now()]);
             $order->update(['status' => $receipt->success ? 'paid' : 'failed']);
+            CouponRedemption::where('order_id', $order->id)->where('status', 'reserved')->update(['status' => $receipt->success ? 'redeemed' : 'released']);
             $event->update(['processed_at' => now()]);
             AuditLog::create(['actor_id' => null, 'action' => $receipt->success ? 'payment.verified_success' : 'payment.verified_failure', 'subject_type' => 'order', 'subject_id' => $order->id, 'changes' => ['provider' => $receipt->provider, 'status' => $order->status]]);
 

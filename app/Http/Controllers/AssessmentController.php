@@ -10,6 +10,8 @@ use App\Models\Certificate;
 use App\Models\CertificateSetting;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\NotificationPreference;
+use App\Notifications\EngagementNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -74,7 +76,10 @@ class AssessmentController extends Controller
             }
             $data['questions'] = array_values($data['questions']);
         }
-        Assessment::create(array_merge($data, ['course_id' => $course->id, 'required' => $request->boolean('required')]));
+        DB::transaction(function () use ($course, $data, $request): void {
+            Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
+            Assessment::create(array_merge($data, ['course_id' => $course->id, 'required' => $request->boolean('required')]));
+        });
 
         return back()->with('status', 'Assessment created. Existing assessment requirements remain frozen.');
     }
@@ -138,7 +143,10 @@ class AssessmentController extends Controller
         $assessment = Assessment::findOrFail($submission->assessment_id);
         $this->owner(Course::findOrFail($assessment->course_id));
         $data = $request->validate(['status' => 'required|in:accepted,revision-needed', 'feedback' => 'required|string|max:10000']);
-        $submission->update($data + ['reviewer_id' => auth()->id()]);
+        DB::transaction(function () use ($assessment, $submission, $data): void {
+            Course::whereKey($assessment->course_id)->lockForUpdate()->firstOrFail();
+            $submission->update($data + ['reviewer_id' => auth()->id()]);
+        });
 
         return back()->with('status', 'Review saved.');
     }
@@ -147,7 +155,10 @@ class AssessmentController extends Controller
     {
         $this->owner($course);
         $request->validate(['enabled' => 'sometimes|boolean']);
-        CertificateSetting::updateOrCreate(['course_id' => $course->id], ['enabled' => $request->boolean('enabled')]);
+        DB::transaction(function () use ($course, $request): void {
+            Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
+            CertificateSetting::updateOrCreate(['course_id' => $course->id], ['enabled' => $request->boolean('enabled')]);
+        });
 
         return back()->with('status', 'Certificate settings saved.');
     }
@@ -156,6 +167,8 @@ class AssessmentController extends Controller
     {
         $enrollment = $this->enrolled($course);
         $certificate = DB::transaction(function () use ($course, $enrollment) {
+            $course = Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
+            abort_unless(Course::published()->whereKey($course->id)->exists(), 404);
             Enrollment::active()->whereKey($enrollment->id)->lockForUpdate()->firstOrFail();
             $existing = Certificate::where('enrollment_id', $enrollment->id)->first();
             if ($existing) {
@@ -171,6 +184,10 @@ class AssessmentController extends Controller
 
             return Certificate::create(['enrollment_id' => $enrollment->id, 'reference' => (string) Str::uuid(), 'learner_name' => auth()->user()->name, 'course_title' => $course->title, 'issued_at' => now()]);
         });
+
+        if ($certificate->wasRecentlyCreated && NotificationPreference::where('user_id', auth()->id())->value('learning') !== false) {
+            auth()->user()->notify(new EngagementNotification(['title' => 'Your completion certificate is ready', 'body' => $certificate->course_title, 'url' => route('certificates.print', $certificate)]));
+        }
 
         return redirect()->route('certificates.print', $certificate);
     }

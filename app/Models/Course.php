@@ -28,6 +28,11 @@ class Course extends Model
         return $lessons->isNotEmpty() && $lessons->every(fn (Lesson $lesson) => $lesson->type === 'text' ? filled(trim($lesson->body ?? '')) : ($lesson->type === 'video' && $lesson->videoAsset?->status === 'ready' && $lesson->videoAsset->course_id === $this->id && app(MediaStorage::class)->available()));
     }
 
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
     public function instructor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'instructor_id');

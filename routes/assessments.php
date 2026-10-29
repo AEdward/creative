@@ -3,11 +3,11 @@
 use App\Http\Controllers\AssessmentController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/certificates/verify/{reference}', [AssessmentController::class, 'verify'])->middleware('throttle:60,1')->name('certificates.verify');
+Route::get('/certificates/verify/{reference}', [AssessmentController::class, 'verify'])->middleware('throttle:60,1,certificates.verify')->name('certificates.verify');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/courses/{course:slug}/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
-    Route::post('/courses/{course:slug}/assessments/{assessment}/attempt', [AssessmentController::class, 'attempt'])->middleware('throttle:20,1')->name('assessments.attempt');
-    Route::post('/courses/{course:slug}/assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->middleware('throttle:10,1')->name('assignments.submit');
+    Route::post('/courses/{course:slug}/assessments/{assessment}/attempt', [AssessmentController::class, 'attempt'])->middleware('throttle:20,1,assessments.attempt')->name('assessments.attempt');
+    Route::post('/courses/{course:slug}/assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->middleware('throttle:10,1,assignments.submit')->name('assignments.submit');
     Route::get('/assignments/{submission}/download', [AssessmentController::class, 'download'])->name('assignments.download');
     Route::get('/certificates', [AssessmentController::class, 'certificates'])->name('certificates.index');
     Route::post('/courses/{course:slug}/certificate', [AssessmentController::class, 'issue'])->name('certificates.issue');

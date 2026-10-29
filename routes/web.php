@@ -21,3 +21,14 @@ require __DIR__.'/account.php';
 require __DIR__.'/payments.php';
 
 require __DIR__.'/media.php';
+
+require __DIR__.'/curriculum.php';
+
+if (file_exists(__DIR__.'/assessments.php')) {
+    require __DIR__.'/assessments.php';
+}
+
+require __DIR__.'/operations.php';
+
+require __DIR__.'/engagement.php';
+require __DIR__.'/instructors.php';

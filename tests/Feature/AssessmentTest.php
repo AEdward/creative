@@ -9,9 +9,11 @@ use App\Models\Certificate;
 use App\Models\CertificateSetting;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LessonProgress;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -161,5 +163,25 @@ class AssessmentTest extends TestCase
         $attempt = AssessmentAttempt::factory()->create(['enrollment_id' => $enrollment->id]);
         $this->expectException(\LogicException::class);
         $attempt->update(['score' => 0]);
+    }
+
+    public function test_curriculum_change_during_issuance_cannot_issue_on_a_draft_course(): void
+    {
+        [$owner,$student,$course,$enrollment] = $this->fixture();
+        CertificateSetting::create(['course_id' => $course->id, 'enabled' => true]);
+        $module = $course->modules()->create(['title' => 'Start']);
+        $complete = $module->lessons()->create(['title' => 'Done', 'type' => 'text', 'body' => 'Read', 'published' => true]);
+        $incomplete = $module->lessons()->create(['title' => 'Not done', 'type' => 'text', 'body' => 'Read', 'published' => true]);
+        LessonProgress::create(['enrollment_id' => $enrollment->id, 'lesson_id' => $complete->id, 'completed_at' => now()]);
+        $changed = false;
+        DB::listen(function ($query) use (&$changed, $course, $incomplete): void {
+            if (! $changed && str_contains($query->sql, 'exists') && str_contains($query->sql, 'courses') && ! str_contains($query->sql, 'enrollments')) {
+                $changed = true;
+                $incomplete->update(['published' => false]);
+                $course->update(['status' => 'draft', 'published_at' => null]);
+            }
+        });
+        $this->actingAs($student)->post('/courses/'.$course->slug.'/certificate')->assertNotFound();
+        $this->assertDatabaseCount('certificates', 0);
     }
 }
