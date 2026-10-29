@@ -18,8 +18,8 @@ Status: `[x]` means completed with evidence recorded in the session/log; `[ ]` m
 - [x] Start private MySQL 8.4.13 and verify PHP connectivity, utf8mb4, InnoDB, and transaction rollback.
 - [x] Create README.md, DECISIONS.md, IMPLEMENTATION_LOG.md, and this checklist.
 - [x] Save runtime installation/start instructions and the api.github.com allowance in the environment draft.
-- [ ] **Blocked — last observed:** apply the saved api.github.com allowance through environment settings; publish as prompted and verify actual access afterward.
-- [ ] Resume Laravel initialization and finish Phase 0. No Laravel application or LMS feature is installed yet; application tests and frontend builds have not run.
+- [x] Remove the package-download blocker using immutable official codeload.github.com archives in Composer’s cache; api.github.com access is no longer required for the current lockfile.
+- [x] Initialize Laravel, install compatible UI dependencies, migrate MySQL, and verify baseline tests, assets, and real HTTP responses. Public-site and LMS features remain unbuilt.
 
 ## Decisions and external prerequisites
 
@@ -47,23 +47,23 @@ Resolve each before implementing the behavior it controls; unrelated development
 
 ## Phase 0 — Application foundation and repeatable development
 
-- [ ] Recheck runtime and Git state before making changes; preserve existing files and use the existing isolated checkout without creating a worktree.
-- [ ] Initialize a supported Laravel application without overwriting project documentation or Git metadata.
-- [ ] Install compatible Livewire, Blade/Alpine integration, Tailwind, and Filament; avoid loading Alpine twice.
-- [ ] Resolve and retain Composer/npm lockfiles; document exact installed versions and PHP/Node requirements.
-- [ ] Create a safe .env.example documenting database, mail, queue, storage, and payment settings without secrets.
-- [ ] Configure ignored local environment files and generate the local application key securely.
+- [x] Recheck runtime and Git state before making changes; preserve existing files and use the existing isolated checkout without creating a worktree.
+- [x] Initialize a supported Laravel application without overwriting project documentation or Git metadata.
+- [x] Install compatible Livewire, Blade/Alpine integration, Tailwind, and Filament; avoid loading Alpine twice.
+- [x] Resolve and retain Composer/npm lockfiles; document exact installed versions and PHP/Node requirements.
+- [x] Create a safe .env.example documenting database, mail, queue, storage, and payment settings without secrets.
+- [x] Configure ignored local environment files and generate the local application key securely.
 - [ ] Configure MySQL 8+, utf8mb4, InnoDB, and separate test database access.
-- [ ] Configure database sessions, cache as appropriate, database queues, and scheduler support without requiring Redis.
+- [x] Configure database sessions, cache as appropriate, database queues, and scheduler support without requiring Redis.
 - [ ] Configure timezone handling and English translation files with a path for Amharic localization.
 - [ ] Configure named routes and public/student/instructor/admin boundaries.
 - [ ] Establish factories and clearly labeled development-only seed data; prevent demo seeding in production.
-- [ ] Establish existing-framework test runner, formatter, and any appropriate static checks.
-- [ ] Add CI for frozen dependency installation, migrations on a test database, tests, formatting checks, and asset build.
-- [ ] Document installation, local startup, database setup, tests, build, and troubleshooting.
-- [ ] Update saved environment install/start instructions using commands actually verified.
+- [x] Establish existing-framework test runner, formatter, and any appropriate static checks.
+- [x] Add CI for frozen dependency installation, migrations on a test database, tests, formatting checks, and asset build. Hosted execution is pending.
+- [x] Document installation, local startup, database setup, tests, build, and troubleshooting.
+- [x] Update saved environment install/start instructions using commands actually verified.
 - [ ] Verify clean installation, migrations, baseline tests, asset build, and a representative HTTP response.
-- [ ] Verify repeatable startup after stopping only project-owned services; document retained files versus restarted processes.
+- [x] Verify repeatable startup after stopping only project-owned services; document retained files versus restarted processes.
 
 ## Database foundation — introduce migrations with their owning phase
 

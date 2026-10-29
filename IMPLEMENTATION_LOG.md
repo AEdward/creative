@@ -11,3 +11,18 @@
 - Laravel skeleton download failed with an HTTP 403 from the proxy for `api.github.com`; saved that precise domain addition in the environment draft. Runtime policy still lacks the domain.
 - Application installation, migrations, tests, frontend build, and HTTP checks are unrun. Phase 0 is incomplete. Phase 1 has not started.
 - No application source, test suite, dependency manifest, or lockfile existed or was changed. No deployment or Git commits were made.
+
+## 2026-10-29 — application foundation installed
+
+- Pushed the original checklist/documentation to GitHub main at c4f4af0.
+- Tested source installation; configured Git to use the mounted system CA bundle. Full repository history was costly, so installed the exact official Laravel skeleton release archive from the permitted GitHub codeload endpoint instead.
+- Resolved Laravel 13.39.0, Livewire 4.4.8, Filament 5.11.0, and Laravel Boost 2.10.3; retained composer.lock and package-lock.json. Cached 150 immutable official package archives without disabling TLS, changing lockfile URLs, or ignoring declared checksums.
+- Added safe local environment configuration, MySQL defaults, a disabled payment flag, and GitHub CI. The upstream scaffold required Laravel Boost; installed it and retained generated guidance.
+- Removed the build-time external font download and used system-font fallbacks. Final visual design is not implemented.
+- Ran the three framework migrations on MySQL successfully (users/sessions, cache, and jobs). Corrected ignored local database settings so the web server uses the private MySQL service.
+- Baseline suite: 4 tests passed, 5 assertions. Includes the upstream trivial unit example plus homepage, health, and database user-persistence/password-hashing checks. Local feature tests use SQLite memory; a dedicated MySQL test database is configured in CI, whose hosted run is not yet verified.
+- PHP formatting passed. Composer manifest validation and platform requirements passed. Composer dependency resolution reported no vulnerability advisories.
+- Frozen npm installation and Vite production asset build passed. Real GET / and /up returned HTTP 200 with MySQL-backed sessions.
+- Executed the reusable installation script again successfully; restarted the project web container and verified both HTTP responses again.
+- Saved updated install/start configuration and removed the now-unnecessary draft api.github.com allowance. Configuration is saved, not published; fresh-task snapshot restoration and a clean-machine install are not yet verified.
+- Filament is a dependency only; there is no admin panel or role system yet. Public branding, courses, authentication, R2, payments, and the remaining LMS are pending.

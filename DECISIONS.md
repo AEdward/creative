@@ -5,3 +5,11 @@
 - PHP 8.4.27 and MySQL 8.4.13 are validated in development containers. Native host Node 24.19.0 and npm 11.9.0 are available.
 - Keep cloud-only tools outside the checkout. Containers are a local tooling fallback, not a hosting decision.
 - Keep R2, SMTP, and real payments unconfigured until their feature work. No production credentials or business rules are invented.
+
+## Working dependency-download alternative
+
+- Download the exact Laravel skeleton commit from the official GitHub codeload endpoint rather than cloning its entire history.
+- Resolve packages using standard Composer metadata/lockfiles. Populate Composer's local archive cache from the official immutable GitHub release endpoints when the API archive host is unavailable. Keep TLS and declared checksum validation enabled; do not rewrite the lockfile or disable security checks.
+- Retain the cache helper outside the checkout as cloud-specific tooling. Ordinary developer machines can use standard Composer installation.
+- Use system fonts for the baseline to avoid a build-time dependency on fonts.bunny.net. Final branded typography remains a later design task.
+- Install Laravel Boost as requested by the upstream scaffold and retain its generated framework guidance.
