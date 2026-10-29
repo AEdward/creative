@@ -95,28 +95,28 @@ Resolve each before implementing the behavior it controls; unrelated development
 - [ ] Define midnight #0B0F1A, blue #3882F6, violet #885CF6, off-white #F1F5F9, restrained gradients, and accessible text colors.
 - [ ] Define typography, spacing, radii, icons, breakpoints, focus styles, and reusable page components.
 - [ ] Build accessible buttons, forms, cards, alerts, pagination, loading/empty/error states, dialogs, and responsive navigation.
-- [ ] Build public header/footer and mobile navigation with correct logged-in/logged-out actions.
-- [ ] Build homepage hero, category navigation, featured courses, benefits, instructor spotlights, FAQ, and calls to action.
-- [ ] Use real content or honest empty states; do not publish sample social proof or invented metrics.
-- [ ] Build /courses and /categories/{slug} with category, level, language, free/paid, and keyword filters.
-- [ ] Add sorting, query-string persistence, pagination, no-results states, and course cards.
-- [ ] Build /courses/{slug}: instructor, summary, description, outcomes, requirements, curriculum, duration, previews, and access/pricing information.
+- [x] Build public header/footer and mobile navigation with correct logged-in/logged-out actions.
+- [x] Build homepage hero, category navigation, featured courses, benefits, instructor spotlights, FAQ, and calls to action.
+- [x] Use real content or honest empty states; do not publish sample social proof or invented metrics.
+- [x] Build /courses and /categories/{slug} with category, level, language, free/paid, and keyword filters.
+- [x] Add sorting, query-string persistence, pagination, no-results states, and course cards.
+- [x] Build /courses/{slug}: instructor, summary, description, outcomes, requirements, curriculum, duration, previews, and access/pricing information.
 - [ ] Show correct enroll/purchase/continue actions for the current access state; unavailable payments must be clearly disabled.
-- [ ] Keep draft/unpublished content out of public results and detail pages.
+- [x] Keep draft/unpublished content out of public results and detail pages.
 - [ ] Build About, FAQ, Contact, and privacy/terms/refund placeholders clearly marked for legal review.
 - [ ] Add contact validation, rate limiting/spam protection, delivery feedback, and server-side handling.
 - [ ] Add SEO slugs, titles/descriptions, canonical URLs, Open Graph, sitemap, robots rules, and valid structured data where applicable.
 - [ ] Test slug uniqueness, filtering, sorting, pagination, publication visibility, contact handling, and accessibility basics.
-- [ ] Inspect mobile/tablet/desktop layouts against the supplied references; record differences without claiming pixel-perfect parity.
+- [x] Inspect mobile/tablet/desktop layouts against the supplied references; record differences without claiming pixel-perfect parity.
 
 ## Phase 2 — Authentication, permissions, and role workspaces
 
-- [ ] Implement registration, login/logout, password reset, verification/resend, and account profile settings.
-- [ ] Add validation, password confirmation where needed, secure session handling, and session invalidation on logout.
-- [ ] Apply login/reset/verification throttles, CSRF protection, secure production cookies, and appropriate middleware.
-- [ ] Enforce account suspension/status and verification rules consistently.
-- [ ] Prevent public clients from assigning themselves instructor/admin privileges.
-- [ ] Define policies/gates for every protected record and enforce them in Livewire actions as well as page routes.
+- [x] Implement registration, login/logout, password reset, verification/resend, and account profile settings.
+- [x] Add validation, password confirmation where needed, secure session handling, and session invalidation on logout.
+- [x] Apply login/reset/verification throttles, CSRF protection, secure production cookies, and appropriate middleware.
+- [x] Enforce account suspension/status and verification rules consistently.
+- [x] Prevent public clients from assigning themselves instructor/admin privileges.
+- [x] Define policies/gates for every protected record and enforce them in Livewire actions as well as page routes.
 - [ ] Build student shell and /dashboard, /my-learning, /wishlist, /certificates, /payments, and /profile boundaries.
 - [ ] Build responsive instructor shell under /instructor/* and Filament admin shell under /admin/*.
 - [ ] Add secure CLI administrator bootstrap without a hardcoded password or public admin registration.
@@ -124,7 +124,7 @@ Resolve each before implementing the behavior it controls; unrelated development
 - [ ] Build profile editing, avatar validation, and notification preferences as needed.
 - [ ] Keep Google/Apple buttons absent unless those optional integrations are approved and implemented.
 - [ ] Test anonymous/student/instructor/admin access, expired sessions, suspended accounts, and unverified-account restrictions.
-- [ ] Test instructor cross-owner access and tampered user/course/role identifiers, including direct Livewire calls.
+- [x] Test instructor cross-owner access and tampered user/course/role identifiers, including direct Livewire calls.
 
 ## Phase 3 — Course builder and protected media
 

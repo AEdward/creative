@@ -1,0 +1,99 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Category;
+use App\Models\Course;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class CatalogTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function course(array $attributes = []): Course
+    {
+        return Course::factory()->create($attributes);
+    }
+
+    public function test_public_pages_have_useful_empty_states(): void
+    {
+        $this->get('/')->assertOk()->assertSee('Learn creative skills')->assertSee('Browse courses');
+        $this->get('/courses')->assertOk()->assertSee('No courses published yet');
+    }
+
+    public function test_only_published_courses_in_active_categories_are_public(): void
+    {
+        $visible = $this->course(['title' => 'Visible course']);
+        $draft = $this->course(['title' => 'Hidden draft', 'status' => 'draft']);
+        $inactive = $this->course(['category_id' => Category::factory()->create(['active' => false])->id]);
+        $scheduled = $this->course(['published_at' => now()->addDay()]);
+
+        $this->get('/courses')->assertOk()->assertSee('Visible course')->assertDontSee('Hidden draft');
+        $this->get('/courses/'.$visible->slug)->assertOk();
+        foreach ([$draft, $inactive, $scheduled] as $course) {
+            $this->get('/courses/'.$course->slug)->assertNotFound();
+        }
+    }
+
+    public function test_catalog_combines_filters_and_search(): void
+    {
+        $category = Category::factory()->create(['slug' => 'video-editing']);
+        $this->course(['title' => 'Editing essentials', 'category_id' => $category->id, 'level' => 'beginner', 'language' => 'en', 'is_free' => true, 'price_minor' => 0]);
+        $this->course(['title' => 'Editing advanced', 'level' => 'advanced', 'is_free' => false]);
+
+        $this->get('/courses?q=Editing&category=video-editing&level=beginner&language=en&access=free')
+            ->assertOk()->assertSee('Editing essentials')->assertDontSee('Editing advanced');
+    }
+
+    public function test_catalog_sorts_and_paginates_without_dropping_filters(): void
+    {
+        Course::factory()->count(13)->create(['title' => 'Editing course']);
+        $response = $this->get('/courses?q=Editing&sort=title');
+        $response->assertOk()->assertViewHas('courses', fn ($courses) => $courses->count() === 12 && $courses->total() === 13);
+        $response->assertSee('q=Editing', false);
+        $this->get('/courses?q=Editing&page=2')->assertViewHas('courses', fn ($courses) => $courses->count() === 1);
+    }
+
+    public function test_invalid_filters_are_rejected(): void
+    {
+        foreach (['sort=sql', 'level=expert', 'q[]=x', 'access=anything', 'page=-1'] as $query) {
+            $this->getJson('/courses?'.$query)->assertUnprocessable();
+        }
+    }
+
+    public function test_category_route_filters_courses_and_rejects_inactive_categories(): void
+    {
+        $category = Category::factory()->create();
+        $course = $this->course(['category_id' => $category->id]);
+        $this->get('/categories/'.$category->slug)->assertOk()->assertSee($course->title);
+        $category->update(['active' => false]);
+        $this->get('/categories/'.$category->slug)->assertNotFound();
+    }
+
+    public function test_details_escape_content_and_hide_unpublished_lessons(): void
+    {
+        $course = $this->course(['description' => '<script>alert(1)</script>']);
+        $module = $course->modules()->create(['title' => 'Getting started', 'sort_order' => 1]);
+        $module->lessons()->create(['title' => 'Public lesson', 'published' => true, 'sort_order' => 1]);
+        $module->lessons()->create(['title' => 'Private lesson', 'published' => false, 'sort_order' => 2]);
+        $this->get('/courses/'.$course->slug)->assertOk()->assertSee('Public lesson')->assertDontSee('Private lesson')
+            ->assertDontSee('<script>alert(1)</script>', false)->assertSee('&lt;script&gt;', false);
+    }
+
+    public function test_static_pages_and_legal_review_notices_are_available(): void
+    {
+        foreach (['about', 'contact', 'faq'] as $page) {
+            $this->get('/'.$page)->assertOk();
+        }
+        foreach (['privacy', 'terms', 'refund-policy'] as $page) {
+            $this->get('/'.$page)->assertOk()->assertSee('Pending legal review');
+        }
+    }
+
+    public function test_paid_courses_do_not_offer_live_checkout(): void
+    {
+        $course = $this->course(['is_free' => false, 'price_minor' => 120000]);
+        $this->get('/courses/'.$course->slug)->assertOk()->assertSee('Checkout is not available yet');
+    }
+}

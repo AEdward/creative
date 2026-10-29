@@ -26,3 +26,14 @@
 - Executed the reusable installation script again successfully; restarted the project web container and verified both HTTP responses again.
 - Saved updated install/start configuration and removed the now-unnecessary draft api.github.com allowance. Configuration is saved, not published; fresh-task snapshot restoration and a clean-machine install are not yet verified.
 - Filament is a dependency only; there is no admin panel or role system yet. Public branding, courses, authentication, R2, payments, and the remaining LMS are pending.
+
+## 2026-10-29 — public catalog and account foundations
+
+- Implemented the reference-led public homepage, five creative-path links, live course catalog/detail pages, About/FAQ, legal-review placeholders, and a contact-channel placeholder. No fabricated courses, ratings, or student counts were seeded.
+- Added category/course/module/lesson schema, factories, publication scoping, filters, search, sorting, pagination, escaped descriptions, and published curriculum visibility.
+- Added native session registration/login/logout, verification and password reset with throttling; canonical lowercase registration emails; student-only self-registration; active-account checks; instructor gate and ownership policy; restricted Filament admin shell.
+- Tests grew from 4 to 27 (116 assertions). All passed after correcting the original homepage fixture to migrate its now-required database and aligning model defaults with database defaults.
+- Desktop/mobile Chromium checks passed for homepage, catalog, login, registration, About and FAQ, including overflow, mobile navigation and page-error checks. Screenshots retained outside Git under /workspace/setup/creative/screenshots. Browser tooling uses a local-only loopback port; no public preview or deployment was created.
+- Final official logo files are visible in chat but are not present among the readable local attachments. The UI uses a typographic brand lockup rather than substituting the earlier unapproved marks. Original file integration remains pending.
+- Ruling: use a locally rendered creative-workspace illustration rather than unlicensed or fabricated course photography. Cost if changed: replace the decorative hero artwork once approved assets are available.
+- Contact submission, profile editing, course builder, enrollment/player, live media/payments, admin resources/reporting, sitemap and deeper accessibility audit remain unfinished.
