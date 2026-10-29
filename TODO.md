@@ -94,7 +94,7 @@ Resolve each before implementing the behavior it controls; unrelated development
 - [ ] Use the confirmed logo instead of alternate marks from earlier reference screens.
 - [ ] Define midnight #0B0F1A, blue #3882F6, violet #885CF6, off-white #F1F5F9, restrained gradients, and accessible text colors.
 - [ ] Define typography, spacing, radii, icons, breakpoints, focus styles, and reusable page components.
-- [ ] Build accessible buttons, forms, cards, alerts, pagination, loading/empty/error states, dialogs, and responsive navigation.
+- [x] Build accessible buttons, forms, cards, alerts, pagination, loading/empty/error states, dialogs, and responsive navigation.
 - [x] Build public header/footer and mobile navigation with correct logged-in/logged-out actions.
 - [x] Build homepage hero, category navigation, featured courses, benefits, instructor spotlights, FAQ, and calls to action.
 - [x] Use real content or honest empty states; do not publish sample social proof or invented metrics.
@@ -103,8 +103,8 @@ Resolve each before implementing the behavior it controls; unrelated development
 - [x] Build /courses/{slug}: instructor, summary, description, outcomes, requirements, curriculum, duration, previews, and access/pricing information.
 - [ ] Show correct enroll/purchase/continue actions for the current access state; unavailable payments must be clearly disabled.
 - [x] Keep draft/unpublished content out of public results and detail pages.
-- [ ] Build About, FAQ, Contact, and privacy/terms/refund placeholders clearly marked for legal review.
-- [ ] Add contact validation, rate limiting/spam protection, delivery feedback, and server-side handling.
+- [x] Build About, FAQ, Contact, and privacy/terms/refund placeholders clearly marked for legal review.
+- [x] Add contact validation, rate limiting/spam protection, delivery feedback, and server-side handling.
 - [ ] Add SEO slugs, titles/descriptions, canonical URLs, Open Graph, sitemap, robots rules, and valid structured data where applicable.
 - [ ] Test slug uniqueness, filtering, sorting, pagination, publication visibility, contact handling, and accessibility basics.
 - [x] Inspect mobile/tablet/desktop layouts against the supplied references; record differences without claiming pixel-perfect parity.
@@ -119,8 +119,8 @@ Resolve each before implementing the behavior it controls; unrelated development
 - [x] Define policies/gates for every protected record and enforce them in Livewire actions as well as page routes.
 - [ ] Build student shell and /dashboard, /my-learning, /wishlist, /certificates, /payments, and /profile boundaries.
 - [ ] Build responsive instructor shell under /instructor/* and Filament admin shell under /admin/*.
-- [ ] Add secure CLI administrator bootstrap without a hardcoded password or public admin registration.
-- [ ] Add instructor approval management and scoped access to owned courses/students only.
+- [x] Add secure CLI administrator bootstrap without a hardcoded password or public admin registration.
+- [x] Add instructor approval management and scoped access to owned courses/students only.
 - [ ] Build profile editing, avatar validation, and notification preferences as needed.
 - [ ] Keep Google/Apple buttons absent unless those optional integrations are approved and implemented.
 - [ ] Test anonymous/student/instructor/admin access, expired sessions, suspended accounts, and unverified-account restrictions.
@@ -146,8 +146,8 @@ Resolve each before implementing the behavior it controls; unrelated development
 
 ## Phase 4 — Enrollment and learning
 
-- [ ] Implement transactional free enrollment with unique membership and duplicate prevention.
-- [ ] Enforce expiry, suspension, revocation, unpublished-course, and refund-related access rules.
+- [x] Implement transactional free enrollment with unique membership and duplicate prevention.
+- [x] Enforce expiry, suspension, revocation, unpublished-course, and refund-related access rules.
 - [ ] Build learning dashboard with real enrolled courses, progress, continue learning, and recently viewed items.
 - [ ] Build /learn/{course:slug}/{lesson} with authorized curriculum sidebar and previous/next navigation.
 - [ ] Verify lesson belongs to the requested course; enforce published lesson and preview rules.
@@ -282,3 +282,16 @@ Reuse this gate for each phase; a previous phase's result does not validate late
 - [ ] Security, payment, permission, accessibility, build, migration, and operational checks have evidence.
 - [ ] Production deployment, backups, restore rehearsal, monitoring, and handoff are documented and authorized.
 - [ ] Missing real-payment documentation/credentials remain explicitly blocked, never reported as a completed paid-learning workflow.
+
+## Current verified capabilities (incremental; bundled phase items above may remain partial)
+
+- [x] Native profile and password settings, email-change reverification, and other-session invalidation.
+- [x] Student-owned wishlist, private text lesson notes, and saved lesson bookmarks.
+- [x] Instructor course create/edit, module creation, text lesson create/edit/unpublish, and admin publication review.
+- [x] Block publication when an unattached video lesson is visible; no pretend video playback.
+- [x] Free enrollment with duplicate protection, expiry/revocation checks, course/lesson authorization, explicit text completion, and course progress.
+- [x] Contact form with validation, honeypot, rate limiting, and restricted admin inbox.
+- [x] Category/user/course management, real account/course/enrollment counts, audited instructor approval, account suspension/reactivation, and publication.
+- [x] Full browser journey on isolated temporary MySQL data: instructor creates curriculum, admin publishes, student enrolls and completes learning to 100%; fixtures removed afterward.
+- [x] Independent review findings for malformed auth fields and catalog redirect loops reproduced and fixed with regression tests.
+- [ ] Finish remaining video/media, commerce, assessments, richer reporting, localization, launch, and operational items above; these are not implied complete by the working text-course flow.

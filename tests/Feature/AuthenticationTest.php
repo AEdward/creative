@@ -95,4 +95,12 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
         $this->post('/register', ['name' => 'Learner', 'email' => $user->email, 'password' => 'short', 'password_confirmation' => 'different'])->assertSessionHasErrors(['email', 'password']);
     }
+
+    public function test_malformed_auth_fields_render_validation_feedback_without_server_errors(): void
+    {
+        $this->from('/login')->post('/login', ['email' => ['invalid'], 'password' => 'bad'])->assertSessionHasErrors('email');
+        $this->withCookie(config('session.cookie'), session()->getId())->get('/login')->assertOk()->assertSee('The email field must be a string.');
+        $this->from('/register')->post('/register', ['name' => ['invalid'], 'email' => 'valid@example.test', 'password' => 'Long-test-password123!', 'password_confirmation' => 'Long-test-password123!'])->assertSessionHasErrors('name');
+        $this->withCookie(config('session.cookie'), session()->getId())->get('/register')->assertOk()->assertSee('The name field must be a string.');
+    }
 }

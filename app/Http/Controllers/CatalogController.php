@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Course;
+use App\Models\Enrollment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CatalogController extends Controller
@@ -19,7 +22,11 @@ class CatalogController extends Controller
     public function index(Request $request, ?Category $category = null): View
     {
         abort_if($category && ! $category->active, 404);
-        $filters = $request->validate(['q' => ['nullable', 'string', 'max:120'], 'category' => ['nullable', 'string', 'alpha_dash', 'max:100'], 'level' => ['nullable', 'in:beginner,intermediate,advanced'], 'language' => ['nullable', 'in:en,am'], 'access' => ['nullable', 'in:free,paid'], 'sort' => ['nullable', 'in:newest,title,price-asc,price-desc'], 'page' => ['nullable', 'integer', 'min:1']]);
+        $validator = Validator::make($request->all(), ['q' => ['nullable', 'string', 'max:120'], 'category' => ['nullable', 'string', 'alpha_dash', 'max:100'], 'level' => ['nullable', 'in:beginner,intermediate,advanced'], 'language' => ['nullable', 'in:en,am'], 'access' => ['nullable', 'in:free,paid'], 'sort' => ['nullable', 'in:newest,title,price-asc,price-desc'], 'page' => ['nullable', 'integer', 'min:1']]);
+        if ($validator->fails()) {
+            throw (new ValidationException($validator))->redirectTo(route('courses.index'));
+        }
+        $filters = $validator->validated();
         if ($category) {
             $filters['category'] = $category->slug;
         }
@@ -49,6 +56,8 @@ class CatalogController extends Controller
     {
         $course = Course::published()->where('slug', $slug)->with(['instructor', 'category', 'modules.lessons' => fn (HasMany $query) => $query->where('published', true)])->firstOrFail();
 
-        return view('courses.show', compact('course'));
+        $enrollment = auth()->check() ? Enrollment::active()->where('course_id', $course->id)->where('user_id', auth()->id())->first() : null;
+
+        return view('courses.show', compact('course', 'enrollment'));
     }
 }

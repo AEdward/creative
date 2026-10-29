@@ -96,4 +96,12 @@ class CatalogTest extends TestCase
         $course = $this->course(['is_free' => false, 'price_minor' => 120000]);
         $this->get('/courses/'.$course->slug)->assertOk()->assertSee('Checkout is not available yet');
     }
+
+    public function test_html_filter_errors_redirect_to_a_clean_catalog_with_feedback(): void
+    {
+        $this->from('/courses?q[]=x')->get('/courses?q[]=x')->assertRedirect('/courses')->assertSessionHasErrors('q');
+        $response = $this->withCookie(config('session.cookie'), session()->getId())->get('/courses');
+        $response->assertOk()->assertSee('Please check your filters');
+        $this->from('/')->get('/courses?sort=invalid')->assertRedirect('/courses')->assertSessionHasErrors('sort');
+    }
 }

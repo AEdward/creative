@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordController;
+use App\Models\Course;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -34,5 +35,5 @@ Route::middleware('auth')->group(function () {
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('/dashboard', 'dashboard')->name('dashboard');
-    Route::view('/instructor', 'instructor.index')->middleware('can:instructor')->name('instructor.dashboard');
+    Route::get('/instructor', fn () => view('instructor.index', ['courses' => Course::with('category')->when(auth()->user()->role !== 'admin', fn ($query) => $query->where('instructor_id', auth()->id()))->latest()->paginate(12)]))->middleware('can:instructor')->name('instructor.dashboard');
 });

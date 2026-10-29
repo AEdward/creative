@@ -13,3 +13,7 @@ foreach (['about' => ['A place for your creative potential.', 'Practical skills.
 }
 
 require __DIR__.'/auth.php';
+
+require __DIR__.'/learning.php';
+
+require __DIR__.'/account.php';

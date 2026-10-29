@@ -1,10 +1,12 @@
 # Creative Lab Academy
 
-A Laravel monolith for the academy described in [the build specification](docs/BUILD_PLAN.md). The runtime/application foundation is installed; the branded public site, authentication, course management, learning, and payments are upcoming work in [TODO.md](TODO.md).
+A Laravel monolith for the academy described in [the build specification](docs/BUILD_PLAN.md). Available now: branded public pages and a searchable catalog; registration/login, verification and password reset; student/instructor/admin boundaries; a Livewire course editor with text lessons and administrator publication; free enrollment, private learning notes/bookmarks, explicit completion and progress; profile/password settings, wishlist, contact inbox, and basic Filament management with audited role/status changes.
+
+Real video uploads/playback, paid checkout, advanced assessments/certificates, and production deployment remain unfinished. Do not treat this development build as a launched service. See [TODO.md](TODO.md).
 
 ## Stack
 
-PHP 8.4, Laravel 13, Livewire 4 (including Alpine), Filament 5, Tailwind 4, Vite 8, MySQL 8.4, and Node 24. Exact PHP/JS dependencies are committed in their lockfiles. Filament is installed as a dependency; no admin panel, role system, or admin account exists yet. The homepage is still the framework welcome page.
+PHP 8.4, Laravel 13, Livewire 4 (including Alpine), Filament 5, Tailwind 4, Vite 8, MySQL 8.4, and Node 24. Exact PHP/JS dependencies are committed in their lockfiles. Filament provides the restricted admin panel. No administrator credentials are seeded or hardcoded.
 
 ## Standard installation
 
@@ -16,6 +18,7 @@ cp .env.example .env
 # Configure your local database credentials securely in .env.
 php artisan key:generate
 php artisan migrate
+php artisan db:seed --class=CategorySeeder
 npm ci --ignore-scripts
 npm run build
 php artisan serve
@@ -33,7 +36,7 @@ Use the existing isolated checkout; do not create a Git worktree unless explicit
 /workspace/setup/creative/start-web
 ```
 
-MySQL and the web process use a private Docker network with no published host ports. Generated local credentials are outside the checkout and in ignored local .env configuration; never print or commit them. Files/dependencies are retained separately from processes, which must be restarted in new tasks. No public preview is configured.
+MySQL uses a private Docker network without a published database port. The development web process exposes only a local loopback port for internal browser checks. Generated local credentials are outside the checkout and in ignored local .env configuration; never print or commit them. Files/dependencies are retained separately from processes, which must be restarted in new tasks. No public preview is configured.
 
 ### Dependency refresh under restricted networking
 
@@ -59,6 +62,14 @@ The cloud wrapper injects development MySQL settings. Remove those selectors whe
 npm run build
 ```
 
-With native PHP, `php artisan test` uses phpunit.xml defaults unless you export database overrides. CI uses a dedicated MySQL `creative_test` database. Baseline coverage checks homepage/health responses and user persistence/password hashing; the scaffold also includes its example unit test. This does not validate future LMS workflows. The GitHub CI workflow is added but its hosted run must be checked separately.
+With native PHP, `php artisan test` uses phpunit.xml defaults unless you export database overrides. CI uses a dedicated MySQL `creative_test` database. Feature coverage includes catalog visibility/filtering, native authentication, role/ownership boundaries, admin operations, course editing/publication, enrollment, learning progress, profile settings, contact validation, wishlists, and private notes. Video, live payments, and deployment are not verified. The scaffold also retains its example unit test. The GitHub CI workflow is added but its hosted run must be checked separately.
 
 See [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md) for executed checks and [DECISIONS.md](DECISIONS.md) for setup choices.
+
+## Administrator bootstrap
+
+From a trusted interactive terminal, run `php artisan academy:admin you@example.com --name="Your name"`. It securely prompts for a password, creates a verified administrator, and refuses to promote or overwrite an existing account. In this cloud runtime, prefix the command with `CREATIVE_INTERACTIVE=1 /workspace/setup/creative/php`. Never put a password in command arguments, files committed to Git, or chat. Administrators can approve instructors from the Users resource; role/status changes are audited.
+
+Default seeding creates only the five creative categories and is repeatable. It never creates demo students, instructors, paid transactions, or courses. Instructor edits return published courses to draft for review. Publication is currently limited to complete text-based curricula; unattached video lessons prevent publication.
+
+Mail is logged locally until a verified SMTP service is configured. Legal pages remain review placeholders. Real payment processing stays off and has no enabled provider.

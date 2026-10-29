@@ -22,7 +22,7 @@
         <div class="header-actions">
             @auth <a class="text-link" href="{{ url('/dashboard') }}">My dashboard</a>
             @else <a class="text-link sign-in-link" href="{{ url('/login') }}">Log in</a> @endauth
-            <a class="button button-small" href="{{ route('courses.index') }}">Explore courses <span aria-hidden="true">↗︎</span></a>
+            <a class="button button-small" href="{{ route('courses.index') }}">Explore courses <span aria-hidden="true"><x-heroicon-o-arrow-up-right class="direction-icon" aria-hidden="true" /></span></a>
         </div>
         <details class="mobile-menu"><summary>Menu</summary><nav aria-label="Mobile navigation"><a href="{{ route('home') }}">Home</a><a href="{{ route('courses.index') }}">Courses</a><a href="{{ route('about') }}">About</a><a href="{{ route('faq') }}">FAQ</a><a href="{{ url('/login') }}">Log in</a></nav></details>
     </div>
