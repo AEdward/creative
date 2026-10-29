@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\Course;
 use App\Models\User;
 use App\Services\AccountAdministration;
+use App\Services\Payments\CheckoutService;
+use App\Services\Payments\FakeGateway;
+use App\Services\Payments\PaymentGateway;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AdministrationTest extends TestCase
@@ -27,7 +32,7 @@ class AdministrationTest extends TestCase
     public function test_administrator_can_open_the_panel_and_management_pages(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'admin']));
-        foreach (['/admin', '/admin/categories', '/admin/users', '/admin/courses', '/admin/contact-messages'] as $url) {
+        foreach (['/admin', '/admin/categories', '/admin/users', '/admin/courses', '/admin/contact-messages', '/admin/orders'] as $url) {
             $this->get($url)->assertOk();
         }
     }
@@ -35,7 +40,7 @@ class AdministrationTest extends TestCase
     public function test_student_cannot_access_admin_management_pages(): void
     {
         $this->actingAs(User::factory()->create());
-        foreach (['/admin/categories', '/admin/users', '/admin/courses', '/admin/contact-messages'] as $url) {
+        foreach (['/admin/categories', '/admin/users', '/admin/courses', '/admin/contact-messages', '/admin/orders'] as $url) {
             $this->get($url)->assertForbidden();
         }
     }
@@ -68,5 +73,13 @@ class AdministrationTest extends TestCase
         app(AccountAdministration::class)->setStatus($admin, $student, 'suspended');
         $this->assertNotSame($oldToken, $student->fresh()->remember_token);
         $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'subject_id' => $student->id, 'action' => 'account.status_changed']);
+    }
+
+    public function test_order_ledger_displays_owned_financial_records_without_creation_actions(): void
+    {
+        config(['academy.payments_enabled' => true]);
+        app()->instance(PaymentGateway::class, new FakeGateway);
+        $order = app(CheckoutService::class)->create(User::factory()->create(), Course::factory()->create(), (string) Str::uuid());
+        $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/admin/orders')->assertOk()->assertSee($order->reference)->assertDontSee('Create order');
     }
 }

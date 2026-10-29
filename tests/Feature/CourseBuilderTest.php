@@ -99,4 +99,27 @@ class CourseBuilderTest extends TestCase
         Livewire::actingAs(User::factory()->create(['role' => 'admin']))->test(CourseEditor::class, ['course' => $course])->call('publish')->assertHasErrors('publication');
         $this->assertSame('draft', $course->fresh()->status);
     }
+
+    public function test_hiding_the_last_lesson_as_admin_returns_the_course_to_draft(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $course = Course::factory()->create(['is_free' => true, 'price_minor' => 0]);
+        $lesson = $course->modules()->create(['title' => 'Module'])->lessons()->create(['title' => 'Only lesson', 'body' => 'Complete content', 'type' => 'text', 'published' => true]);
+        Livewire::actingAs($admin)->test(CourseEditor::class, ['course' => $course])->call('unpublishLesson', $lesson->id)->assertHasNoErrors();
+        $this->assertSame('draft', $course->fresh()->status);
+        $this->actingAs(User::factory()->create())->post('/courses/'.$course->slug.'/enroll')->assertNotFound();
+    }
+
+    public function test_long_unicode_course_and_lesson_content_can_be_saved(): void
+    {
+        $owner = User::factory()->create(['role' => 'instructor']);
+        $category = Category::factory()->create();
+        $content = str_repeat('ሀ', 25000);
+        Livewire::actingAs($owner)->test(CourseEditor::class)->set('title', 'Unicode foundations')->set('slug', 'unicode-foundations')->set('categoryId', $category->id)->set('summary', 'A multilingual course.')->set('description', $content)->call('save')->assertHasNoErrors();
+        $course = Course::where('slug', 'unicode-foundations')->firstOrFail();
+        $module = $course->modules()->create(['title' => 'Module']);
+        Livewire::actingAs($owner)->test(CourseEditor::class, ['course' => $course])->set('lessonModuleId', $module->id)->set('lessonTitle', 'A Unicode lesson')->set('lessonBody', $content)->call('addLesson')->assertHasNoErrors();
+        $this->assertSame($content, $course->fresh()->description);
+        $this->assertSame($content, $module->lessons()->firstOrFail()->body);
+    }
 }

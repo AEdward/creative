@@ -10,11 +10,16 @@ class Lesson extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['module_id', 'title', 'type', 'body', 'duration_seconds', 'is_preview', 'sort_order', 'published'];
+    protected $fillable = ['video_asset_id', 'module_id', 'title', 'type', 'body', 'duration_seconds', 'is_preview', 'sort_order', 'published'];
 
     protected function casts(): array
     {
         return ['published' => 'boolean', 'is_preview' => 'boolean'];
+    }
+
+    public function videoAsset(): BelongsTo
+    {
+        return $this->belongsTo(VideoAsset::class);
     }
 
     public function module(): BelongsTo

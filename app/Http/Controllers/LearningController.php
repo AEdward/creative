@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonNote;
 use App\Models\LessonProgress;
+use App\Services\Media\MediaStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,7 +73,7 @@ class LearningController extends Controller
         $this->publishedLesson($course, $lesson);
         $enrollment = $this->enrollment($course);
         abort_unless($enrollment, 403);
-        abort_unless($lesson->type === 'text', 422, 'Video completion requires an attached playable asset.');
+        abort_unless($lesson->type === 'text' || ($lesson->type === 'video' && $lesson->videoAsset?->status === 'ready' && $lesson->videoAsset->course_id === $course->id && app(MediaStorage::class)->available()), 422, 'Video completion requires an attached playable asset.');
         $progress = LessonProgress::firstOrCreate(['enrollment_id' => $enrollment->id, 'lesson_id' => $lesson->id]);
         LessonProgress::whereKey($progress->id)->whereNull('completed_at')->update(['completed_at' => now()]);
 

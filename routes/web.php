@@ -17,3 +17,7 @@ require __DIR__.'/auth.php';
 require __DIR__.'/learning.php';
 
 require __DIR__.'/account.php';
+
+require __DIR__.'/payments.php';
+
+require __DIR__.'/media.php';

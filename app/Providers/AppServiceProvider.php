@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\Media\MediaStorage;
+use App\Services\Media\R2Storage;
+use App\Services\Payments\PaymentGateway;
+use App\Services\Payments\UnavailableGateway;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,7 +17,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(MediaStorage::class, R2Storage::class);
+        $this->app->bind(PaymentGateway::class, UnavailableGateway::class);
     }
 
     /**

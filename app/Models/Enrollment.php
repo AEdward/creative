@@ -12,7 +12,7 @@ class Enrollment extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'course_id', 'status', 'source', 'enrolled_at', 'expires_at'];
+    protected $fillable = ['user_id', 'course_id', 'status', 'source', 'enrolled_at', 'expires_at', 'source_order_item_id'];
 
     protected function casts(): array
     {

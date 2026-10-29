@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Media\MediaStorage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,13 @@ class Course extends Model
     protected function casts(): array
     {
         return ['is_free' => 'boolean', 'price_minor' => 'integer', 'published_at' => 'datetime', 'outcomes' => 'array', 'requirements' => 'array'];
+    }
+
+    public function hasReadyCurriculum(): bool
+    {
+        $lessons = $this->lessons()->where('published', true)->with('videoAsset')->get();
+
+        return $lessons->isNotEmpty() && $lessons->every(fn (Lesson $lesson) => $lesson->type === 'text' ? filled(trim($lesson->body ?? '')) : ($lesson->type === 'video' && $lesson->videoAsset?->status === 'ready' && $lesson->videoAsset->course_id === $this->id && app(MediaStorage::class)->available()));
     }
 
     public function instructor(): BelongsTo

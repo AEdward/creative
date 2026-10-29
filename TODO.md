@@ -295,3 +295,9 @@ Reuse this gate for each phase; a previous phase's result does not validate late
 - [x] Full browser journey on isolated temporary MySQL data: instructor creates curriculum, admin publishes, student enrolls and completes learning to 100%; fixtures removed afterward.
 - [x] Independent review findings for malformed auth fields and catalog redirect loops reproduced and fixed with regression tests.
 - [ ] Finish remaining video/media, commerce, assessments, richer reporting, localization, launch, and operational items above; these are not implied complete by the working text-course flow.
+
+- [x] Commerce domain with integer price snapshots, test-only adapter, idempotent verified fulfillment, owned order history and read-only admin ledger; real checkout remains disabled.
+- [x] Private media intents, verified staging-to-final copy, same-course attachment, short-lived authorized playback, upload progress/cancel, explicit video completion and resume UI (local/fake/SDK checks).
+- [x] Slow-upload confirmation grace, video lesson editing/restoration and retryable staging/orphan pruning (local tests).
+- [ ] Verify all media flows on real R2, schedule cleanup, configure quotas/lifecycle/CORS, and enforce storage-level upload controls before activation.
+- [ ] Implement a provider-approved payment adapter and sandbox verification; no public callback or live payment is enabled by the domain foundation.

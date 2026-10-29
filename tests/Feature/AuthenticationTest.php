@@ -103,4 +103,14 @@ class AuthenticationTest extends TestCase
         $this->from('/register')->post('/register', ['name' => ['invalid'], 'email' => 'valid@example.test', 'password' => 'Long-test-password123!', 'password_confirmation' => 'Long-test-password123!'])->assertSessionHasErrors('name');
         $this->withCookie(config('session.cookie'), session()->getId())->get('/register')->assertOk()->assertSee('The name field must be a string.');
     }
+
+    public function test_login_attempts_do_not_consume_the_password_reset_rate_limit(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+        for ($attempt = 0; $attempt < 6; $attempt++) {
+            $this->post('/login', ['email' => $user->email, 'password' => 'wrong'])->assertSessionHasErrors('email');
+        }
+        $this->post('/forgot-password', ['email' => $user->email])->assertRedirect()->assertSessionHas('status');
+    }
 }

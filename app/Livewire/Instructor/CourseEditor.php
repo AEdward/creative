@@ -99,7 +99,7 @@ class CourseEditor extends Component
 
     private function returnToReview(Course $course): void
     {
-        if (auth()->user()->role !== 'admin') {
+        if (auth()->user()->role !== 'admin' || ! $course->hasReadyCurriculum()) {
             $course->update(['status' => 'draft', 'published_at' => null]);
         }
     }
@@ -122,7 +122,6 @@ class CourseEditor extends Component
         $course = $this->editableCourse();
         abort_unless($course, 422);
         $lesson = $course->lessons()->findOrFail($lessonId);
-        abort_unless($lesson->type === 'text', 422);
         $this->editingLessonId = $lesson->id;
         $this->lessonModuleId = $lesson->module_id;
         $this->lessonTitle = $lesson->title;
@@ -140,13 +139,15 @@ class CourseEditor extends Component
     {
         $course = $this->editableCourse();
         abort_unless($course, 422);
-        $this->validate(['lessonModuleId' => ['required', 'integer'], 'lessonTitle' => ['required', 'string', 'max:180'], 'lessonBody' => ['required', 'string', 'max:30000'], 'lessonPreview' => ['boolean']]);
+        $editing = $this->editingLessonId ? $course->lessons()->findOrFail($this->editingLessonId) : null;
+        $this->validate(['lessonModuleId' => ['required', 'integer'], 'lessonTitle' => ['required', 'string', 'max:180'], 'lessonBody' => [$editing?->type === 'video' ? 'nullable' : 'required', 'string', 'max:30000'], 'lessonPreview' => ['boolean']]);
         $module = $course->modules()->findOrFail($this->lessonModuleId);
         DB::transaction(function () use ($course, $module) {
             Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
             $data = ['title' => $this->lessonTitle, 'type' => 'text', 'body' => $this->lessonBody, 'is_preview' => $this->lessonPreview, 'published' => true];
             if ($this->editingLessonId) {
                 $lesson = $course->lessons()->findOrFail($this->editingLessonId);
+                $data['type'] = $lesson->type;
                 if ($lesson->module_id !== $module->id) {
                     $data['sort_order'] = (int) $module->lessons()->max('sort_order') + 1;
                 }
@@ -177,8 +178,8 @@ class CourseEditor extends Component
         $this->authorize('publish', $course);
         DB::transaction(function () use ($course) {
             $locked = Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
-            if (! $locked->category->active || ! $locked->summary || ! $locked->description || ! $locked->lessons()->where('published', true)->where('type', 'text')->whereNotNull('body')->where('body', '!=', '')->exists() || $locked->lessons()->where('published', true)->where('type', 'video')->exists() || (! $locked->is_free && $locked->price_minor < 1)) {
-                throw ValidationException::withMessages(['publication' => 'A course needs an active category, complete description, valid price, and complete text lessons. Unattached video lessons must stay unpublished until media integration is ready.']);
+            if (! $locked->category->active || ! $locked->summary || ! $locked->description || ! $locked->hasReadyCurriculum() || (! $locked->is_free && $locked->price_minor < 1)) {
+                throw ValidationException::withMessages(['publication' => 'A course needs an active category, complete description, valid price, and complete lessons. Videos need verified assets and configured private storage.']);
             }
             $previous = $locked->status;
             $locked->update(['status' => 'published', 'published_at' => $locked->published_at ?? now()]);
