@@ -2904,3 +2904,6 @@ input[type="radio"] {
         display: none;
     }
 }
+.path-thumb {
+    aspect-ratio: 640 / 235;
+}

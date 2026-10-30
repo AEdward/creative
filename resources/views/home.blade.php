@@ -34,7 +34,7 @@ $pathStyles = [
     @foreach($categories as $category)
         @php [$style, $copy] = $pathStyles[$category->slug] ?? ['video', $category->description]; $thumb = 'images/categories/'.$category->slug.'.webp'; @endphp
         <a class="path-card {{ $style }}" href="{{ route('categories.show', $category) }}">
-            <div class="path-thumb">@if(file_exists(public_path($thumb)))<img src="{{ asset($thumb) }}" alt="" loading="lazy" width="480" height="270">@else<x-heroicon-o-sparkles class="path-thumb-icon" aria-hidden="true" />@endif</div>
+            <div class="path-thumb">@if(file_exists(public_path($thumb)))<img src="{{ asset($thumb) }}" alt="" loading="lazy" width="640" height="235">@else<x-heroicon-o-sparkles class="path-thumb-icon" aria-hidden="true" />@endif</div>
             <h3>{{ __($category->name) }}</h3>
             <p>{{ filled($category->description) ? $category->description : __($copy) }}</p>
             <div class="path-foot"><span class="path-count">{{ trans_choice('{0} Courses coming soon|{1} :count course|[2,*] :count courses', $category->courses_count, ['count' => $category->courses_count]) }}</span><span class="path-arrow" aria-hidden="true"><x-heroicon-o-arrow-right class="direction-icon" aria-hidden="true" /></span></div>
