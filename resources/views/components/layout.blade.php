@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }} · Creative Lab Academy</title>
-    <meta name="description" content="{{ $description }}"><meta name="theme-color" content="#0B0F1A">
+    <meta name="description" content="{{ $description }}"><meta name="theme-color" content="#0B1025">
     @if(file_exists(public_path('images/brand/favicon-32.png')))<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/brand/favicon-32.png') }}"><link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/brand/favicon-192.png') }}"><link rel="apple-touch-icon" href="{{ asset('images/brand/apple-touch-icon.png') }}">@endif
     <link rel="canonical" href="{{ url()->current() }}">
     <meta property="og:title" content="{{ $title }}"><meta property="og:description" content="{{ $description }}"><meta property="og:type" content="website"><meta property="og:url" content="{{ url()->current() }}">

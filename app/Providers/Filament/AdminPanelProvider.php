@@ -30,9 +30,13 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Creative Lab Academy')
+            ->brandLogo(fn () => asset('images/brand/logo-full.webp'))
+            ->brandLogoHeight('2.75rem')
+            ->favicon(asset('images/brand/favicon-32.png'))
             ->emailVerification()
             ->colors([
-                'primary' => Color::Violet,
+                'primary' => Color::hex('#7138F5'),
+                'info' => Color::hex('#3054F5'),
             ])
             ->navigationItems([
                 NavigationItem::make('Academy operations')->url(fn () => route('academy-admin'))->icon('heroicon-o-chart-bar'),

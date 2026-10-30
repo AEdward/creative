@@ -8,15 +8,25 @@
 @source '../../storage/framework/views/*.php';
 @theme {
     --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+    --color-brand-primary: #7138F5;
+    --color-brand-blue: #3054F5;
+    --color-brand-violet: #A34CF5;
+    --color-brand-cyan: #13B9F5;
+    --color-brand-dark: #0B1025;
+    --color-brand-light: #F8FAFF;
 }
 :root {
     --ink: #101321;
     --muted: #626779;
-    --paper: #f7f8fc;
+    --paper: #F8FAFF;
     --line: #e3e5ee;
-    --violet: #7542e8;
-    --blue: #3882f6;
-    --night: #0b0f1a;
+    --violet: #7138F5;
+    --blue: #3054F5;
+    --night: #0B1025;
+    --violet-bright: #A34CF5;
+    --cyan: #13B9F5;
+    /* Primary brand gradient: purple → violet → blue → cyan. */
+    --brand-gradient: linear-gradient(120deg, #7138F5 0%, #A34CF5 35%, #3054F5 70%, #13B9F5 100%);
     --radius: 18px;
     --font-sans: "Poppins", "Noto Sans Ethiopic", "Nyala", Arial, sans-serif;
     color-scheme: light;
@@ -73,7 +83,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-    outline: 3px solid #3882f6;
+    outline: 3px solid #3054F5;
     outline-offset: 5px;
 }
 h1,
@@ -115,7 +125,7 @@ p {
     letter-spacing: 0.18em;
     font-weight: 700;
     text-transform: uppercase;
-    color: #7542e8;
+    color: #7138F5;
     margin-bottom: 18px;
 }
 .button {
@@ -138,7 +148,7 @@ p {
 }
 .button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 7px 20px #7542e822;
+    box-shadow: 0 7px 20px #7138F522;
 }
 .button-small {
     min-height: 43px;
@@ -237,7 +247,7 @@ p {
     left: 0;
     width: 22px;
     height: 2px;
-    background: #885cf6;
+    background: #A34CF5;
 }
 .desktop-nav a:hover {
     color: #966cff;
@@ -311,7 +321,7 @@ p {
 .line-accent {
     width: 28px;
     height: 2px;
-    background: linear-gradient(90deg, #3882f6, #885cf6);
+    background: linear-gradient(90deg, #3054F5, #A34CF5);
 }
 .creative-art {
     height: 430px;
@@ -631,7 +641,7 @@ p {
     position: absolute;
     right: 14px;
     bottom: 12px;
-    color: #7542e8;
+    color: #7138F5;
     font-size: 21px;
 }
 .courses-section {
@@ -727,7 +737,7 @@ p {
     margin-bottom: 12px;
 }
 .course-card h3 a:hover {
-    color: #7542e8;
+    color: #7138F5;
 }
 .course-card-content > p {
     font-size: 13px;
@@ -818,7 +828,7 @@ p {
 .faq-item summary:after {
     content: "+";
     font-size: 20px;
-    color: #7542e8;
+    color: #7138F5;
     font-weight: 400;
     line-height: 1;
 }
@@ -833,7 +843,7 @@ p {
     max-width: 560px;
 }
 .site-footer {
-    background: #0b0f1a;
+    background: #0B1025;
     padding-top: 65px;
     color: #fff;
 }
@@ -920,7 +930,7 @@ p {
 .search-field input {
     flex: 1;
     min-width: 0;
-    background: #f7f8fc;
+    background: #F8FAFF;
 }
 .filter-row {
     display: grid;
@@ -1068,7 +1078,7 @@ textarea::placeholder {
 .curriculum small {
     white-space: nowrap;
     font-size: 10px;
-    color: #7542e8;
+    color: #7138F5;
 }
 .access-card {
     border: 1px solid var(--line);
@@ -1086,7 +1096,7 @@ textarea::placeholder {
     letter-spacing: -0.06em;
 }
 .access-art em {
-    color: #7542e8;
+    color: #7138F5;
     font-style: normal;
 }
 .access-card-body {
@@ -1178,7 +1188,7 @@ textarea::placeholder {
 .auth-art {
     width: 210px;
     height: 210px;
-    border: 48px solid #885cf6;
+    border: 48px solid #A34CF5;
     border-radius: 45px;
     transform: rotate(-25deg);
     position: relative;
@@ -1192,7 +1202,7 @@ textarea::placeholder {
     content: "";
     width: 120px;
     height: 120px;
-    border: 30px solid #3882f6;
+    border: 30px solid #3054F5;
     border-radius: 50%;
     position: absolute;
     left: -100px;
@@ -1244,7 +1254,7 @@ textarea::placeholder {
 .checkbox-label input {
     width: 15px;
     min-height: 15px;
-    accent-color: #7542e8;
+    accent-color: #7138F5;
 }
 .form-wide-button {
     width: 100%;
@@ -1256,7 +1266,7 @@ textarea::placeholder {
 }
 .auth-switch a,
 .form-extra a {
-    color: #7542e8;
+    color: #7138F5;
     font-weight: 600;
 }
 .dashboard-top {
@@ -1291,7 +1301,7 @@ textarea::placeholder {
 .logout-button {
     background: none;
     border: 0;
-    color: #7542e8;
+    color: #7138F5;
     font-size: 13px;
     padding: 10px;
 }
@@ -2026,13 +2036,13 @@ progress {
     border-radius: 10px;
     background: #e8e2f4;
     overflow: hidden;
-    accent-color: #885cf6;
+    accent-color: #A34CF5;
 }
 progress::-webkit-progress-bar {
     background: #e8e2f4;
 }
 progress::-webkit-progress-value {
-    background: #885cf6;
+    background: #A34CF5;
     border-radius: 10px;
 }
 .learning-header {
@@ -2086,7 +2096,7 @@ progress::-webkit-progress-value {
     gap: 25px;
     font-size: 12px;
     padding-top: 30px;
-    color: #7542e8;
+    color: #7138F5;
 }
 .lesson-navigation > a {
     max-width: 45%;
@@ -2120,7 +2130,7 @@ progress::-webkit-progress-value {
 }
 .sidebar-module a[aria-current] {
     background: #f0e9fc;
-    color: #7542e8;
+    color: #7138F5;
 }
 .sidebar-module small {
     display: block;
