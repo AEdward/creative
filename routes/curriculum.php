@@ -11,6 +11,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/profile/avatar', [LocalFileController::class, 'avatar'])->middleware('throttle:10,1,profile.avatar')->name('profile.avatar.store');
 });
 Route::middleware(['auth', 'verified', 'can:instructor', 'throttle:60,1,curriculum'])->prefix('/instructor/courses/{course:slug}')->group(function (): void {
+    Route::get('/learners', [CurriculumController::class, 'learners'])->name('instructor.learners');
     Route::get('/materials', [CurriculumController::class, 'index'])->name('instructor.materials');
     Route::put('/modules/{module}', [CurriculumController::class, 'module'])->name('curriculum.module');
     Route::post('/modules/{module}/move', [CurriculumController::class, 'moveModule'])->name('curriculum.module.move');

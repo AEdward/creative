@@ -22,6 +22,16 @@ class CurriculumController extends Controller
         return view('instructor.materials', compact('course'));
     }
 
+    public function learners(Course $course): View
+    {
+        Gate::authorize('update', $course);
+        $lessonIds = $course->lessons()->where('published', true)->select('lessons.id');
+        $totalLessons = (clone $lessonIds)->count();
+        $enrollments = $course->enrollments()->with('user:id,name')->withCount(['progress as completed_lessons_count' => fn ($progress) => $progress->whereIn('lesson_id', $lessonIds)->whereNotNull('completed_at')])->latest('enrolled_at')->paginate(20);
+
+        return view('instructor.learners', compact('course', 'enrollments', 'totalLessons'));
+    }
+
     public function module(Request $request, Course $course, Module $module): RedirectResponse
     {
         Gate::authorize('update', $course);
