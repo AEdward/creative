@@ -96,7 +96,7 @@ h1,
 h2,
 h3 {
     line-height: 1.1;
-    letter-spacing: -0.045em;
+    letter-spacing: -0.02em;
 }
 h1 {
     font-size: clamp(2.8rem, 5vw, 4.6rem);
@@ -218,7 +218,7 @@ p {
     flex-direction: column;
     font-size: 24px;
     line-height: 1.03;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.025em;
     font-weight: 800;
     flex-shrink: 0;
 }
@@ -295,7 +295,7 @@ p {
     font-size: clamp(2.7rem, 4.5vw, 4.2rem);
     line-height: 1.045;
     margin-bottom: 26px;
-    letter-spacing: -0.055em;
+    letter-spacing: -0.025em;
 }
 .hero h1 span {
     background: linear-gradient(110deg, #5aa0ff, #ac76ff);
@@ -389,7 +389,7 @@ p {
     color: #23133c;
     font-size: 38px;
     font-weight: 800;
-    letter-spacing: -0.06em;
+    letter-spacing: -0.03em;
     line-height: 0.99;
     z-index: 3;
 }
@@ -538,7 +538,7 @@ p {
     right: 3px;
     bottom: -17px;
     font-size: 21px;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.025em;
     font-style: italic;
     line-height: 1.1;
     color: #bbc5e0;
@@ -627,7 +627,7 @@ p {
 }
 .path-copy h3 {
     font-size: 16px;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.02em;
     line-height: 1.2;
     margin-bottom: 8px;
 }
@@ -1093,7 +1093,7 @@ textarea::placeholder {
     font-size: 38px;
     line-height: 1.1;
     font-weight: 750;
-    letter-spacing: -0.06em;
+    letter-spacing: -0.03em;
 }
 .access-art em {
     color: #7138F5;
@@ -2467,4 +2467,64 @@ input[type="radio"] {
     width: 44px;
     height: 44px;
     object-fit: contain;
+}
+
+/* Photo hero: creator workspace on the right, navy fade keeps copy readable on the left. */
+.hero-photo .hero-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 70% center;
+    z-index: 0;
+}
+.hero-photo:after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+        linear-gradient(90deg, #0B1025 0%, #0B1025f2 28%, #0B102599 48%, #0B102500 70%),
+        linear-gradient(0deg, #0B1025cc 0%, #0B102500 30%);
+}
+.hero-photo .hero-grid {
+    position: relative;
+    z-index: 2;
+    grid-template-columns: minmax(0, 560px);
+    min-height: 600px;
+}
+@media (max-width: 860px) {
+    .hero-photo .hero-image {
+        object-position: 78% center;
+    }
+    .hero-photo:after {
+        background: linear-gradient(0deg, #0B1025 0%, #0B1025e6 45%, #0B102580 100%);
+    }
+    .hero-photo .hero-grid {
+        grid-template-columns: 1fr;
+        min-height: 520px;
+        align-items: end;
+    }
+}
+@media (max-width: 860px) {
+    .hero h1 {
+        font-size: clamp(2.1rem, 8.6vw, 3rem);
+        overflow-wrap: anywhere;
+    }
+    .header-inner > .brand {
+        min-width: 0;
+    }
+}
+@media (max-width: 420px) {
+    .brand {
+        gap: 9px;
+    }
+    .brand-mark {
+        width: 36px;
+        height: 36px;
+    }
+    .brand .wordmark > span {
+        letter-spacing: 0.22em;
+    }
 }
