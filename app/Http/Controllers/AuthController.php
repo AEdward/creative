@@ -17,7 +17,10 @@ class AuthController extends Controller
     public function register(Request $request): RedirectResponse
     {
         $request->merge(['email' => is_string($request->input('email')) ? Str::lower($request->input('email')) : $request->input('email')]);
-        $data = $request->validate(['name' => ['required', 'string', 'max:100'], 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'], 'password' => ['required', 'confirmed', Password::min(12), 'max:128']]);
+        // Popup sign-ups use their own error bag so other forms on the returning page stay clean.
+        $bag = $request->boolean('auth_modal') ? 'register' : 'default';
+        $data = $request->validateWithBag($bag, ['name' => ['required', 'string', 'max:100'], 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'], 'password' => ['required', 'confirmed', Password::min(12), 'max:128'], 'auth_modal' => ['sometimes', 'boolean']]);
+        unset($data['auth_modal']);
         $data['email'] = Str::lower($data['email']);
         $user = User::create($data);
         event(new Registered($user));

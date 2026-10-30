@@ -16,5 +16,5 @@
         <div class="form-extra"><label class="checkbox-label"><input type="checkbox" name="remember" value="1">{{ __('Remember me') }}</label><a href="{{ route('password.request') }}">{{ __('Forgot password?') }}</a></div>
         <button type="submit" class="button form-wide-button">{{ __('Sign In') }} <x-heroicon-o-arrow-right class="direction-icon" aria-hidden="true" /></button>
     </form>
-    <div class="auth-switch">{{ __('Don’t have an account?') }} <a href="{{ route('register') }}">{{ __('Create account') }}</a></div>
+    <div class="auth-switch">{{ __('Don’t have an account?') }} <a href="{{ route('register') }}" data-auth-switch="register">{{ __('Create account') }}</a></div>
 </div>

@@ -63,6 +63,24 @@ class AuthenticationTest extends TestCase
         $this->get('/courses')->assertDontSee('id="login-dialog"', false);
     }
 
+    public function test_popup_registration_reopens_on_its_tab_and_creates_accounts(): void
+    {
+        $this->get('/courses')->assertSee('id="auth-panel-register"', false)->assertSee('data-login-open="register"', false);
+        $this->get('/register')->assertOk()->assertDontSee('id="login-dialog"', false);
+
+        $this->from('/courses')->followingRedirects()->post('/register', ['name' => 'Sara', 'email' => 'sara@example.com', 'password' => 'short', 'password_confirmation' => 'short', 'auth_modal' => '1'])
+            ->assertSee('data-open-on-load="register"', false);
+        $this->assertGuest();
+        $this->from('/contact')->post('/register', ['name' => 'Sara', 'email' => 'sara@example.com', 'password' => 'short', 'password_confirmation' => 'short', 'auth_modal' => '1'])
+            ->assertSessionHasErrorsIn('register', 'password')
+            ->assertSessionDoesntHaveErrors('password');
+
+        $this->post('/register', ['name' => 'Sara', 'email' => 'Sara@Example.com', 'password' => 'Long-test-password123!', 'password_confirmation' => 'Long-test-password123!', 'auth_modal' => '1'])
+            ->assertRedirect(route('verification.notice'));
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', ['email' => 'sara@example.com', 'role' => 'student']);
+    }
+
     public function test_login_is_rate_limited_and_invalid_credentials_do_not_authenticate(): void
     {
         $user = User::factory()->create();

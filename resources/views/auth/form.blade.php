@@ -4,7 +4,7 @@ $intros = ['login'=>'Sign in to continue your creative journey.', 'register'=>'C
 $actions = ['login'=>'login.store','register'=>'register.store','forgot'=>'password.email','reset'=>'password.update'];
 @endphp
 <x-layout :title="__($titles[$mode])">
-<section class="auth-section" @if($mode === 'login') data-login-page @endif><div class="container"><div class="auth-shell"><x-auth-aside />@if($mode === 'login')<x-login-form />@else<div class="auth-form-area"><h1>{{ __($titles[$mode]) }}</h1><p>{{ __($intros[$mode]) }}</p>
+<section class="auth-section" @if($mode === 'login') data-login-page @endif><div class="container"><div class="auth-shell"><x-auth-aside />@if($mode === 'login')<x-login-form />@elseif($mode === 'register')<x-register-form />@else<div class="auth-form-area"><h1>{{ __($titles[$mode]) }}</h1><p>{{ __($intros[$mode]) }}</p>
 @if(session('status'))<div class="notice" role="status">{{ __(session('status')) }}</div>@endif
 <form method="POST" action="{{ route($actions[$mode]) }}">@csrf
 @if($mode === 'reset')<input type="hidden" name="token" value="{{ $token }}">@endif

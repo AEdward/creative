@@ -50,7 +50,7 @@ $pathStyles = [
         <p class="eyebrow">{{ __('Why Creative Lab Academy') }}</p>
         <h2>{{ __('More Than Courses.') }}<br>{{ __('A') }} <span class="gradient-text">{{ __('Creative Community.') }}</span></h2>
         <p>{{ __('We help you build real skills, create amazing projects and grow your career in the creative industry.') }}</p>
-        <a class="button button-pill" href="{{ auth()->check() ? route('courses.index') : url('/register') }}">{{ __('Get Started Today') }} <x-heroicon-o-arrow-right class="direction-icon" aria-hidden="true" /></a>
+        <a class="button button-pill" href="{{ auth()->check() ? route('courses.index') : url('/register') }}" @guest data-login-open="register" @endguest>{{ __('Get Started Today') }} <x-heroicon-o-arrow-right class="direction-icon" aria-hidden="true" /></a>
     </div>
     <div class="community-panel">
         <div class="benefit-cards">

@@ -3220,3 +3220,68 @@ input[type="radio"] {
 .auth-aside h2 {
     font-size: clamp(2rem, 2.8vw, 2.6rem);
 }
+
+/* Popup tabs: Sign In / Create Account */
+.auth-forms {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 0 8px;
+}
+.auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin: 0 64px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #f1f2f8;
+}
+.auth-tabs button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+.auth-tabs button[aria-selected="true"] {
+    background: #fff;
+    color: #7138F5;
+    box-shadow: 0 2px 8px #0b102514;
+}
+.login-dialog .auth-shell .auth-form-area {
+    padding: 28px 64px 36px;
+}
+.login-dialog .form-field {
+    margin-bottom: 16px;
+}
+.login-dialog .input-icon input {
+    min-height: 50px;
+}
+.auth-legal {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 4px 0 18px;
+}
+.auth-legal a {
+    color: #7138F5;
+    font-weight: 600;
+}
+.login-dialog > form[method="dialog"] {
+    top: 10px;
+    right: 10px;
+}
+@media (max-width: 960px) {
+    .auth-forms {
+        padding-top: 64px;
+    }
+    .auth-tabs {
+        margin: 0 28px;
+    }
+    .login-dialog .auth-shell .auth-form-area {
+        padding: 24px 28px 32px;
+    }
+}

@@ -26,9 +26,9 @@
             <a class="icon-link" href="{{ route('courses.index') }}#q" aria-label="{{ __('Search courses') }}"><x-heroicon-o-magnifying-glass aria-hidden="true" /></a>
             @auth <a class="button button-ghost" href="{{ url('/dashboard') }}">{{ __('My dashboard') }}</a>
             @else <a class="button button-ghost sign-in-link" href="{{ url('/login') }}" data-login-open>{{ __('Log In') }}</a>
-            <a class="button button-pill" href="{{ url('/register') }}">{{ __('Get Started') }}</a> @endauth
+            <a class="button button-pill" href="{{ url('/register') }}" data-login-open="register">{{ __('Get Started') }}</a> @endauth
         </div>
-        <details class="mobile-menu"><summary>{{ __('Menu') }}</summary><nav aria-label="{{ __('Mobile navigation') }}"><a href="{{ route('home') }}">{{ __('academy.home') }}</a><a href="{{ route('courses.index') }}">{{ __('academy.courses') }}</a><a href="{{ route('instructors.index') }}">{{ __('Instructors') }}</a><a href="{{ route('about') }}">{{ __('academy.about') }}</a><a href="{{ route('contact') }}">{{ __('Contact') }}</a><a href="{{ route('faq') }}">{{ __('academy.faq') }}</a>@auth<a href="{{ url('/dashboard') }}">{{ __('My dashboard') }}</a>@else<a href="{{ url('/login') }}" data-login-open>{{ __('Log In') }}</a><a href="{{ url('/register') }}">{{ __('Get Started') }}</a>@endauth<form method="POST" action="{{ route('locale') }}" class="mobile-locale-form">@csrf<label for="mobile-locale">{{ __('academy.language') }}</label><select name="locale" id="mobile-locale"><option value="en" @selected(app()->getLocale() === 'en')>English</option><option value="am" @selected(app()->getLocale() === 'am')>አማርኛ</option></select><button type="submit" class="button button-small">{{ __('academy.language') }}</button></form></nav></details>
+        <details class="mobile-menu"><summary>{{ __('Menu') }}</summary><nav aria-label="{{ __('Mobile navigation') }}"><a href="{{ route('home') }}">{{ __('academy.home') }}</a><a href="{{ route('courses.index') }}">{{ __('academy.courses') }}</a><a href="{{ route('instructors.index') }}">{{ __('Instructors') }}</a><a href="{{ route('about') }}">{{ __('academy.about') }}</a><a href="{{ route('contact') }}">{{ __('Contact') }}</a><a href="{{ route('faq') }}">{{ __('academy.faq') }}</a>@auth<a href="{{ url('/dashboard') }}">{{ __('My dashboard') }}</a>@else<a href="{{ url('/login') }}" data-login-open>{{ __('Log In') }}</a><a href="{{ url('/register') }}" data-login-open="register">{{ __('Get Started') }}</a>@endauth<form method="POST" action="{{ route('locale') }}" class="mobile-locale-form">@csrf<label for="mobile-locale">{{ __('academy.language') }}</label><select name="locale" id="mobile-locale"><option value="en" @selected(app()->getLocale() === 'en')>English</option><option value="am" @selected(app()->getLocale() === 'am')>አማርኛ</option></select><button type="submit" class="button button-small">{{ __('academy.language') }}</button></form></nav></details>
     </div>
 </header>
 @auth @if(auth()->user()->hasVerifiedEmail())<nav class="account-nav" aria-label="{{ __('Your workspace') }}"><div class="container"><a href="{{ route('dashboard') }}">{{ __('academy.dashboard') }}</a><a href="{{ route('learning.index') }}">{{ __('academy.learning') }}</a><a href="{{ route('certificates.index') }}">{{ __('academy.certificates') }}</a><a href="{{ route('notifications.index') }}">{{ __('academy.notifications') }}</a><a href="{{ route('support.index') }}">{{ __('academy.support') }}</a>@can('instructor')<a href="{{ route('instructor.dashboard') }}">{{ __('Teaching studio') }}</a><a href="{{ route('instructor.profile.edit') }}">{{ __('Instructor profile') }}</a>@endcan @can('administer-academy')<a href="{{ route('academy-admin') }}">{{ __('Operations') }}</a>@endcan</div></nav>@endif @endauth
@@ -54,11 +54,19 @@ $mediaLabels = collect([
     'Uploading:'
 ])->mapWithKeys(fn ($label) => [$label => __($label)])->all();
 @endphp
-@guest @unless(request()->routeIs('login'))
-<dialog class="login-dialog" id="login-dialog" aria-labelledby="login-dialog-title" @if($errors->getBag('login')->any()) data-open-on-load @endif>
+@guest @unless(request()->routeIs('login', 'register'))
+@php $authPanel = $errors->getBag('register')->any() ? 'register' : ($errors->getBag('login')->any() ? 'login' : null); @endphp
+<dialog class="login-dialog" id="login-dialog" aria-label="{{ __('Sign in or create an account') }}" @if($authPanel) data-open-on-load="{{ $authPanel }}" @endif>
     <div class="auth-shell">
         <x-auth-aside />
-        <x-login-form modal />
+        <div class="auth-forms">
+            <div class="auth-tabs" role="tablist">
+                <button type="button" role="tab" id="auth-tab-login" aria-controls="auth-panel-login" data-auth-tab="login" aria-selected="{{ $authPanel === 'register' ? 'false' : 'true' }}">{{ __('Sign In') }}</button>
+                <button type="button" role="tab" id="auth-tab-register" aria-controls="auth-panel-register" data-auth-tab="register" aria-selected="{{ $authPanel === 'register' ? 'true' : 'false' }}">{{ __('Create Account') }}</button>
+            </div>
+            <div role="tabpanel" id="auth-panel-login" aria-labelledby="auth-tab-login" data-auth-panel="login" @if($authPanel === 'register') hidden @endif><x-login-form modal /></div>
+            <div role="tabpanel" id="auth-panel-register" aria-labelledby="auth-tab-register" data-auth-panel="register" @if($authPanel !== 'register') hidden @endif><x-register-form modal /></div>
+        </div>
     </div>
     <form method="dialog"><button class="dialog-close" aria-label="{{ __('Close') }}"><x-heroicon-o-x-mark aria-hidden="true" /></button></form>
 </dialog>

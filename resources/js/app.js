@@ -188,27 +188,56 @@ function registerMediaHook() {
 registerMediaHook();
 document.addEventListener("livewire:initialized", registerMediaHook);
 
-// Login popup: "Log In" links open the dialog; without JS they fall back to /login.
-function openLoginDialog(dialog) {
-    if (dialog.open) return;
+// Sign-in / sign-up popup: links with data-login-open ("login" or "register") open it on that tab.
+// Without JS those links fall back to the /login and /register pages.
+function showAuthPanel(dialog, name, focus = false) {
+    dialog.querySelectorAll("[data-auth-tab]").forEach((tab) => {
+        const active = tab.dataset.authTab === name;
+        tab.setAttribute("aria-selected", String(active));
+        tab.tabIndex = active ? 0 : -1;
+    });
+    dialog.querySelectorAll("[data-auth-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.authPanel !== name;
+    });
+    if (focus) {
+        const panel = dialog.querySelector(`[data-auth-panel="${name}"]`);
+        (panel.querySelector('[aria-invalid="true"]') || panel.querySelector("input:not([type=hidden])"))?.focus();
+    }
+}
+function openLoginDialog(dialog, name = "login") {
     document.querySelectorAll(".mobile-menu[open]").forEach((menu) => menu.removeAttribute("open"));
-    dialog.showModal();
-    const field = dialog.querySelector('[aria-invalid="true"]') || dialog.querySelector('input[type="email"]');
-    field?.focus();
+    if (!dialog.open) dialog.showModal();
+    showAuthPanel(dialog, name, true);
 }
 document.addEventListener("click", (event) => {
     const dialog = document.getElementById("login-dialog");
     if (!dialog) return;
     // Clicking the backdrop (outside the card) closes the dialog.
     if (event.target === dialog) return dialog.close();
+    const tab = event.target.closest("[data-auth-tab]");
+    if (tab) return showAuthPanel(dialog, tab.dataset.authTab, true);
+    const switcher = event.target.closest("[data-auth-switch]");
+    if (switcher && dialog.contains(switcher)) {
+        event.preventDefault();
+        return showAuthPanel(dialog, switcher.dataset.authSwitch, true);
+    }
     const link = event.target.closest("[data-login-open]");
     if (!link || event.metaKey || event.ctrlKey || event.shiftKey) return;
     event.preventDefault();
-    openLoginDialog(dialog);
+    openLoginDialog(dialog, link.dataset.loginOpen || "login");
+});
+// Arrow keys move between the two tabs.
+document.addEventListener("keydown", (event) => {
+    const tab = event.target.closest?.("[data-auth-tab]");
+    if (!tab || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    const next = tab.dataset.authTab === "login" ? "register" : "login";
+    const dialog = document.getElementById("login-dialog");
+    showAuthPanel(dialog, next);
+    dialog.querySelector(`[data-auth-tab="${next}"]`).focus();
 });
 function initializeLoginDialog() {
     const dialog = document.getElementById("login-dialog");
-    if (dialog?.hasAttribute("data-open-on-load")) openLoginDialog(dialog);
+    if (dialog?.dataset.openOnLoad) openLoginDialog(dialog, dialog.dataset.openOnLoad);
 }
 
 // Show/hide password buttons.
