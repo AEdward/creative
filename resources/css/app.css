@@ -2476,7 +2476,7 @@ input[type="radio"] {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 70% center;
+    object-position: right center;
     z-index: 0;
 }
 .hero-photo:after {
@@ -2485,7 +2485,7 @@ input[type="radio"] {
     inset: 0;
     z-index: 1;
     background:
-        linear-gradient(90deg, #0B1025 0%, #0B1025f2 28%, #0B102599 48%, #0B102500 70%),
+        linear-gradient(90deg, #0B1025f0 0%, #0B1025d9 34%, #0B102580 46%, #0B102500 60%),
         linear-gradient(0deg, #0B1025cc 0%, #0B102500 30%);
 }
 .hero-photo .hero-grid {

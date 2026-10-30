@@ -1,6 +1,6 @@
 <x-layout dark>
 <section class="hero hero-photo">
-    <img class="hero-image" src="{{ asset('images/home/hero.webp') }}" srcset="{{ asset('images/home/hero-1000.webp') }} 1000w, {{ asset('images/home/hero.webp') }} 1942w" sizes="100vw" width="1942" height="809" alt="" fetchpriority="high">
+    <img class="hero-image" src="{{ asset('images/home/hero.webp') }}" srcset="{{ asset('images/home/hero-1000.webp') }} 1000w, {{ asset('images/home/hero.webp') }} 1862w" sizes="100vw" width="1862" height="845" alt="" fetchpriority="high">
     <div class="container hero-grid">
     <div class="hero-copy"><p class="eyebrow">{{ __('Learn · Create · Grow') }}</p><h1>{{ __('Learn creative skills.') }}<br>@if(app()->getLocale() === 'am')<span>{{ __('Build a brighter future.') }}</span>@else Build a <span>{{ __('brighter future.') }}</span>@endif</h1><p class="hero-description">{{ __('From your first edit to your next big idea. Explore practical learning in design, video, motion, 3D, and digital marketing.') }}</p><div class="button-row"><a class="button" href="{{ route('courses.index') }}">{{ __('Browse courses') }} <span aria-hidden="true"><x-heroicon-o-arrow-up-right class="direction-icon" aria-hidden="true" /></span></a><a class="button button-outline" href="#creative-paths">{{ __('Find your creative path') }} <span aria-hidden="true">↓</span></a></div><div class="hero-footnote"><span class="line-accent"></span>{{ __('Curiosity is all you need to get started.') }}</div></div>
 </div></section>
