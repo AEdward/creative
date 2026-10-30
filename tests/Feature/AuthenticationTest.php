@@ -43,6 +43,26 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_login_popup_is_offered_to_guests_and_keeps_its_errors_separate(): void
+    {
+        $this->get('/courses')->assertOk()->assertSee('id="login-dialog"', false)->assertSee('data-login-open', false);
+        $this->get('/login')->assertOk()->assertDontSee('id="login-dialog"', false);
+
+        $user = User::factory()->create(['password' => 'Long-test-password123!']);
+        $this->from('/contact')->post('/login', ['email' => $user->email, 'password' => 'wrong', 'auth_modal' => '1'])
+            ->assertRedirect('/contact')
+            ->assertSessionHasErrorsIn('login', 'email')
+            ->assertSessionDoesntHaveErrors('email');
+        $this->assertGuest();
+        $this->from('/contact')->followingRedirects()->post('/login', ['email' => $user->email, 'password' => 'wrong', 'auth_modal' => '1'])
+            ->assertSee('data-open-on-load', false)
+            ->assertSee('These credentials do not match an active account.');
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'Long-test-password123!', 'auth_modal' => '1'])->assertRedirect('/dashboard');
+        $this->assertAuthenticatedAs($user);
+        $this->get('/courses')->assertDontSee('id="login-dialog"', false);
+    }
+
     public function test_login_is_rate_limited_and_invalid_credentials_do_not_authenticate(): void
     {
         $user = User::factory()->create();

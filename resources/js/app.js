@@ -187,3 +187,41 @@ function registerMediaHook() {
 }
 registerMediaHook();
 document.addEventListener("livewire:initialized", registerMediaHook);
+
+// Login popup: "Log In" links open the dialog; without JS they fall back to /login.
+function openLoginDialog(dialog) {
+    if (dialog.open) return;
+    document.querySelectorAll(".mobile-menu[open]").forEach((menu) => menu.removeAttribute("open"));
+    dialog.showModal();
+    const field = dialog.querySelector('[aria-invalid="true"]') || dialog.querySelector('input[type="email"]');
+    field?.focus();
+}
+document.addEventListener("click", (event) => {
+    const dialog = document.getElementById("login-dialog");
+    if (!dialog) return;
+    // Clicking the backdrop (outside the card) closes the dialog.
+    if (event.target === dialog) return dialog.close();
+    const link = event.target.closest("[data-login-open]");
+    if (!link || event.metaKey || event.ctrlKey || event.shiftKey) return;
+    event.preventDefault();
+    openLoginDialog(dialog);
+});
+function initializeLoginDialog() {
+    const dialog = document.getElementById("login-dialog");
+    if (dialog?.hasAttribute("data-open-on-load")) openLoginDialog(dialog);
+}
+
+// Show/hide password buttons.
+document.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-password-toggle]");
+    if (!toggle) return;
+    const input = document.getElementById(toggle.getAttribute("aria-controls"));
+    if (!input) return;
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    toggle.setAttribute("aria-pressed", String(show));
+    toggle.setAttribute("aria-label", show ? toggle.dataset.labelHide : toggle.dataset.labelShow);
+});
+
+document.addEventListener("DOMContentLoaded", initializeLoginDialog);
+document.addEventListener("livewire:navigated", initializeLoginDialog);

@@ -4,7 +4,7 @@ $intros = ['login'=>'Sign in to continue your creative journey.', 'register'=>'C
 $actions = ['login'=>'login.store','register'=>'register.store','forgot'=>'password.email','reset'=>'password.update'];
 @endphp
 <x-layout :title="__($titles[$mode])">
-<section class="auth-section"><div class="container"><div class="auth-shell"><aside class="auth-story"><div><p class="eyebrow">{{ __('Learn · Create · Grow') }}</p><h2>@if(app()->getLocale() === 'am'){{ __('Turn your creativity into real skills.') }}@else Turn your creativity into <span>{{ __('real skills.') }}</span>@endif</h2><p>{{ __('Make room for your ideas. Discover your creative path, one lesson at a time.') }}</p></div><div class="auth-art" aria-hidden="true"></div><p>{{ __('Video. Design. Motion. 3D.') }}<br>{{ __('Your next idea belongs here.') }}</p></aside><div class="auth-form-area"><h1>{{ __($titles[$mode]) }}</h1><p>{{ __($intros[$mode]) }}</p>
+<section class="auth-section" @if($mode === 'login') data-login-page @endif><div class="container"><div class="auth-shell"><x-auth-aside />@if($mode === 'login')<x-login-form />@else<div class="auth-form-area"><h1>{{ __($titles[$mode]) }}</h1><p>{{ __($intros[$mode]) }}</p>
 @if(session('status'))<div class="notice" role="status">{{ __(session('status')) }}</div>@endif
 <form method="POST" action="{{ route($actions[$mode]) }}">@csrf
 @if($mode === 'reset')<input type="hidden" name="token" value="{{ $token }}">@endif
@@ -16,5 +16,5 @@ $actions = ['login'=>'login.store','register'=>'register.store','forgot'=>'passw
 <button type="submit" class="button form-wide-button">{{ __(['login'=>'Sign in','register'=>'Create account','forgot'=>'Send reset link','reset'=>'Reset password'][$mode]) }} <span aria-hidden="true"><x-heroicon-o-arrow-up-right class="direction-icon" aria-hidden="true" /></span></button></form>
 <div class="auth-switch">@if($mode === 'login'){{ __('New to Creative Lab?') }} <a href="{{ route('register') }}">{{ __('Create account') }}</a>@else {{ __('Already have an account?') }} <a href="{{ route('login') }}">{{ __('Sign in') }}</a>@endif</div>
 @if($mode === 'register')<p class="small" style="margin-top:20px">{{ __('This academy is in development. Please review the') }} <a class="inline-link" href="{{ route('terms') }}">{{ __('terms') }}</a> {{ __('and') }} <a class="inline-link" href="{{ route('privacy') }}">{{ __('privacy notice') }}</a> {{ __('before continuing.') }}</p>@endif
-</div></div></div></section>
+</div>@endif</div></div></section>
 </x-layout>

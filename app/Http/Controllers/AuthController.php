@@ -29,13 +29,15 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => ['required', 'string', 'email', 'max:255'], 'password' => ['required', 'string', 'max:128'], 'remember' => ['sometimes', 'boolean']]);
+        // Popup sign-ins use their own error bag so other forms on the returning page stay clean.
+        $bag = $request->boolean('auth_modal') ? 'login' : 'default';
+        $data = $request->validateWithBag($bag, ['email' => ['required', 'string', 'email', 'max:255'], 'password' => ['required', 'string', 'max:128'], 'remember' => ['sometimes', 'boolean'], 'auth_modal' => ['sometimes', 'boolean']]);
         $email = Str::lower($data['email']);
         $key = 'login:'.hash('sha256', $email.'|'.$request->ip());
         abort_if(RateLimiter::tooManyAttempts($key, 6), 429, 'Too many sign-in attempts. Please try again later.');
         if (! Auth::attempt(['email' => $email, 'password' => $data['password'], 'status' => 'active'], $request->boolean('remember'))) {
             RateLimiter::hit($key, 60);
-            throw ValidationException::withMessages(['email' => 'These credentials do not match an active account.']);
+            throw ValidationException::withMessages(['email' => 'These credentials do not match an active account.'])->errorBag($bag);
         }
         RateLimiter::clear($key);
         $request->session()->regenerate();
