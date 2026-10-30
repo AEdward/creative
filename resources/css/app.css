@@ -1,8 +1,13 @@
 @import "tailwindcss";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+@import "@fontsource/poppins/800.css";
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @theme {
-    --font-sans: "Arial", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
 :root {
     --ink: #101321;
@@ -13,7 +18,7 @@
     --blue: #3882f6;
     --night: #0b0f1a;
     --radius: 18px;
-    --font-sans: Arial, Helvetica, sans-serif;
+    --font-sans: "Poppins", "Noto Sans Ethiopic", "Nyala", Arial, sans-serif;
     color-scheme: light;
 }
 * {
@@ -2439,4 +2444,17 @@ input[type="radio"] {
 }
 .mobile-menu[open] {
     z-index: 40;
+}
+
+/* Brand lockup: official cap icon beside the live wordmark. */
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.brand-mark {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
 }
