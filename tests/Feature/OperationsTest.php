@@ -82,4 +82,14 @@ class OperationsTest extends TestCase
         $this->get('/')->assertSee('lang="am"', false);
         $this->post('/locale', ['locale' => 'invalid'])->assertSessionHasErrors('locale');
     }
+
+    public function test_reporting_chart_uses_inclusive_nairobi_day_boundaries(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        Enrollment::factory()->create(['enrolled_at' => '2026-09-30 21:30:00']);
+        Enrollment::factory()->create(['enrolled_at' => '2026-10-01 21:00:00']);
+        $this->actingAs($admin)->get('/academy-admin?from=2026-10-01&to=2026-10-01')->assertOk()->assertSee('data-enrollment-count="1"', false)->assertSee('2026-10-01');
+        $this->withHeader('Referer', 'http://localhost/academy-admin?from=invalid')->get('/academy-admin?from=invalid')->assertRedirect(route('academy-admin'));
+        $this->getJson('/academy-admin?from[]=invalid')->assertUnprocessable();
+    }
 }

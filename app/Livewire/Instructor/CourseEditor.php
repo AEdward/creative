@@ -100,7 +100,7 @@ class CourseEditor extends Component
     private function returnToReview(Course $course): void
     {
         if (auth()->user()->role !== 'admin' || ! $course->hasReadyCurriculum()) {
-            $course->update(['status' => 'draft', 'published_at' => null]);
+            Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
         }
     }
 
@@ -148,10 +148,18 @@ class CourseEditor extends Component
             if ($this->editingLessonId) {
                 $lesson = $course->lessons()->findOrFail($this->editingLessonId);
                 $data['type'] = $lesson->type;
-                if ($lesson->module_id !== $module->id) {
+                $sourceModuleId = $lesson->module_id;
+                if ($sourceModuleId !== $module->id) {
                     $data['sort_order'] = (int) $module->lessons()->max('sort_order') + 1;
                 }
                 $lesson->update($data + ['module_id' => $module->id]);
+                if ($sourceModuleId !== $module->id) {
+                    foreach ([$sourceModuleId, $module->id] as $moduleId) {
+                        foreach ($course->modules()->findOrFail($moduleId)->lessons()->get() as $index => $orderedLesson) {
+                            $orderedLesson->update(['sort_order' => $index + 1]);
+                        }
+                    }
+                }
             } else {
                 $module->lessons()->create($data + ['sort_order' => (int) $module->lessons()->max('sort_order') + 1]);
             }

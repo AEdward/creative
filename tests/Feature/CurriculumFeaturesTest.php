@@ -8,6 +8,7 @@ use App\Models\LessonResource;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -81,5 +82,22 @@ class CurriculumFeaturesTest extends TestCase
         $this->actingAs($user)->get('/courses/'.$course->slug.'/thumbnail')->assertNotFound();
         $course->refresh()->update(['status' => 'published', 'published_at' => now()]);
         $this->get('/courses/'.$course->slug.'/thumbnail')->assertOk();
+    }
+
+    public function test_a_concurrent_publication_does_not_leave_instructor_curriculum_changes_published(): void
+    {
+        $course = $this->course();
+        $course->update(['status' => 'draft', 'published_at' => null]);
+        $module = $course->modules()->create(['title' => 'Original']);
+        $published = false;
+        DB::listen(function ($query) use ($course, &$published): void {
+            if (! $published && str_starts_with($query->sql, 'select') && str_contains($query->sql, 'courses') && str_contains($query->sql, 'slug')) {
+                $published = true;
+                DB::table('courses')->where('id', $course->id)->update(['status' => 'published', 'published_at' => now()]);
+            }
+        });
+        $this->actingAs($course->instructor)->put('/instructor/courses/'.$course->slug.'/modules/'.$module->id, ['title' => 'Changed curriculum'])->assertRedirect();
+        $this->assertSame('draft', $course->fresh()->status);
+        $this->assertNull($course->fresh()->published_at);
     }
 }

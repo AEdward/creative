@@ -2395,3 +2395,48 @@ progress::-webkit-progress-value {
         display: none !important;
     }
 }
+
+/* Keep small text readable and native choice controls proportional. */
+.wordmark > span {
+    color: #7846c9;
+}
+.header-dark .wordmark > span,
+.site-footer .wordmark > span {
+    color: #b9a0ff;
+}
+.path-number {
+    color: #5c3b71;
+    opacity: 1;
+}
+.benefit-list article > span {
+    color: #634991;
+}
+.curriculum summary > span {
+    color: #606576;
+}
+input[type="checkbox"],
+input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    flex: 0 0 18px;
+    padding: 0;
+    vertical-align: middle;
+}
+.feature-page label:has(> input[type="radio"]),
+.feature-page label:has(> input[type="checkbox"]) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+}
+.mobile-locale-form {
+    border-top: 1px solid var(--line);
+    margin-top: 8px;
+    padding: 12px 14px;
+    display: grid;
+    gap: 8px;
+}
+.mobile-menu[open] {
+    z-index: 40;
+}

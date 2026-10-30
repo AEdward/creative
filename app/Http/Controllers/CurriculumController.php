@@ -89,6 +89,6 @@ class CurriculumController extends Controller
 
     private function draft(Course $course): void
     {
-        $course->update(['status' => 'draft', 'published_at' => null]);
+        Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
     }
 }

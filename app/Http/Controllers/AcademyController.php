@@ -15,7 +15,9 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -23,7 +25,11 @@ class AcademyController extends Controller
 {
     private function dates(Request $request): array
     {
-        $data = $request->validate(['from' => ['nullable', 'date_format:Y-m-d'], 'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from']]);
+        $validator = Validator::make($request->all(), ['from' => ['nullable', 'date_format:Y-m-d'], 'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from']]);
+        if ($validator->fails()) {
+            throw (new ValidationException($validator))->redirectTo(route('academy-admin'));
+        }
+        $data = $validator->validated();
         $start = CarbonImmutable::parse($data['from'] ?? now('Africa/Nairobi')->startOfMonth()->toDateString(), 'Africa/Nairobi')->startOfDay()->utc();
         $end = CarbonImmutable::parse($data['to'] ?? now('Africa/Nairobi')->toDateString(), 'Africa/Nairobi')->endOfDay()->utc();
         abort_unless($end->greaterThanOrEqualTo($start) && $start->diffInDays($end) <= 366, 422, 'Choose a date range of up to one year.');
@@ -35,6 +41,19 @@ class AcademyController extends Controller
     {
         [$start,$end] = $this->dates($request);
         $metrics = ['New student accounts' => User::where('role', 'student')->whereBetween('created_at', [$start, $end])->count(), 'New enrollments' => Enrollment::whereBetween('enrolled_at', [$start, $end])->count(), 'Learners saving progress' => LessonProgress::whereBetween('lesson_progress.updated_at', [$start, $end])->join('enrollments', 'enrollments.id', '=', 'lesson_progress.enrollment_id')->distinct()->count('enrollments.user_id'), 'Verified ETB payments (minor units)' => Payment::where('currency', 'ETB')->where('status', 'verified_success')->whereBetween('verified_at', [$start, $end])->sum('amount_minor')];
+        $daily = [];
+        for ($day = $start->setTimezone('Africa/Nairobi')->startOfDay(); $day->lessThanOrEqualTo($end->setTimezone('Africa/Nairobi')->startOfDay()); $day = $day->addDay()) {
+            $daily[$day->toDateString()] = 0;
+        }
+        foreach (Enrollment::whereBetween('enrolled_at', [$start, $end])->select('enrolled_at')->cursor() as $entry) {
+            $daily[$entry->enrolled_at->timezone('Africa/Nairobi')->toDateString()]++;
+        }
+        $peak = max(1, max($daily));
+        $points = [];
+        foreach (array_values($daily) as $i => $count) {
+            $points[] = number_format(10 + 580 * $i / max(1, count($daily) - 1), 2, '.', '').','.number_format(150 - 140 * $count / $peak, 2, '.', '');
+        }
+        $courseEnrollments = Enrollment::whereBetween('enrolled_at', [$start, $end])->selectRaw('course_id, COUNT(*) as aggregate')->groupBy('course_id')->with('course:id,title')->orderByDesc('aggregate')->limit(10)->get();
         $enrollments = Enrollment::with('user', 'course')->latest('enrolled_at')->paginate(20, ['*'], 'enrollments_page');
         $audits = AuditLog::latest()->paginate(20, ['*'], 'audit_page');
         $coupons = Coupon::latest()->paginate(20, ['*'], 'coupons_page');
@@ -42,7 +61,7 @@ class AcademyController extends Controller
         $content = SiteSetting::content();
         $courses = Course::orderBy('title')->get(['id', 'title']);
 
-        return view('admin.operations', compact('start', 'end', 'metrics', 'enrollments', 'audits', 'coupons', 'media', 'content', 'courses'));
+        return view('admin.operations', compact('start', 'end', 'metrics', 'enrollments', 'audits', 'coupons', 'media', 'content', 'courses', 'daily', 'points', 'courseEnrollments'));
     }
 
     public function settings(Request $request): RedirectResponse
@@ -108,7 +127,7 @@ class AcademyController extends Controller
         }, 'academy-enrollments.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store, private']);
     }
 
-    private function audit(Request $request,string $action,string $type,int $id,array $changes): void
+    private function audit(Request $request, string $action, string $type, int $id, array $changes): void
     {
         AuditLog::create(['actor_id' => $request->user()->id, 'action' => $action, 'subject_type' => $type, 'subject_id' => $id, 'changes' => $changes]);
     }

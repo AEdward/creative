@@ -41,7 +41,7 @@ class LocalFileController extends Controller
             DB::transaction(function () use ($course, $lesson, $data, $key, $mime, $extension, $file): void {
                 Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
                 LessonResource::create(['lesson_id' => $lesson->id, 'title' => $data['title'], 'kind' => $data['kind'], 'language' => $data['language'] ?? 'en', 'object_key' => $key, 'mime' => $mime, 'extension' => $extension, 'bytes' => $file->getSize()]);
-                $course->update(['status' => 'draft', 'published_at' => null]);
+                Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
             });
         } catch (Throwable $error) {
             Storage::disk('local')->delete($key);
@@ -72,7 +72,7 @@ class LocalFileController extends Controller
         DB::transaction(function () use ($course, $resource): void {
             Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
             $resource->delete();
-            $course->update(['status' => 'draft', 'published_at' => null]);
+            Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
         });
         Storage::disk('local')->delete($key);
 
@@ -101,7 +101,7 @@ class LocalFileController extends Controller
         Gate::authorize('update', $course);
         $key = $this->image($request, 'thumbnails');
         $old = $course->thumbnail_key;
-        $course->update(['thumbnail_key' => $key, 'status' => 'draft', 'published_at' => null]);
+        Course::whereKey($course->id)->update(['thumbnail_key' => $key, 'status' => 'draft', 'published_at' => null]);
         if ($old && str_starts_with($old, 'thumbnails/')) {
             Storage::disk('local')->delete($old);
         }

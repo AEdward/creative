@@ -70,4 +70,13 @@ class LocalizationTest extends TestCase
         $this->assertSame('የይለፍ ቃልዎ ተቀይሯል።', __('passwords.reset'));
         $this->withSession(['locale' => 'am', 'status' => 'Your profile has been updated.'])->get('/login')->assertOk()->assertSee('መገለጫዎ ተዘምኗል።');
     }
+
+    public function test_marketing_and_instructor_consent_and_editor_controls_are_localized(): void
+    {
+        $this->withSession(['locale' => 'am'])->get('/')->assertOk()->assertDontSee('Find your creative path');
+        $owner = User::factory()->create(['role' => 'instructor']);
+        $this->actingAs($owner)->get('/instructor/profile')->assertOk()->assertDontSee('I consent to publishing my name and instructor profile in the public directory.');
+        $this->get('/instructor/courses/create')->assertOk()->assertDontSee('Start with an idea.');
+        $this->get('/login')->assertRedirect();
+    }
 }

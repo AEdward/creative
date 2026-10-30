@@ -122,4 +122,19 @@ class CourseBuilderTest extends TestCase
         $this->assertSame($content, $course->fresh()->description);
         $this->assertSame($content, $module->lessons()->firstOrFail()->body);
     }
+
+    public function test_moving_a_lesson_normalizes_source_and_target_positions(): void
+    {
+        $owner = User::factory()->create(['role' => 'instructor']);
+        $course = Course::factory()->create(['instructor_id' => $owner->id]);
+        $source = $course->modules()->create(['title' => 'Source', 'sort_order' => 1]);
+        $target = $course->modules()->create(['title' => 'Target', 'sort_order' => 2]);
+        foreach ([1, 2, 3] as $position) {
+            $source->lessons()->create(['title' => 'Lesson '.$position, 'body' => 'Read this', 'type' => 'text', 'sort_order' => $position]);
+        }
+        $lesson = $source->lessons()->where('sort_order', 2)->firstOrFail();
+        Livewire::actingAs($owner)->test(CourseEditor::class, ['course' => $course])->call('editLesson', $lesson->id)->set('lessonModuleId', $target->id)->call('addLesson')->assertHasNoErrors();
+        $this->assertSame([1, 2], $source->lessons()->pluck('sort_order')->all());
+        $this->assertSame([1], $target->lessons()->pluck('sort_order')->all());
+    }
 }

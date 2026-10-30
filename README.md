@@ -91,3 +91,44 @@ Before activation, verify browser CORS for the exact app origin and signed reque
 Orders snapshot integer minor-unit prices. Payment adapters must independently verify provider evidence before payment processing can grant enrollment. The domain handles duplicate events, mismatched amounts/references, terminal conflicts and audited fulfillment. Account-row locking serializes checkout eligibility with fulfillment. Reusing the original checkout key resumes its order; a different key is rejected while an order is pending.
 
 The default gateway is unavailable even if PAYMENTS_ENABLED is set. The fake gateway exists only for local/test fixtures, implements no vendor contract and is rejected in production. There is no public payment callback endpoint. `/payments` shows only the authenticated student's own records; the admin ledger is read-only. Provider documentation, signatures, merchant verification, sandbox reconciliation, tax/refund policy and authorization are prerequisites for real checkout.
+
+## Local learning and administration
+
+No external integration is needed for quizzes, assignments, completion certificates, eligible-learner reviews, announcements, support tickets, instructor profiles, local lesson downloads/captions, course/profile images, coupons, site content or reports. Student navigation links to these workspaces; instructor course editors link to curriculum files, assessments, announcements and learner progress. Filament navigation links to the native operations, moderation, support and certificate pages.
+
+Course owners configure quiz pass thresholds/attempt limits and explicitly enable certificates. Certificates require every current published lesson and required assessment; they are non-accredited completion records, with private printable copies and public opaque-ID status verification. Browser Print → Save as PDF provides a local download. Issued records snapshot names/titles; administrators can revoke with an audited reason. New requirements do not retroactively rewrite an already issued document. Instructors must review changed requirements deliberately.
+
+Private local files remain under `storage/app/private`; do not expose that directory or create a public symlink to it. Downloads authorize the current viewer. Images are JPEG/PNG/WebP only; assignment/download files have explicit limits and are never executed or extracted. File type validation is not malware scanning. Back up private files with the database and keep file keys intact during restore. Local serving does not verify any R2 integration.
+
+Instructor public profiles are opt-in. Public photo sharing has its own consent switch; disabling listing or eligibility removes access to the directory entry and photo endpoint. Course reviews show the submitting learner's account name only after the applicable moderation policy permits publication. Contact details and payment records are excluded from instructor learner reporting.
+
+Operations report dates use Africa/Nairobi and convert inclusive day boundaries to UTC. Activity counts distinct learners who saved progress in the selected period. Verified ETB payment amounts are gross verified payments in minor units, not net revenue, refunds, profit or a tax calculation. CSV exports are administrator-only and protect spreadsheet formula prefixes. Coupon percentages are 1–99%, with total/per-user limits; pending orders reserve uses, verified success redeems them, and failure/expiry releases them. Original price snapshots remain intact. Real checkout stays disabled.
+
+## Queue and maintenance runbook
+
+In-app notifications use the existing database queue with bounded retries/backoff; they do not send email or push messages. Preference changes control future delivery. Configure one trusted scheduler invocation per minute on the chosen host:
+
+```sh
+php artisan schedule:run
+```
+
+The scheduler declares hourly unpaid-order expiry and conditional video cleanup with overlap locks. Expiry closes unpaid attempts older than 24 hours; contradictory late payment evidence requires operator reconciliation. Video cleanup remains inactive without configured storage.
+
+For hosts without long-lived workers, invoke a bounded queue process from cron, with a host-supported lock to prevent overlap:
+
+```sh
+php artisan queue:work database --stop-when-empty --max-time=50 --timeout=45 --tries=3 --backoff=60
+php artisan queue:failed
+```
+
+Verify the host's PHP executable, cron working directory, lock utility and permissions before scheduling. Inspect failures before retrying an individual job with `php artisan queue:retry JOB_ID`; do not blindly retry financial or file-removal operations. Restart workers after a release. Scheduler/queue declarations are built; production cron is intentionally not configured here.
+
+## Backup, restore and release recovery
+
+Back up the MySQL database using a consistent transactional dump, plus `storage/app/private`, approved public assets and the exact release/lockfiles. Use a protected client option file for database credentials; never put passwords in command arguments, committed scripts or chat. Encrypt archives with an authenticated encryption tool, restrict file permissions, and keep recovery keys separately from backups. Preserve the application key securely: changing or losing it can make encrypted data, cookies and application-key-encrypted backups unreadable. No off-host backup integration or retention policy has been activated.
+
+Restore first into an isolated database and private-file directory, never directly over the running academy. Keep outbound services disabled. Verify migrations, row counts/foreign keys, Unicode content, authorized downloads, authentication, and a representative learning journey before considering a production recovery. Compare the recovered archive checksum and test decryption. Remove temporary restored copies securely after the drill.
+
+A development restore rehearsal copied only the dedicated test database into a disposable MySQL database, round-tripped its dump through Laravel authenticated encryption, restored it, verified an Amharic sentinel row, and removed the temporary database and backup artifacts. This validates the local procedure, not off-host retention or a production disaster-recovery guarantee.
+
+For a release, retain the previous application artifact and database/private-file backups, run non-destructive migrations, then verify health and core routes. Roll back application code only when compatible with the current schema; prefer forward corrective migrations over destructive narrowing. The LONGTEXT content widening deliberately has a non-narrowing rollback to protect existing Unicode content. Production deployment still requires separate authorization.
