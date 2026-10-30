@@ -18,8 +18,21 @@ class CatalogTest extends TestCase
 
     public function test_public_pages_have_useful_empty_states(): void
     {
-        $this->get('/')->assertOk()->assertSee('Learn creative skills')->assertSee('Browse courses');
+        $this->get('/')->assertOk()->assertSee('Learn Creative Skills')->assertSee('Start Learning')->assertDontSee('student is already learning')->assertDontSee('Active Students');
         $this->get('/courses')->assertOk()->assertSee('No courses published yet');
+    }
+
+    public function test_home_path_cards_count_only_published_courses(): void
+    {
+        $category = Category::factory()->create(['name' => 'Video Editing', 'slug' => 'video-editing', 'active' => true]);
+        Course::factory()->count(2)->create(['category_id' => $category->id]);
+        Course::factory()->create(['category_id' => $category->id, 'status' => 'draft', 'published_at' => null]);
+        Category::factory()->create(['name' => 'Motion Design', 'slug' => 'motion-design', 'active' => true]);
+
+        $this->get('/')->assertOk()
+            ->assertSee('2 courses')
+            ->assertSee('Courses coming soon')
+            ->assertSee(route('categories.show', $category), false);
     }
 
     public function test_only_published_courses_in_active_categories_are_public(): void

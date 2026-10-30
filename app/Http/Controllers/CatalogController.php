@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Course;
+use App\Models\CourseReview;
 use App\Models\Enrollment;
+use App\Models\Lesson;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
@@ -16,7 +19,19 @@ class CatalogController extends Controller
 {
     public function home(): View
     {
-        return view('home', ['courses' => Course::published()->with(['instructor', 'category'])->latest('published_at')->limit(3)->get()]);
+        $published = fn (Builder $course) => $course->published();
+        $reviews = CourseReview::where('status', 'approved')->whereHas('course', $published);
+
+        return view('home', [
+            'courses' => Course::published()->with(['instructor', 'category'])->latest('published_at')->limit(3)->get(),
+            'categories' => Category::where('active', true)->withCount(['courses' => $published])->orderBy('sort_order')->orderBy('id')->get(),
+            'stats' => [
+                'students' => User::where('role', 'student')->where('status', 'active')->count(),
+                'lessons' => Lesson::where('published', true)->whereHas('module.course', $published)->count(),
+                'courses' => Course::published()->count(),
+                'rating' => $reviews->exists() ? round((float) $reviews->avg('rating'), 1) : null,
+            ],
+        ]);
     }
 
     public function index(Request $request, ?Category $category = null): View
