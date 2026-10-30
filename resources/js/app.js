@@ -254,3 +254,25 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("DOMContentLoaded", initializeLoginDialog);
 document.addEventListener("livewire:navigated", initializeLoginDialog);
+
+// Header search dropdown: focus the box when opened; close on Escape or outside click.
+document.addEventListener(
+    "toggle",
+    (event) => {
+        const search = event.target;
+        if (search.matches?.("[data-nav-search]") && search.open) search.querySelector("input")?.focus();
+    },
+    true,
+);
+document.addEventListener("click", (event) => {
+    document.querySelectorAll("[data-nav-search][open]").forEach((search) => {
+        if (!search.contains(event.target)) search.removeAttribute("open");
+    });
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll("[data-nav-search][open]").forEach((search) => {
+        search.removeAttribute("open");
+        search.querySelector("summary")?.focus();
+    });
+});
