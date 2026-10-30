@@ -1,3 +1,8 @@
+const mediaText = (message) => {
+    const element = document.getElementById("media-localization");
+    const messages = element ? JSON.parse(element.dataset.messages) : {};
+    return messages[message] ?? message;
+};
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content;
 async function api(url, body) {
     const response = await fetch(url, {
@@ -15,7 +20,7 @@ async function api(url, body) {
         throw new Error(
             Object.values(data.errors || {}).flat()[0] ||
                 data.message ||
-                "Please retry later.",
+                mediaText("Please retry later."),
         );
     return data;
 }
@@ -36,10 +41,10 @@ function initializeMedia() {
                 try {
                     const data = await api(root.dataset.playback);
                     video.src = data.url;
-                    status.textContent = "Ready to watch.";
+                    status.textContent = mediaText("Ready to watch.");
                 } catch {
                     status.textContent =
-                        "Playback is unavailable. Refresh playback to retry.";
+                        mediaText("Playback is unavailable. Refresh playback to retry.");
                 } finally {
                     loading = false;
                 }
@@ -53,7 +58,7 @@ function initializeMedia() {
             });
             video.addEventListener("error", () => {
                 status.textContent =
-                    "Playback stopped or the link expired. Refresh playback to continue from your place.";
+                    mediaText("Playback stopped or the link expired. Refresh playback to continue from your place.");
             });
             video.addEventListener("timeupdate", async () => {
                 if (!root.dataset.progress || Date.now() - lastSave < 15000)
@@ -65,7 +70,7 @@ function initializeMedia() {
                     });
                 } catch {
                     status.textContent =
-                        "Your place could not be saved. Check your connection.";
+                        mediaText("Your place could not be saved. Check your connection.");
                 }
             });
             root.querySelector("[data-reload-video]").addEventListener(
@@ -93,7 +98,7 @@ function initializeMedia() {
                     !file.name.toLowerCase().endsWith(".mp4") ||
                     file.size > 1073741824
                 ) {
-                    status.textContent = "Choose an MP4 video up to 1 GB.";
+                    status.textContent = mediaText("Choose an MP4 video up to 1 GB.");
                     return;
                 }
                 submit.disabled = true;
@@ -104,7 +109,7 @@ function initializeMedia() {
                         mime: "video/mp4",
                     });
                     status.textContent =
-                        "Uploading directly to private storage…";
+                        mediaText("Uploading directly to private storage…");
                     await new Promise((resolve, reject) => {
                         xhr = new XMLHttpRequest();
                         xhr.open("PUT", intent.upload.url);
@@ -121,29 +126,29 @@ function initializeMedia() {
                         );
                         xhr.upload.onprogress = (e) => {
                             if (e.lengthComputable)
-                                status.textContent = `Uploading: ${Math.round((e.loaded / e.total) * 100)}%`;
+                                status.textContent = `${mediaText("Uploading:")} ${Math.round((e.loaded / e.total) * 100)}%`;
                         };
                         xhr.onload = () =>
                             xhr.status >= 200 && xhr.status < 300
                                 ? resolve()
                                 : reject(
-                                      new Error("Upload failed. Please retry."),
+                                      new Error(mediaText("Upload failed. Please retry.")),
                                   );
                         xhr.onerror = () =>
                             reject(
                                 new Error(
-                                    "Upload connection failed. Please retry.",
+                                    mediaText("Upload connection failed. Please retry."),
                                 ),
                             );
                         xhr.onabort = () =>
                             reject(
                                 new Error(
-                                    "Upload cancelled. You can start a new upload.",
+                                    mediaText("Upload cancelled. You can start a new upload."),
                                 ),
                             );
                         xhr.send(file);
                     });
-                    status.textContent = "Verifying video…";
+                    status.textContent = mediaText("Verifying video…");
                     await api(
                         `${form.dataset.videoUpload}/${intent.id}/confirm`,
                         {},
