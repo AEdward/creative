@@ -2907,3 +2907,17 @@ input[type="radio"] {
 .path-thumb {
     aspect-ratio: 640 / 235;
 }
+.brand-wordmark {
+    height: 30px;
+    width: auto;
+}
+@media (max-width: 1180px) {
+    .header-inner .brand-wordmark {
+        height: 24px;
+    }
+}
+@media (max-width: 420px) {
+    .header-inner .brand-wordmark {
+        height: 20px;
+    }
+}

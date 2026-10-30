@@ -30,8 +30,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Creative Lab Academy')
-            ->brandLogo(fn () => asset('images/brand/logo-full.webp'))
-            ->brandLogoHeight('2.75rem')
+            ->brandLogo(fn () => asset('images/brand/wordmark-on-light-60.webp'))
+            ->darkModeBrandLogo(fn () => asset('images/brand/wordmark-on-dark-60.webp'))
+            ->brandLogoHeight('1.6rem')
             ->favicon(asset('images/brand/favicon-32.png'))
             ->emailVerification()
             ->colors([

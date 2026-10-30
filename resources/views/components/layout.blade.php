@@ -16,7 +16,7 @@
 <a class="skip-link" href="#main">{{ __('Skip to content') }}</a>
 <header class="site-header {{ $dark ? 'header-dark' : '' }}">
     <div class="container header-inner">
-        <x-brand />
+        <x-brand :on-dark="$dark" />
         <nav class="desktop-nav" aria-label="{{ __('Main navigation') }}">
             <a href="{{ route('home') }}" @if(request()->routeIs('home')) aria-current="page" @endif>{{ __('academy.home') }}</a>
             <a href="{{ route('courses.index') }}" @if(request()->routeIs('courses.*', 'categories.*')) aria-current="page" @endif>{{ __('academy.courses') }}</a>
@@ -34,7 +34,7 @@
 @auth @if(auth()->user()->hasVerifiedEmail())<nav class="account-nav" aria-label="{{ __('Your workspace') }}"><div class="container"><a href="{{ route('dashboard') }}">{{ __('academy.dashboard') }}</a><a href="{{ route('learning.index') }}">{{ __('academy.learning') }}</a><a href="{{ route('certificates.index') }}">{{ __('academy.certificates') }}</a><a href="{{ route('notifications.index') }}">{{ __('academy.notifications') }}</a><a href="{{ route('support.index') }}">{{ __('academy.support') }}</a>@can('instructor')<a href="{{ route('instructor.dashboard') }}">{{ __('Teaching studio') }}</a><a href="{{ route('instructor.profile.edit') }}">{{ __('Instructor profile') }}</a>@endcan @can('administer-academy')<a href="{{ route('academy-admin') }}">{{ __('Operations') }}</a>@endcan</div></nav>@endif @endauth
 <main id="main" tabindex="-1">{{ $slot }}</main>
 <footer class="site-footer"><div class="container footer-grid">
-    <div><x-brand /><p>{{ __('Learn. Create. Grow.') }}</p><p class="small">{{ __('A place to turn creative curiosity into practical skills.') }}</p></div>
+    <div><x-brand /><p class="small">{{ __('A place to turn creative curiosity into practical skills.') }}</p></div>
     <div><h2>{{ __('Explore') }}</h2><a href="{{ route('courses.index') }}">{{ __('All courses') }}</a><a href="{{ route('instructors.index') }}">{{ __('Instructors') }}</a><a href="{{ route('about') }}">{{ __('About the academy') }}</a><a href="{{ route('contact') }}">{{ __('Contact') }}</a></div>
     <div><h2>{{ __('Good to know') }}</h2><a href="{{ route('faq') }}">{{ __('Questions & answers') }}</a><a href="{{ route('privacy') }}">{{ __('Privacy') }}</a><a href="{{ route('terms') }}">{{ __('Terms') }}</a><a href="{{ route('refund-policy') }}">{{ __('Refund policy') }}</a></div>
 </div><div class="container footer-bottom"><span>© {{ date('Y') }} Creative Lab Academy</span><span>{{ __('Made for creative minds.') }}</span></div></footer>
