@@ -90,7 +90,7 @@ Before activation, verify browser CORS for the exact app origin and signed reque
 
 Orders snapshot integer minor-unit prices. Payment adapters must independently verify provider evidence before payment processing can grant enrollment. The domain handles duplicate events, mismatched amounts/references, terminal conflicts and audited fulfillment. Account-row locking serializes checkout eligibility with fulfillment. Reusing the original checkout key resumes its order; a different key is rejected while an order is pending.
 
-The default gateway is unavailable even if PAYMENTS_ENABLED is set. The fake gateway exists only for local/test fixtures, implements no vendor contract and is rejected in production. There is no public payment callback endpoint. `/payments` shows only the authenticated student's own records; the admin ledger is read-only. Provider documentation, signatures, merchant verification, sandbox reconciliation, tax/refund policy and authorization are prerequisites for real checkout.
+The default gateway is unavailable even if PAYMENTS_ENABLED is set. The fake gateway exists only for local/test fixtures, implements no vendor contract and is rejected in production. Provider callbacks post to `POST /payments/webhook` (CSRF-exempt, throttled, disabled until a real gateway is available); the gateway adapter must authenticate the raw body and signature headers it receives as `raw_body` and `headers`. `/payments` shows only the authenticated student's own records; the admin ledger is read-only. Provider documentation, signatures, merchant verification, sandbox reconciliation, tax/refund policy and authorization are prerequisites for real checkout.
 
 ## Local learning and administration
 

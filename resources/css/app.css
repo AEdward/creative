@@ -122,7 +122,7 @@ p {
     padding: 88px 0;
 }
 .eyebrow {
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 0.18em;
     font-weight: 700;
     text-transform: uppercase;
@@ -224,7 +224,7 @@ p {
     flex-shrink: 0;
 }
 .wordmark > span {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 650;
     text-transform: uppercase;
     letter-spacing: 0.38em;
@@ -315,7 +315,7 @@ p {
     align-items: center;
     gap: 12px;
     margin-top: 34px;
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 0.02em;
     color: #a3aabd;
 }
@@ -637,7 +637,7 @@ p {
     padding: 20px;
 }
 .cover-category {
-    font-size: 10px;
+    font-size: 12px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: #d4beff;
@@ -656,7 +656,7 @@ p {
     position: absolute;
     bottom: 16px;
     left: 20px;
-    font-size: 10px;
+    font-size: 12px;
     padding: 3px 9px;
     border: 1px solid #ffffff44;
     border-radius: 30px;
@@ -689,7 +689,7 @@ p {
     justify-content: space-between;
     gap: 12px;
     color: #6b6c7e;
-    font-size: 11px;
+    font-size: 12px;
     margin-top: auto;
     margin-bottom: 18px;
 }
@@ -826,7 +826,7 @@ p {
     justify-content: space-between;
     gap: 20px;
     padding-block: 22px;
-    font-size: 10px;
+    font-size: 12px;
     color: #818ba2;
 }
 .page-banner {
@@ -856,7 +856,7 @@ p {
 .filter-row > label {
     display: flex;
     flex-direction: column;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: #56576a;
     gap: 7px;
@@ -932,7 +932,7 @@ textarea::placeholder {
     color: #fff;
 }
 .breadcrumbs {
-    font-size: 11px;
+    font-size: 12px;
     display: flex;
     gap: 12px;
     color: #aba7c1;
@@ -999,7 +999,7 @@ textarea::placeholder {
 }
 .curriculum summary > span {
     float: right;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 400;
     color: #7b7f8e;
 }
@@ -1018,7 +1018,7 @@ textarea::placeholder {
 }
 .curriculum small {
     white-space: nowrap;
-    font-size: 10px;
+    font-size: 12px;
     color: #7138F5;
 }
 .access-card {
@@ -1054,7 +1054,7 @@ textarea::placeholder {
     margin-block: 7px 20px;
 }
 .access-card .small {
-    font-size: 11px;
+    font-size: 12px;
 }
 .prose-page {
     max-width: 800px;
@@ -1293,7 +1293,7 @@ textarea::placeholder {
     .tool-chip {
         width: 70px;
         height: 65px;
-        font-size: 11px;
+        font-size: 12px;
     }
     .chip-design {
         right: 0;
@@ -1349,7 +1349,7 @@ textarea::placeholder {
         display: none;
     }
     .header-actions > .button {
-        font-size: 11px;
+        font-size: 12px;
         padding: 9px 12px;
         gap: 12px;
     }
@@ -1522,14 +1522,14 @@ textarea::placeholder {
         gap: 10px;
     }
     .button-row .button {
-        font-size: 11px;
+        font-size: 12px;
         padding: 12px 15px;
         min-height: 46px;
         gap: 14px;
     }
     .hero-footnote {
         margin-top: 24px;
-        font-size: 10px;
+        font-size: 12px;
     }
     .creative-art {
         height: 310px;
@@ -1727,7 +1727,7 @@ textarea::placeholder {
         padding: 10px;
     }
     .search-field .button {
-        font-size: 11px;
+        font-size: 12px;
         padding-inline: 13px;
         gap: 8px;
         min-height: 46px;
@@ -1738,20 +1738,20 @@ textarea::placeholder {
         margin-top: 18px;
     }
     .filter-row > label {
-        font-size: 10px;
+        font-size: 12px;
     }
     .filter-row select {
         padding-inline: 8px;
-        font-size: 11px;
+        font-size: 12px;
     }
     .filter-apply {
-        font-size: 11px;
+        font-size: 12px;
     }
     .results-heading p {
-        font-size: 11px;
+        font-size: 12px;
     }
     .results-heading .inline-link {
-        font-size: 11px;
+        font-size: 12px;
     }
     .detail-grid {
         grid-template-columns: 1fr;
@@ -1784,11 +1784,11 @@ textarea::placeholder {
     }
     .breadcrumbs {
         margin-bottom: 30px;
-        font-size: 10px;
+        font-size: 12px;
     }
     .detail-meta {
         gap: 16px;
-        font-size: 11px;
+        font-size: 12px;
     }
     .detail-content h2 {
         font-size: 25px;
@@ -1923,7 +1923,7 @@ textarea::placeholder {
     display: flex;
     justify-content: space-between;
     gap: 15px;
-    font-size: 11px;
+    font-size: 12px;
     color: #6d6881;
     margin-top: 24px;
 }
@@ -2103,10 +2103,10 @@ progress::-webkit-progress-value {
         font-size: 14px;
     }
     .learning-header .inline-link {
-        font-size: 11px;
+        font-size: 12px;
     }
     .lesson-navigation {
-        font-size: 11px;
+        font-size: 12px;
     }
     .editor-fields {
         gap: 0;
@@ -2185,7 +2185,7 @@ progress::-webkit-progress-value {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: 12px;
 }
 .locale-form select {
     max-width: 60px;
@@ -3439,3 +3439,19 @@ input[type="radio"] {
 .courses-hero h1,.courses-hero p:not(.eyebrow){color:#fff}
 .courses-hero .eyebrow{color:#C9B6FF}
 @media (max-width:760px){.courses-hero{background-image:url('/images/courses/hero-1000.webp');background-position:70% center}.courses-hero::before{background:rgba(11,16,37,.65)}}
+
+/* Review fixes: readable inputs on phones, locale switch, mobile menu, tokens */
+.site-banner{margin:0;border-radius:0;text-align:center}
+.lesson-video{width:100%;background:var(--night);border-radius:16px}
+.locale-form .locale-switch{display:inline-flex;border:1px solid #85859a;border-radius:8px;overflow:hidden;max-width:none}
+.locale-form .locale-switch button{display:inline-flex;align-items:center;min-height:32px;padding:4px 9px;font-size:12px;font-weight:600;background:transparent;color:inherit;border:0;cursor:pointer}
+.locale-form .locale-switch button[aria-pressed="true"]{background:var(--color-brand-primary);color:#fff}
+.header-dark .locale-form .locale-switch{border-color:#ffffff59}
+@media (max-width:600px){.locale-form{max-width:none}}
+@media (max-width:760px){
+    input,select,textarea{font-size:16px}
+    .mobile-menu>summary{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+    .mobile-menu nav{position:fixed;top:var(--header-h,76px);left:16px;right:16px;width:auto;max-height:calc(100dvh - var(--header-h,76px) - 16px);overflow-y:auto;z-index:60}
+    .mobile-menu nav a{min-height:44px;display:flex;align-items:center}
+}
+.locale-form .locale-switch button[lang="am"]{font-family:"Noto Sans Ethiopic","Ebrima","Nyala","Abyssinica SIL",system-ui,sans-serif}

@@ -2,6 +2,7 @@
 
 namespace App\Services\Payments;
 
+use App\Models\CouponRedemption;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Order;
@@ -23,7 +24,9 @@ class CheckoutService
         if (! Str::isUuid($key)) {
             throw ValidationException::withMessages(['idempotency_key' => 'A valid checkout key is required.']);
         }
-        $checkoutKey = hash('sha256', $actor->id.'|'.$key);
+        $coupon = filled($coupon) ? Str::upper(trim($coupon)) : null;
+        // The coupon is part of the key, so replaying a key with a different coupon can't return the original order.
+        $checkoutKey = hash('sha256', $actor->id.'|'.$key.($coupon ? '|'.$coupon : ''));
         $existing = Order::where('checkout_key', $checkoutKey)->where('user_id', $actor->id)->with('items', 'payment')->first();
         if ($existing) {
             if ((int) $existing->items->first()?->course_id !== $course->id) {
@@ -72,7 +75,17 @@ class CheckoutService
         if ($order->payment->provider_reference) {
             return $order;
         }
-        $session = $this->gateway->initiate($order);
+        try {
+            $session = $this->gateway->initiate($order);
+        } catch (\Throwable $e) {
+            // Fail the order so the learner can start a fresh checkout instead of waiting for the 24h expiry.
+            DB::transaction(function () use ($order) {
+                if (Order::whereKey($order->id)->where('status', 'pending')->lockForUpdate()->update(['status' => 'failed'])) {
+                    CouponRedemption::where('order_id', $order->id)->where('status', 'reserved')->update(['status' => 'released']);
+                }
+            }, 3);
+            throw $e;
+        }
         DB::transaction(function () use ($order, $session) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'pending') {

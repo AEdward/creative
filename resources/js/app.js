@@ -209,11 +209,17 @@ function openLoginDialog(dialog, name = "login") {
     if (!dialog.open) dialog.showModal();
     showAuthPanel(dialog, name, true);
 }
+// Remember where a press started so a drag out of the card (e.g. selecting text) doesn't close it.
+let pressTarget = null;
+document.addEventListener("pointerdown", (event) => (pressTarget = event.target), true);
 document.addEventListener("click", (event) => {
     const dialog = document.getElementById("login-dialog");
     if (!dialog) return;
     // Clicking the backdrop (outside the card) closes the dialog.
-    if (event.target === dialog) return dialog.close();
+    if (event.target === dialog) {
+        if (pressTarget === null || pressTarget === dialog) dialog.close();
+        return;
+    }
     const tab = event.target.closest("[data-auth-tab]");
     if (tab) return showAuthPanel(dialog, tab.dataset.authTab, true);
     const switcher = event.target.closest("[data-auth-switch]");
@@ -264,14 +270,16 @@ document.addEventListener(
     },
     true,
 );
+// The mobile menu behaves the same way.
+const dropdowns = "[data-nav-search][open], .mobile-menu[open]";
 document.addEventListener("click", (event) => {
-    document.querySelectorAll("[data-nav-search][open]").forEach((search) => {
+    document.querySelectorAll(dropdowns).forEach((search) => {
         if (!search.contains(event.target)) search.removeAttribute("open");
     });
 });
 document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
-    document.querySelectorAll("[data-nav-search][open]").forEach((search) => {
+    document.querySelectorAll(dropdowns).forEach((search) => {
         search.removeAttribute("open");
         search.querySelector("summary")?.focus();
     });

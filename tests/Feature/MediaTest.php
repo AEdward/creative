@@ -115,7 +115,12 @@ class MediaTest extends TestCase
         Enrollment::factory()->create(['user_id' => $student->id, 'course_id' => $course->id]);
         $this->actingAs($student)->get('/learn/'.$course->slug.'/'.$lesson->id)->assertOk()->assertSee('data-private-video', false);
         $this->assertDatabaseCount('lesson_progress', 0);
-        $this->post('/learn/'.$course->slug.'/'.$lesson->id.'/complete')->assertRedirect();
+        $this->post('/learn/'.$course->slug.'/'.$lesson->id.'/complete')->assertSessionHasErrors('lesson');
+        $this->assertNull(LessonProgress::first()->completed_at);
+        $this->postJson('/learn/'.$course->slug.'/'.$lesson->id.'/progress', ['position_seconds' => 60])->assertOk();
+        $this->assertSame(20, LessonProgress::first()->position_seconds);
+        LessonProgress::first()->update(['position_seconds' => 55]);
+        $this->post('/learn/'.$course->slug.'/'.$lesson->id.'/complete')->assertRedirect()->assertSessionHasNoErrors();
         $this->assertNotNull(LessonProgress::first()->completed_at);
     }
 

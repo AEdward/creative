@@ -15,8 +15,10 @@ use App\Notifications\EngagementNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -24,7 +26,7 @@ class AssessmentController extends Controller
 {
     private function owner(Course $course): void
     {
-        abort_unless(auth()->user()->role === 'admin' || (auth()->user()->role === 'instructor' && $course->instructor_id === auth()->id()), 403);
+        abort_unless(Gate::allows('administer-academy') || (auth()->user()->role === 'instructor' && $course->instructor_id === auth()->id()), 403);
     }
 
     private function enrollment(Course $course): Enrollment
@@ -115,11 +117,31 @@ class AssessmentController extends Controller
         $file = $request->file('file');
         $path = $file->store('assignments', 'local');
         abort_unless(is_string($path) && $path !== '', 500, 'Unable to save this submission. Please try again.');
+        // One live submission per learner and assignment: a new upload replaces a pending one, and nothing replaces an accepted one.
         try {
-            AssignmentSubmission::create(['assessment_id' => $assessment->id, 'enrollment_id' => $enrollment->id, 'path' => $path, 'original_name' => basename($file->getClientOriginalName())]);
+            $replaced = DB::transaction(function () use ($assessment, $enrollment, $file, $path) {
+                Enrollment::whereKey($enrollment->id)->lockForUpdate()->firstOrFail();
+                $existing = AssignmentSubmission::where('assessment_id', $assessment->id)->where('enrollment_id', $enrollment->id)->latest('id')->first();
+                if ($existing?->status === 'accepted') {
+                    throw ValidationException::withMessages(['file' => 'This assignment has already been accepted.']);
+                }
+                $name = basename($file->getClientOriginalName());
+                if ($existing) {
+                    $old = $existing->path;
+                    $existing->update(['path' => $path, 'original_name' => $name, 'status' => 'pending', 'feedback' => null, 'reviewer_id' => null]);
+
+                    return $old;
+                }
+                AssignmentSubmission::create(['assessment_id' => $assessment->id, 'enrollment_id' => $enrollment->id, 'path' => $path, 'original_name' => $name]);
+
+                return null;
+            });
         } catch (\Throwable $e) {
             Storage::disk('local')->delete($path);
             throw $e;
+        }
+        if ($replaced) {
+            Storage::disk('local')->delete($replaced);
         }
 
         return back()->with('status', 'Assignment submitted for review.');
@@ -201,7 +223,7 @@ class AssessmentController extends Controller
 
     public function print(Certificate $certificate): View
     {
-        abort_unless(Enrollment::whereKey($certificate->enrollment_id)->where('user_id', auth()->id())->exists() || auth()->user()->role === 'admin', 403);
+        abort_unless(Enrollment::whereKey($certificate->enrollment_id)->where('user_id', auth()->id())->exists() || Gate::allows('administer-academy'), 403);
 
         return view('assessments.certificate', compact('certificate'));
     }
@@ -215,7 +237,7 @@ class AssessmentController extends Controller
 
     public function revoke(Request $request, Certificate $certificate): RedirectResponse
     {
-        abort_unless(auth()->user()->role === 'admin', 403);
+        abort_unless(Gate::allows('administer-academy'), 403);
         $data = $request->validate(['reason' => 'required|string|max:2000']);
         DB::transaction(function () use ($certificate, $data) {
             $certificate = Certificate::whereKey($certificate->id)->lockForUpdate()->firstOrFail();

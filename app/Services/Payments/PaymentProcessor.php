@@ -39,7 +39,9 @@ class PaymentProcessor
 
                 return $order;
             }
-            if (! in_array($order->status, ['pending', 'awaiting_payment']) || in_array($payment->status, ['verified_success', 'verified_failure'])) {
+            // A verified success that arrives after the 24h expiry still grants access: the customer was charged.
+            $late = $receipt->success && $order->status === 'expired';
+            if ((! in_array($order->status, ['pending', 'awaiting_payment']) && ! $late) || in_array($payment->status, ['verified_success', 'verified_failure'])) {
                 throw ValidationException::withMessages(['payment' => 'A terminal payment conflict requires operator reconciliation.']);
             }
             if ($receipt->success) {
@@ -55,7 +57,7 @@ class PaymentProcessor
             $order->update(['status' => $receipt->success ? 'paid' : 'failed']);
             CouponRedemption::where('order_id', $order->id)->where('status', 'reserved')->update(['status' => $receipt->success ? 'redeemed' : 'released']);
             $event->update(['processed_at' => now()]);
-            AuditLog::create(['actor_id' => null, 'action' => $receipt->success ? 'payment.verified_success' : 'payment.verified_failure', 'subject_type' => 'order', 'subject_id' => $order->id, 'changes' => ['provider' => $receipt->provider, 'status' => $order->status]]);
+            AuditLog::create(['actor_id' => null, 'action' => $receipt->success ? 'payment.verified_success' : 'payment.verified_failure', 'subject_type' => 'order', 'subject_id' => $order->id, 'changes' => ['provider' => $receipt->provider, 'status' => $order->status, 'late' => $late]]);
 
             return $order;
         }, 3);

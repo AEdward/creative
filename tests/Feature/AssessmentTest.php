@@ -101,6 +101,24 @@ class AssessmentTest extends TestCase
         $this->postJson('/assignments/'.$submission->id.'/review', ['status' => 'accepted', 'feedback' => 'Good work'])->assertRedirect();
         $this->assertDatabaseHas('assignment_submissions', ['id' => $submission->id, 'status' => 'accepted', 'reviewer_id' => $owner->id]);
         $this->actingAs($student)->postJson('/courses/'.$course->slug.'/assessments/'.$assignment->id.'/submit', ['file' => UploadedFile::fake()->create('program.exe', 10)])->assertUnprocessable();
+        $this->postJson('/courses/'.$course->slug.'/assessments/'.$assignment->id.'/submit', ['file' => UploadedFile::fake()->create('again.pdf', 20, 'application/pdf')])->assertJsonValidationErrors(['file' => 'This assignment has already been accepted.']);
+        $this->assertDatabaseCount('assignment_submissions', 1);
+    }
+
+    public function test_resubmitting_replaces_the_pending_file_instead_of_piling_up_uploads(): void
+    {
+        Storage::fake('local');
+        [$owner,$student,$course,$enrollment] = $this->fixture();
+        $assignment = Assessment::create(['course_id' => $course->id, 'type' => 'assignment', 'title' => 'Poster']);
+        $url = '/courses/'.$course->slug.'/assessments/'.$assignment->id.'/submit';
+        $this->actingAs($student)->postJson($url, ['file' => UploadedFile::fake()->create('one.pdf', 20, 'application/pdf')])->assertRedirect();
+        $first = AssignmentSubmission::firstOrFail()->path;
+        $this->postJson($url, ['file' => UploadedFile::fake()->create('two.pdf', 20, 'application/pdf')])->assertRedirect();
+        $this->assertDatabaseCount('assignment_submissions', 1);
+        $submission = AssignmentSubmission::firstOrFail();
+        $this->assertSame('two.pdf', $submission->original_name);
+        Storage::disk('local')->assertMissing($first);
+        Storage::disk('local')->assertExists($submission->path);
     }
 
     public function test_certificates_require_opt_in_current_lessons_and_assessments_and_are_private_revocable_and_idempotent(): void

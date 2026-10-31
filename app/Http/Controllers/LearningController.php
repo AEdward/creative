@@ -84,6 +84,10 @@ class LearningController extends Controller
         abort_unless($enrollment, 403);
         abort_unless($lesson->type === 'text' || ($lesson->type === 'video' && $lesson->videoAsset?->status === 'ready' && $lesson->videoAsset->course_id === $course->id && app(MediaStorage::class)->available()), 422, 'Video completion requires an attached playable asset.');
         $progress = LessonProgress::firstOrCreate(['enrollment_id' => $enrollment->id, 'lesson_id' => $lesson->id]);
+        // Videos count as complete only once most of them has been watched.
+        if ($lesson->type === 'video' && $lesson->duration_seconds > 0 && ! $progress->completed_at && $progress->position_seconds < (int) floor($lesson->duration_seconds * 0.9)) {
+            return back()->withErrors(['lesson' => 'Watch the video to the end before marking it complete.']);
+        }
         LessonProgress::whereKey($progress->id)->whereNull('completed_at')->update(['completed_at' => now()]);
 
         return back()->with('status', 'Lesson completed. Keep creating.');
@@ -96,8 +100,12 @@ class LearningController extends Controller
         abort_unless($enrollment, 403);
         $data = $request->validate(['position_seconds' => ['required', 'integer', 'min:0', 'max:'.$lesson->duration_seconds]]);
         DB::transaction(function () use ($enrollment, $lesson, $data) {
-            $progress = LessonProgress::firstOrCreate(['enrollment_id' => $enrollment->id, 'lesson_id' => $lesson->id]);
-            LessonProgress::whereKey($progress->id)->update(['position_seconds' => $data['position_seconds']]);
+            $created = LessonProgress::firstOrCreate(['enrollment_id' => $enrollment->id, 'lesson_id' => $lesson->id])->wasRecentlyCreated;
+            $progress = LessonProgress::where('enrollment_id', $enrollment->id)->where('lesson_id', $lesson->id)->lockForUpdate()->firstOrFail();
+            // Watched time can only grow about as fast as real time (2x playback plus slack); seeking back is always allowed.
+            $elapsed = $created ? 0 : max(0, (int) $progress->updated_at?->diffInSeconds(now(), true));
+            $position = min($data['position_seconds'], $progress->position_seconds + $elapsed * 2 + 20);
+            LessonProgress::whereKey($progress->id)->update(['position_seconds' => $position, 'updated_at' => now()]);
         });
 
         return response()->json(['saved' => true]);

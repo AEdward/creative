@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Order;
@@ -183,5 +184,61 @@ class CommerceTest extends TestCase
             $this->assertDatabaseCount('orders', 0);
             $this->assertDatabaseCount('enrollments', 1);
         }
+    }
+
+    public function test_payment_arriving_after_expiry_still_grants_access(): void
+    {
+        $order = $this->checkout();
+        $order->update(['status' => 'expired']);
+        app(PaymentProcessor::class)->handle(new FakeGateway, $this->event($order));
+        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertDatabaseCount('enrollments', 1);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'payment.verified_success', 'subject_id' => $order->id]);
+    }
+
+    public function test_learners_can_apply_a_coupon_at_checkout(): void
+    {
+        config(['academy.payments_enabled' => true]);
+        app()->instance(PaymentGateway::class, new FakeGateway);
+        Coupon::factory()->create(['code' => 'CREATE25', 'percent' => 25, 'max_uses' => 5]);
+        $course = Course::factory()->create(['is_free' => false, 'price_minor' => 10000]);
+        $user = User::factory()->create();
+        $this->actingAs($user)->postJson('/checkout/'.$course->slug, ['idempotency_key' => (string) Str::uuid(), 'coupon' => 'create25'])->assertOk();
+        $this->assertSame(7500, Order::first()->total_minor);
+        $this->assertSame(7500, Order::first()->payment->amount_minor);
+        $other = Course::factory()->create(['is_free' => false]);
+        $this->postJson('/checkout/'.$other->slug, ['idempotency_key' => (string) Str::uuid(), 'coupon' => 'NOPE'])->assertJsonValidationErrors(['coupon' => 'This coupon is not valid.']);
+    }
+
+    public function test_failed_provider_start_lets_the_learner_retry_with_a_new_key(): void
+    {
+        config(['academy.payments_enabled' => true]);
+        $broken = new class extends FakeGateway
+        {
+            public function initiate(\App\Models\Order $order): \App\Services\Payments\PaymentSession
+            {
+                throw new \RuntimeException('provider down');
+            }
+        };
+        app()->instance(PaymentGateway::class, $broken);
+        $user = User::factory()->create();
+        $course = Course::factory()->create(['is_free' => false]);
+        try {
+            app(CheckoutService::class)->create($user, $course, (string) Str::uuid());
+            $this->fail('The provider error should surface.');
+        } catch (\RuntimeException) {
+            $this->assertSame('failed', Order::first()->status);
+        }
+        $order = $this->checkout($user, $course);
+        $this->assertSame('awaiting_payment', $order->status);
+    }
+
+    public function test_webhook_is_csrf_exempt_and_processes_verified_evidence(): void
+    {
+        $order = $this->checkout();
+        $this->postJson('/payments/webhook', $this->event($order))->assertOk()->assertJson(['status' => 'paid']);
+        $this->assertDatabaseCount('enrollments', 1);
+        config(['academy.payments_enabled' => false]);
+        $this->postJson('/payments/webhook', $this->event($order))->assertServiceUnavailable();
     }
 }

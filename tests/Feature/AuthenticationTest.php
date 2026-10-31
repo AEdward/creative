@@ -151,4 +151,11 @@ class AuthenticationTest extends TestCase
         }
         $this->post('/forgot-password', ['email' => $user->email])->assertRedirect()->assertSessionHas('status');
     }
+
+    public function test_pages_send_security_headers(): void
+    {
+        $response = $this->get('/');
+        $response->assertHeader('X-Frame-Options', 'SAMEORIGIN')->assertHeader('X-Content-Type-Options', 'nosniff')->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $this->assertStringContainsString("frame-ancestors 'self'", $response->headers->get('Content-Security-Policy'));
+    }
 }

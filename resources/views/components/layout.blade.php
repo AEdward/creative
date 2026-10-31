@@ -13,7 +13,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="{{ $dark ? 'home-page' : '' }}">
-@if($banner = (\App\Models\SiteSetting::content()['banner'] ?? null))<div class="notice" style="margin:0;border-radius:0;text-align:center" role="status">{{ $banner }}</div>@endif
+@if($banner = (\App\Models\SiteSetting::content()['banner'] ?? null))<div class="notice site-banner" role="status">{{ $banner }}</div>@endif
 <a class="skip-link" href="#main">{{ __('Skip to content') }}</a>
 <header class="site-header {{ $dark ? 'header-dark' : '' }}">
     <div class="container header-inner">
@@ -23,7 +23,7 @@
             <a href="{{ route('courses.index') }}" @if(request()->routeIs('courses.*', 'categories.*')) aria-current="page" @endif>{{ __('academy.courses') }}</a>
             <a href="{{ route('instructors.index') }}" @if(request()->routeIs('instructors.*')) aria-current="page" @endif>{{ __('Instructors') }}</a><a href="{{ route('about') }}" @if(request()->routeIs('about')) aria-current="page" @endif>{{ __('academy.about') }}</a><a href="{{ route('contact') }}" @if(request()->routeIs('contact')) aria-current="page" @endif>{{ __('Contact') }}</a>
         </nav>
-        <div class="header-actions"><form method="POST" action="{{ route('locale') }}" class="locale-form">@csrf<label class="sr-only" for="locale">{{ __('academy.language') }}</label><select name="locale" id="locale" aria-label="{{ __('academy.language') }}" onchange="this.form.submit()"><option value="en" @selected(app()->getLocale() === 'en')>EN</option><option value="am" @selected(app()->getLocale() === 'am')>አማ</option></select><noscript><button type="submit" class="text-link">{{ __('academy.language') }}</button></noscript></form>
+        <div class="header-actions"><form method="POST" action="{{ route('locale') }}" class="locale-form">@csrf<div class="locale-switch" role="group" aria-label="{{ __('academy.language') }}"><button type="submit" name="locale" value="en" lang="en" aria-label="English" aria-pressed="{{ app()->getLocale() === 'en' ? 'true' : 'false' }}">EN</button><button type="submit" name="locale" value="am" lang="am" aria-label="አማርኛ" aria-pressed="{{ app()->getLocale() === 'am' ? 'true' : 'false' }}">አማ</button></div></form>
             <details class="nav-search" data-nav-search>
                 <summary class="icon-link" aria-label="{{ __('Search courses') }}"><x-heroicon-o-magnifying-glass aria-hidden="true" /></summary>
                 <div class="nav-search-panel">
@@ -67,9 +67,9 @@ $mediaLabels = collect([
     <div class="auth-shell">
         <x-auth-aside />
         <div class="auth-forms">
-            <div class="auth-tabs" role="tablist">
-                <button type="button" role="tab" id="auth-tab-login" aria-controls="auth-panel-login" data-auth-tab="login" aria-selected="{{ $authPanel === 'register' ? 'false' : 'true' }}">{{ __('Sign In') }}</button>
-                <button type="button" role="tab" id="auth-tab-register" aria-controls="auth-panel-register" data-auth-tab="register" aria-selected="{{ $authPanel === 'register' ? 'true' : 'false' }}">{{ __('Create Account') }}</button>
+            <div class="auth-tabs" role="tablist" aria-label="{{ __('Sign in or create an account') }}">
+                <button type="button" role="tab" id="auth-tab-login" aria-controls="auth-panel-login" data-auth-tab="login" aria-selected="{{ $authPanel === 'register' ? 'false' : 'true' }}" tabindex="{{ $authPanel === 'register' ? '-1' : '0' }}">{{ __('Sign In') }}</button>
+                <button type="button" role="tab" id="auth-tab-register" aria-controls="auth-panel-register" data-auth-tab="register" aria-selected="{{ $authPanel === 'register' ? 'true' : 'false' }}" tabindex="{{ $authPanel === 'register' ? '0' : '-1' }}">{{ __('Create Account') }}</button>
             </div>
             <div role="tabpanel" id="auth-panel-login" aria-labelledby="auth-tab-login" data-auth-panel="login" @if($authPanel === 'register') hidden @endif><x-login-form modal /></div>
             <div role="tabpanel" id="auth-panel-register" aria-labelledby="auth-tab-register" data-auth-panel="register" @if($authPanel !== 'register') hidden @endif><x-register-form modal /></div>

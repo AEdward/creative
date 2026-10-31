@@ -98,8 +98,8 @@ class LearningTest extends TestCase
         Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
         $this->actingAs($other)->postJson('/learn/'.$course->slug.'/'.$lesson->id.'/progress', ['position_seconds' => 30])->assertForbidden();
         $this->actingAs($user)->postJson('/learn/'.$course->slug.'/'.$lesson->id.'/progress', ['position_seconds' => 121])->assertUnprocessable();
-        $this->postJson('/learn/'.$course->slug.'/'.$lesson->id.'/progress', ['position_seconds' => 30])->assertOk();
-        $this->assertDatabaseHas('lesson_progress', ['lesson_id' => $lesson->id, 'position_seconds' => 30]);
+        $this->postJson('/learn/'.$course->slug.'/'.$lesson->id.'/progress', ['position_seconds' => 15])->assertOk();
+        $this->assertDatabaseHas('lesson_progress', ['lesson_id' => $lesson->id, 'position_seconds' => 15]);
         $this->assertNull(LessonProgress::first()->completed_at);
     }
 
