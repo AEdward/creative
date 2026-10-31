@@ -297,3 +297,30 @@ document.addEventListener("keydown", (event) => {
         document.querySelector(".app-menu-button")?.focus();
     }
 });
+
+// Protected player: no context menu, fullscreen on the wrapper so the watermark stays visible,
+// and the watermark drifts to a new spot every few seconds so it can't be cropped out of a recording.
+function initializeSecurePlayers() {
+    document.querySelectorAll("[data-secure-player]:not([data-secured])").forEach((player) => {
+        player.dataset.secured = "true";
+        const video = player.querySelector("video");
+        const marks = player.querySelectorAll(".video-watermark");
+        player.addEventListener("contextmenu", (event) => event.preventDefault());
+        video.addEventListener("dragstart", (event) => event.preventDefault());
+        const move = () => marks.forEach((mark) => {
+            mark.style.left = `${5 + Math.random() * 55}%`;
+            mark.style.top = `${8 + Math.random() * 70}%`;
+        });
+        move();
+        setInterval(move, 7000);
+        // If the native fullscreen button targets the bare <video>, swap to the wrapper.
+        document.addEventListener("fullscreenchange", () => {
+            if (document.fullscreenElement === video) {
+                document.exitFullscreen().then(() => player.requestFullscreen?.()).catch(() => {});
+            }
+        });
+        video.addEventListener("webkitbeginfullscreen", () => player.classList.add("ios-fullscreen"));
+    });
+}
+document.addEventListener("DOMContentLoaded", initializeSecurePlayers);
+document.addEventListener("livewire:navigated", initializeSecurePlayers);

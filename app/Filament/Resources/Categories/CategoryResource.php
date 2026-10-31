@@ -18,6 +18,12 @@ class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
+    protected static ?string $navigationLabel = 'Categories';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-tag';
+
+    protected static ?int $navigationSort = 6;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([TextInput::make('name')->required()->maxLength(100), TextInput::make('slug')->required()->alphaDash()->maxLength(100)->unique(ignoreRecord: true), Textarea::make('description')->maxLength(3000), TextInput::make('sort_order')->integer()->minValue(0)->default(0)->required(), Toggle::make('active')->default(true)]);

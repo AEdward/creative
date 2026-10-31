@@ -85,5 +85,5 @@
     </div>
 @endforelse
 </div>
-<div class="pagination">{{ $courses->links() }}</div>
+<div class="pagination">{{ $courses->links('pagination::tailwind') }}</div>
 </x-app-shell>

@@ -13,6 +13,12 @@ class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
+    protected static ?string $navigationLabel = 'Orders & Payments';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-credit-card';
+
+    protected static ?int $navigationSort = 8;
+
     public static function canCreate(): bool
     {
         return false;

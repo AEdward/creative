@@ -16,6 +16,12 @@ class ContactMessageResource extends Resource
 {
     protected static ?string $model = ContactMessage::class;
 
+    protected static ?string $navigationLabel = 'Messages';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
+
+    protected static ?int $navigationSort = 10;
+
     public static function canCreate(): bool
     {
         return false;

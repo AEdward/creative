@@ -113,7 +113,7 @@ class MediaTest extends TestCase
         Livewire::test(CourseEditor::class, ['course' => $course])->call('publish')->assertHasNoErrors();
         $student = User::factory()->create();
         Enrollment::factory()->create(['user_id' => $student->id, 'course_id' => $course->id]);
-        $this->actingAs($student)->get('/learn/'.$course->slug.'/'.$lesson->id)->assertOk()->assertSee('data-private-video', false);
+        $this->actingAs($student)->get('/learn/'.$course->slug.'/'.$lesson->id)->assertOk()->assertSee('data-private-video', false)->assertSee('controlslist="nodownload', false)->assertSee($student->email);
         $this->assertDatabaseCount('lesson_progress', 0);
         $this->post('/learn/'.$course->slug.'/'.$lesson->id.'/complete')->assertSessionHasErrors('lesson');
         $this->assertNull(LessonProgress::first()->completed_at);

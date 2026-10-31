@@ -23,7 +23,7 @@ class AuthorizationTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user)->get('/dashboard')->assertOk();
         $this->get('/instructor')->assertForbidden();
-        $this->get('/admin')->assertForbidden();
+        $this->get('/admin')->assertRedirect(route('dashboard'));
     }
 
     public function test_only_instructors_and_admins_can_enter_instructor_workspace(): void

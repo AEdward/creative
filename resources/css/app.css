@@ -3581,3 +3581,30 @@ input[type="radio"] {
 @media (max-width:760px){.app-content .page-banner,.app-content .learning-header{padding:24px 20px}}
 .app-content .course-detail-hero{border-radius:18px;padding:40px 44px;margin-top:4px}
 @media (max-width:760px){.app-content .course-detail-hero{padding:26px 20px}}
+
+/* Certificate sheet (shared by the print page and the admin preview) */
+.cert-sheet{--cert-accent:#7138F5;aspect-ratio:1.414/1;width:100%;max-width:980px;margin:0 auto;background:#fff;color:#0B1025;box-shadow:0 18px 50px #0b10251f;padding:22px;box-sizing:border-box;font-family:Poppins,system-ui,sans-serif;container-type:inline-size}
+.cert-border{height:100%;box-sizing:border-box;border:2px solid var(--cert-accent);outline:6px solid color-mix(in srgb,var(--cert-accent) 14%,transparent);outline-offset:-12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4cqw 6cqw;gap:1.1cqw;background:radial-gradient(circle at 50% 0,color-mix(in srgb,var(--cert-accent) 8%,#fff),#fff 60%)}
+.cert-brand{display:flex;align-items:center;gap:1.2cqw;font-weight:700;font-size:2cqw;letter-spacing:.04em}
+.cert-brand img{width:5cqw;height:5cqw}
+.cert-sheet h1{margin:1cqw 0 .5cqw;font-size:4.6cqw;line-height:1.1;font-weight:800;color:var(--cert-accent);letter-spacing:.02em}
+.cert-small{margin:0;font-size:1.6cqw;color:#4A4E6A}
+.cert-name{margin:.4cqw 0;font-family:"Great Vibes",cursive;font-size:6.4cqw;line-height:1.15;color:#0B1025;border-bottom:1px solid #d9dbe7;padding:0 4cqw .4cqw}
+.cert-course{margin:0;font-size:2.4cqw;font-weight:700}
+.cert-foot{display:flex;justify-content:space-between;gap:8cqw;margin-top:2.6cqw;width:80%}
+.cert-foot div{flex:1;display:flex;flex-direction:column;gap:.5cqw;align-items:center}
+.cert-line{display:block;width:100%;border-bottom:1.5px solid #0B1025;padding-bottom:.5cqw;font-size:1.7cqw;font-weight:600}
+.cert-sign{font-family:"Great Vibes",cursive;font-size:2.8cqw;font-weight:400}
+.cert-foot small{font-size:1.3cqw;color:#5B5F7A}
+.cert-ref{margin:2cqw 0 0;font-size:1.1cqw;color:#7A7E98;word-break:break-all}
+.cert-revoked{margin:0;padding:.5cqw 2cqw;border-radius:99px;background:#ffe5e8;color:#c8102e;font-weight:700;font-size:1.5cqw}
+.certificate-actions{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:24px auto 0;max-width:980px}
+
+/* Protected lesson player with moving watermark */
+.secure-player{position:relative;border-radius:16px;overflow:hidden;background:var(--night);user-select:none;-webkit-user-select:none}
+.secure-player video{display:block;width:100%;border-radius:0}
+.secure-player:fullscreen{display:flex;align-items:center;justify-content:center;border-radius:0}
+.secure-player:fullscreen video{height:100%;object-fit:contain}
+.video-watermark{position:absolute;left:10%;top:12%;z-index:2;pointer-events:none;color:#fff;opacity:.38;font-size:clamp(11px,1.4vw,16px);font-weight:600;text-shadow:0 1px 3px #000a;white-space:nowrap;transition:left 1.2s ease,top 1.2s ease}
+.video-watermark-faint{opacity:.16;font-size:clamp(10px,1.1vw,13px)}
+@media (prefers-reduced-motion:reduce){.video-watermark{transition:none}}

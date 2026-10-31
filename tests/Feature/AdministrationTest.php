@@ -41,7 +41,7 @@ class AdministrationTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
         foreach (['/admin/categories', '/admin/users', '/admin/courses', '/admin/contact-messages', '/admin/orders'] as $url) {
-            $this->get($url)->assertForbidden();
+            $this->get($url)->assertRedirect(route('dashboard'));
         }
     }
 
