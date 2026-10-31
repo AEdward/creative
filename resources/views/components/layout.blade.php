@@ -1,4 +1,29 @@
 @props(['title' => 'Creative skills. Real possibilities.', 'description' => 'Creative Lab Academy — learn video editing, graphic design, motion design, 3D and digital marketing.', 'dark' => false])
+@php
+$mediaLabels = collect([
+    'Please retry later.',
+    'Ready to watch.',
+    'Playback is unavailable. Refresh playback to retry.',
+    'Playback stopped or the link expired. Refresh playback to continue from your place.',
+    'Your place could not be saved. Check your connection.',
+    'Choose an MP4 video up to 1 GB.',
+    'Uploading directly to private storage…',
+    'Upload failed. Please retry.',
+    'Upload connection failed. Please retry.',
+    'Upload cancelled. You can start a new upload.',
+    'Verifying video…',
+    'Uploading:'
+])->mapWithKeys(fn ($label) => [$label => __($label)])->all();
+@endphp
+@php
+    // Pages behind the auth middleware use the signed-in sidebar layout; public pages keep the marketing header.
+    $useShell = auth()->check() && auth()->user()->hasVerifiedEmail()
+        && (request()->routeIs('learning.show', 'courses.show', 'categories.show')
+            || collect(request()->route()?->gatherMiddleware() ?? [])->contains(fn ($m) => is_string($m) && ($m === 'auth' || str_starts_with($m, 'auth:'))));
+@endphp
+@if($useShell)
+<x-app-shell :title="$title">{{ $slot }}<div hidden id="media-localization" data-messages="{{ json_encode($mediaLabels, JSON_UNESCAPED_UNICODE) }}"></div></x-app-shell>
+@else
 @php $searchCategories = \App\Models\Category::where('active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'slug']); @endphp
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -45,22 +70,7 @@
     <div><h2>{{ __('Explore') }}</h2><a href="{{ route('courses.index') }}">{{ __('All courses') }}</a><a href="{{ route('instructors.index') }}">{{ __('Instructors') }}</a><a href="{{ route('about') }}">{{ __('About the academy') }}</a><a href="{{ route('contact') }}">{{ __('Contact') }}</a></div>
     <div><h2>{{ __('Good to know') }}</h2><a href="{{ route('faq') }}">{{ __('Questions & answers') }}</a><a href="{{ route('privacy') }}">{{ __('Privacy') }}</a><a href="{{ route('terms') }}">{{ __('Terms') }}</a><a href="{{ route('refund-policy') }}">{{ __('Refund policy') }}</a></div>
 </div><div class="container footer-bottom"><span>© {{ date('Y') }} Creative Lab Academy</span><span>{{ __('Made for creative minds.') }}</span></div></footer>
-@php
-$mediaLabels = collect([
-    'Please retry later.',
-    'Ready to watch.',
-    'Playback is unavailable. Refresh playback to retry.',
-    'Playback stopped or the link expired. Refresh playback to continue from your place.',
-    'Your place could not be saved. Check your connection.',
-    'Choose an MP4 video up to 1 GB.',
-    'Uploading directly to private storage…',
-    'Upload failed. Please retry.',
-    'Upload connection failed. Please retry.',
-    'Upload cancelled. You can start a new upload.',
-    'Verifying video…',
-    'Uploading:'
-])->mapWithKeys(fn ($label) => [$label => __($label)])->all();
-@endphp
+
 @guest @unless(request()->routeIs('login', 'register'))
 @php $authPanel = $errors->getBag('register')->any() ? 'register' : ($errors->getBag('login')->any() ? 'login' : null); @endphp
 <dialog class="login-dialog" id="login-dialog" aria-label="{{ __('Sign in or create an account') }}" @if($authPanel) data-open-on-load="{{ $authPanel }}" @endif>
@@ -81,3 +91,4 @@ $mediaLabels = collect([
 <div hidden id="media-localization" data-messages="{{ json_encode($mediaLabels, JSON_UNESCAPED_UNICODE) }}"></div>
 @livewireScripts
 </body></html>
+@endif

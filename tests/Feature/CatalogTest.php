@@ -140,4 +140,16 @@ class CatalogTest extends TestCase
         auth()->logout();
         $this->get('/courses')->assertOk()->assertDontSee('class="app-sidebar"', false);
     }
+
+    public function test_signed_in_pages_use_the_sidebar_and_public_pages_do_not(): void
+    {
+        $user = \App\Models\User::factory()->create();
+        foreach (['/dashboard', '/my-learning', '/certificates', '/wishlist', '/profile', '/payments', '/notifications', '/support'] as $page) {
+            $this->actingAs($user)->get($page)->assertOk()->assertSee('class="app-sidebar"', false)->assertDontSee('class="site-footer"', false);
+        }
+        $this->get('/')->assertOk()->assertDontSee('class="app-sidebar"', false);
+        $this->get('/about')->assertOk()->assertDontSee('class="app-sidebar"', false);
+        $unverified = \App\Models\User::factory()->unverified()->create();
+        $this->actingAs($unverified)->get('/verify-email')->assertOk()->assertDontSee('class="app-sidebar"', false);
+    }
 }

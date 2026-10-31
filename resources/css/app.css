@@ -3572,3 +3572,12 @@ input[type="radio"] {
     .browse-grid{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){.app-sidebar,.browse-card{transition:none}}
+
+/* Existing pages rendered inside the signed-in shell */
+.app-content .container{width:100%;max-width:1400px;margin-inline:0}
+.app-content .section{padding:28px 0}
+.app-content .page-banner,.app-content .learning-header{border-radius:18px;padding:34px 36px;margin-top:4px}
+.app-content .page-banner h1{font-size:clamp(28px,3vw,40px)}
+@media (max-width:760px){.app-content .page-banner,.app-content .learning-header{padding:24px 20px}}
+.app-content .course-detail-hero{border-radius:18px;padding:40px 44px;margin-top:4px}
+@media (max-width:760px){.app-content .course-detail-hero{padding:26px 20px}}
