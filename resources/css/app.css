@@ -3430,3 +3430,12 @@ input[type="radio"] {
 .mobile-menu nav .search-box {
     min-width: 0;
 }
+
+/* Courses page hero photo */
+.courses-hero{position:relative;background:#0B1025 url('/images/courses/hero.webp') right center/cover no-repeat;color:#fff;min-height:clamp(260px,30vw,420px);display:flex;align-items:center}
+.courses-hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,16,37,.55) 0%,rgba(11,16,37,.25) 45%,transparent 70%);pointer-events:none}
+.courses-hero .container{position:relative;width:100%}
+.courses-hero .container>*{max-width:520px}
+.courses-hero h1,.courses-hero p:not(.eyebrow){color:#fff}
+.courses-hero .eyebrow{color:#C9B6FF}
+@media (max-width:760px){.courses-hero{background-image:url('/images/courses/hero-1000.webp');background-position:70% center}.courses-hero::before{background:rgba(11,16,37,.65)}}
