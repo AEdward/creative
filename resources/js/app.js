@@ -284,3 +284,16 @@ document.addEventListener("keydown", (event) => {
         search.querySelector("summary")?.focus();
     });
 });
+
+// Signed-in sidebar drawer: the menu button is a label, so give it keyboard support and close on Escape.
+document.addEventListener("keydown", (event) => {
+    const toggle = document.getElementById("app-nav-toggle");
+    if (!toggle) return;
+    if (event.target.closest?.(".app-menu-button") && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        toggle.checked = !toggle.checked;
+    } else if (event.key === "Escape" && toggle.checked) {
+        toggle.checked = false;
+        document.querySelector(".app-menu-button")?.focus();
+    }
+});

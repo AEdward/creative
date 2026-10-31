@@ -8,6 +8,7 @@ use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\User;
+use App\Models\Wishlist;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ class CatalogController extends Controller
     public function index(Request $request, ?Category $category = null): View
     {
         abort_if($category && ! $category->active, 404);
-        $validator = Validator::make($request->all(), ['q' => ['nullable', 'string', 'max:120'], 'category' => ['nullable', 'string', 'alpha_dash', 'max:100'], 'level' => ['nullable', 'in:beginner,intermediate,advanced'], 'language' => ['nullable', 'in:en,am'], 'access' => ['nullable', 'in:free,paid'], 'sort' => ['nullable', 'in:newest,title,price-asc,price-desc'], 'page' => ['nullable', 'integer', 'min:1']]);
+        $validator = Validator::make($request->all(), ['q' => ['nullable', 'string', 'max:120'], 'category' => ['nullable', 'string', 'alpha_dash', 'max:100'], 'level' => ['nullable', 'in:beginner,intermediate,advanced'], 'language' => ['nullable', 'in:en,am'], 'access' => ['nullable', 'in:free,paid'], 'sort' => ['nullable', 'in:popular,newest,title,price-asc,price-desc'], 'page' => ['nullable', 'integer', 'min:1']]);
         if ($validator->fails()) {
             throw (new ValidationException($validator))->redirectTo(route('courses.index'));
         }
@@ -45,7 +46,11 @@ class CatalogController extends Controller
         if ($category) {
             $filters['category'] = $category->slug;
         }
-        $query = Course::published()->with(['instructor', 'category']);
+        $query = Course::published()->with(['instructor', 'category'])
+            ->withCount(['lessons' => fn (Builder $q) => $q->where('lessons.published', true), 'enrollments'])
+            ->withSum(['lessons as duration_seconds' => fn (Builder $q) => $q->where('lessons.published', true)], 'duration_seconds')
+            ->withAvg(['reviews as rating' => fn (Builder $q) => $q->where('status', 'approved')], 'rating')
+            ->withCount(['reviews as rating_count' => fn (Builder $q) => $q->where('status', 'approved')]);
         if (! empty($filters['q'])) {
             $query->where(fn (Builder $search) => $search->where('title', 'like', '%'.$filters['q'].'%')->orWhere('summary', 'like', '%'.$filters['q'].'%'));
         }
@@ -61,10 +66,20 @@ class CatalogController extends Controller
             $query->where('is_free', $filters['access'] === 'free');
         }
         match ($filters['sort'] ?? 'newest') {
-            'title' => $query->orderBy('title'), 'price-asc' => $query->orderBy('price_minor'), 'price-desc' => $query->orderByDesc('price_minor'), default => $query->orderByDesc('published_at')
+            'popular' => $query->orderByDesc('enrollments_count'), 'title' => $query->orderBy('title'), 'price-asc' => $query->orderBy('price_minor'), 'price-desc' => $query->orderByDesc('price_minor'), default => $query->orderByDesc('published_at')
         };
 
-        return view('courses.index', ['courses' => $query->orderBy('id')->paginate(12)->withQueryString(), 'categories' => Category::where('active', true)->orderBy('sort_order')->get(), 'filters' => $filters, 'category' => $category]);
+        $data = ['courses' => $query->orderBy('id')->paginate(12)->withQueryString(), 'categories' => Category::where('active', true)->orderBy('sort_order')->get(), 'filters' => $filters, 'category' => $category];
+        // Signed-in learners get the app-style catalogue with their enrollment and wishlist state.
+        if ($user = auth()->user()) {
+            $ids = $data['courses']->pluck('id');
+            $data['enrolledIds'] = Enrollment::active()->where('user_id', $user->id)->whereIn('course_id', $ids)->pluck('course_id')->all();
+            $data['wishlistIds'] = Wishlist::where('user_id', $user->id)->whereIn('course_id', $ids)->pluck('course_id')->all();
+
+            return view('courses.browse', $data);
+        }
+
+        return view('courses.index', $data);
     }
 
     public function show(string $slug): View

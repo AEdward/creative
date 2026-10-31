@@ -117,4 +117,27 @@ class CatalogTest extends TestCase
         $response->assertOk()->assertSee('Please check your filters');
         $this->from('/')->get('/courses?sort=invalid')->assertRedirect('/courses')->assertSessionHasErrors('sort');
     }
+
+    public function test_signed_in_catalogue_shows_enrollment_wishlist_and_real_counts(): void
+    {
+        $user = \App\Models\User::factory()->create();
+        $course = Course::factory()->create(['title' => 'Enrolled course', 'is_free' => true, 'price_minor' => 0]);
+        $other = Course::factory()->create(['title' => 'Other course']);
+        $module = $course->modules()->create(['title' => 'One']);
+        $module->lessons()->create(['title' => 'A', 'type' => 'text', 'body' => 'x', 'duration_seconds' => 5400, 'published' => true]);
+        $module->lessons()->create(['title' => 'Draft', 'type' => 'text', 'body' => 'x', 'duration_seconds' => 600, 'published' => false]);
+        \App\Models\Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
+        \App\Models\Wishlist::create(['user_id' => $user->id, 'course_id' => $other->id]);
+        \App\Models\CourseReview::create(['course_id' => $other->id, 'user_id' => $user->id, 'rating' => 4, 'body' => 'Good', 'status' => 'pending']);
+
+        $this->actingAs($user)->get('/courses')->assertOk()
+            ->assertSee('class="app-sidebar"', false)
+            ->assertSee('Start Learning')->assertSee('Enroll Now')
+            ->assertSee('1 Lesson')->assertSee('1h')
+            ->assertSee('Remove Other course from wishlist')
+            ->assertDontSee('browse-rating', false);
+        $this->get('/courses?sort=popular')->assertOk();
+        auth()->logout();
+        $this->get('/courses')->assertOk()->assertDontSee('class="app-sidebar"', false);
+    }
 }
