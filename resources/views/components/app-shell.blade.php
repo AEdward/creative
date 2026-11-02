@@ -3,6 +3,7 @@
     $user = auth()->user();
     $unread = $user->unreadNotifications()->count();
     $latestNotifications = $user->notifications()->latest()->limit(5)->get();
+    $unreadMessages = \App\Models\Conversation::visibleTo($user)->latest('last_message_at')->limit(50)->get()->filter(fn ($c) => $c->isUnreadFor($user))->count();
     $firstName = \Illuminate\Support\Str::of($user->name)->before(' ')->limit(18);
     $initials = \Illuminate\Support\Str::of($user->name)->explode(' ')->filter()->take(2)->map(fn ($part) => mb_substr($part, 0, 1))->implode('');
     $hasAvatar = is_string($user->avatar_key) && $user->avatar_key !== '';
@@ -12,7 +13,7 @@
         ['learning.index', 'academy.learning', 'heroicon-o-book-open', 'learning.*'],
         ['certificates.index', 'Certificates', 'heroicon-o-trophy', 'certificates.*'],
         ['wishlist', 'Wishlist', 'heroicon-o-heart', 'wishlist'],
-        ['notifications.index', 'Messages', 'heroicon-o-envelope', 'notifications.*'],
+        ['messages.index', 'Messages', 'heroicon-o-envelope', 'messages.*'],
     ];
     $account = [
         ['profile', 'Profile', 'heroicon-o-user', 'profile'],
@@ -38,7 +39,7 @@
         <div class="app-sidebar-brand"><x-brand :on-dark="true" /></div>
         <nav class="app-nav">
             @foreach($nav as [$route, $label, $icon, $active])
-                <a href="{{ route($route) }}" @if(request()->routeIs($active)) aria-current="page" @endif><x-dynamic-component :component="$icon" aria-hidden="true" /><span>{{ __($label) }}</span></a>
+                <a href="{{ route($route) }}" @if(request()->routeIs($active)) aria-current="page" @endif><x-dynamic-component :component="$icon" aria-hidden="true" /><span>{{ __($label) }}</span>@if($route === 'messages.index' && $unreadMessages)<b class="app-nav-badge" aria-label="{{ trans_choice(':count unread conversation|:count unread conversations', $unreadMessages, ['count' => $unreadMessages]) }}">{{ $unreadMessages }}</b>@endif</a>
             @endforeach
             @can('instructor')<a href="{{ route('instructor.dashboard') }}" @if(request()->routeIs('instructor.*')) aria-current="page" @endif><x-heroicon-o-presentation-chart-line aria-hidden="true" /><span>{{ __('Instructor workspace') }}</span></a>@endcan
             @can('administer-academy')<a href="{{ route('academy-admin') }}"><x-heroicon-o-shield-check aria-hidden="true" /><span>{{ __('Administration') }}</span></a>@endcan
