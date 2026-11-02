@@ -16,8 +16,8 @@ class ProfileController extends Controller
         $request->merge(['email' => is_string($request->input('email')) ? Str::lower($request->input('email')) : $request->input('email')]);
         $user = $request->user();
         $changedEmail = $request->input('email') !== $user->email;
-        $data = $request->validate(['name' => ['required', 'string', 'max:100'], 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)], 'current_password' => $changedEmail ? ['bail', 'required', 'string', 'current_password'] : ['nullable']]);
-        $user->fill(['name' => $data['name'], 'email' => $data['email']]);
+        $data = $request->validate(['name' => ['required', 'string', 'max:100'], 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)], 'phone' => ['nullable', 'string', 'max:30', 'regex:/^\+?[0-9 ()-]{7,30}$/'], 'bio' => ['nullable', 'string', 'max:500'], 'current_password' => $changedEmail ? ['bail', 'required', 'string', 'current_password'] : ['nullable']]);
+        $user->fill(['name' => $data['name'], 'email' => $data['email'], 'phone' => $data['phone'] ?? null, 'bio' => $data['bio'] ?? null]);
         if ($changedEmail) {
             $user->email_verified_at = null;
         }

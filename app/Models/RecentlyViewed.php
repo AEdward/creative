@@ -14,6 +14,11 @@ class RecentlyViewed extends Model
 
     protected $fillable = ['user_id', 'lesson_id', 'viewed_at'];
 
+    protected function casts(): array
+    {
+        return ['viewed_at' => 'datetime'];
+    }
+
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);

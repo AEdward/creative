@@ -19,7 +19,7 @@ class LocalizationTest extends TestCase
     {
         $this->withSession(['locale' => 'am'])->get('/login')->assertOk()->assertSee('የኢሜይል አድራሻ')->assertSee('ለመመልከት ዝግጁ ነው።');
         $this->actingAs(User::factory()->create())->withSession(['locale' => 'am']);
-        foreach (['/profile' => 'የእርስዎ ዝርዝሮች', '/dashboard' => 'በቅርቡ የታዩ', '/support' => 'የእርዳታ ጥያቄ ክፈት', '/notifications' => 'እስካሁን ማሳወቂያዎች የሉም።'] as $url => $label) {
+        foreach (['/profile' => 'የእርስዎ ዝርዝሮች', '/dashboard' => 'የቅርብ ጊዜ እንቅስቃሴ', '/support' => 'የእርዳታ ጥያቄ ክፈት', '/notifications' => 'እስካሁን ማሳወቂያዎች የሉም።'] as $url => $label) {
             $this->get($url)->assertOk()->assertSee($label)->assertDontSee('academy.home')->assertDontSee('academy.dashboard');
         }
     }
