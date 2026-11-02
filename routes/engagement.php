@@ -11,6 +11,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/instructor/courses/{course:slug}/announcements', [Engagement::class, 'announce'])->middleware('throttle:10,1,announcements')->name('announcements.store');
     Route::get('/notifications', [Engagement::class, 'notifications'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [Engagement::class, 'read'])->name('notifications.read');
+    Route::get('/notifications/{notification}/open', [Engagement::class, 'open'])->name('notifications.open');
+    Route::post('/notifications/read-all', [Engagement::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notification-preferences', [Engagement::class, 'preferences'])->name('notifications.preferences');
     Route::get('/support', [Engagement::class, 'tickets'])->name('support.index');
     Route::post('/support', [Engagement::class, 'ticketCreate'])->middleware('throttle:10,1,support-create')->name('support.store');

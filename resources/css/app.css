@@ -3608,3 +3608,22 @@ input[type="radio"] {
 .video-watermark{position:absolute;left:10%;top:12%;z-index:2;pointer-events:none;color:#fff;opacity:.38;font-size:clamp(11px,1.4vw,16px);font-weight:600;text-shadow:0 1px 3px #000a;white-space:nowrap;transition:left 1.2s ease,top 1.2s ease}
 .video-watermark-faint{opacity:.16;font-size:clamp(10px,1.1vw,13px)}
 @media (prefers-reduced-motion:reduce){.video-watermark{transition:none}}
+
+/* Notification dropdown in the signed-in topbar */
+.app-bell-menu{position:relative}
+.app-bell-menu>summary{list-style:none;cursor:pointer}
+.app-bell-menu>summary::-webkit-details-marker{display:none}
+.app-bell-count{position:absolute;top:4px;right:3px;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:#FF3B5C;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px #F5F6FB}
+.app-bell-panel{position:absolute;right:-8px;top:calc(100% + 10px);width:min(360px,calc(100vw - 24px));background:#fff;border:1px solid #E3E5EE;border-radius:14px;box-shadow:0 18px 44px #0b102526;z-index:80;overflow:hidden}
+.app-bell-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #F0F1F6}
+.app-bell-head form{margin:0}
+.app-bell-head button{background:none;border:0;color:var(--color-brand-primary);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.app-bell-panel ul{list-style:none;margin:0;padding:0;max-height:360px;overflow-y:auto}
+.app-bell-panel li a{display:flex;flex-direction:column;gap:2px;padding:12px 16px 12px 28px;position:relative;color:#0B1025;text-decoration:none;border-bottom:1px solid #F5F6FA}
+.app-bell-panel li a:hover{background:#7138f50a}
+.app-bell-panel li.unread a::before{content:"";position:absolute;left:12px;top:18px;width:8px;height:8px;border-radius:50%;background:var(--color-brand-primary)}
+.app-bell-panel li b{font-size:14px;font-weight:600}
+.app-bell-panel li span{font-size:13px;color:#4A4E6A}
+.app-bell-panel li small{font-size:12px;color:#7A7E98}
+.app-bell-empty{padding:22px 16px;text-align:center;color:#7A7E98;font-size:14px}
+.app-bell-all{display:block;padding:12px;text-align:center;font-size:14px;font-weight:600;color:var(--color-brand-primary);text-decoration:none;background:#FAFAFD}

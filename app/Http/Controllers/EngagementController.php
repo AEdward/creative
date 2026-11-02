@@ -137,6 +137,26 @@ class EngagementController extends Controller
         return back();
     }
 
+    /** Opening a notification from the bell marks it read, then follows its link (same-site only). */
+    public function open(Request $request, string $notification): RedirectResponse
+    {
+        $this->active($request);
+        $note = $request->user()->notifications()->findOrFail($notification);
+        $note->markAsRead();
+        $url = is_string($note->data['url'] ?? null) ? $note->data['url'] : '';
+        $sameSite = str_starts_with($url, '/') && ! str_starts_with($url, '//') || str_starts_with($url, url('/').'/');
+
+        return $sameSite ? redirect($url) : redirect()->route('notifications.index');
+    }
+
+    public function readAll(Request $request): RedirectResponse
+    {
+        $this->active($request);
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        return back();
+    }
+
     public function preferences(Request $request): RedirectResponse
     {
         $this->active($request);

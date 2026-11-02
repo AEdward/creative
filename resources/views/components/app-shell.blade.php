@@ -2,6 +2,7 @@
 @php
     $user = auth()->user();
     $unread = $user->unreadNotifications()->count();
+    $latestNotifications = $user->notifications()->latest()->limit(5)->get();
     $firstName = \Illuminate\Support\Str::of($user->name)->before(' ')->limit(18);
     $initials = \Illuminate\Support\Str::of($user->name)->explode(' ')->filter()->take(2)->map(fn ($part) => mb_substr($part, 0, 1))->implode('');
     $hasAvatar = is_string($user->avatar_key) && $user->avatar_key !== '';
@@ -56,7 +57,20 @@
             <label for="app-nav-toggle" class="app-menu-button" role="button" tabindex="0" aria-label="{{ __('Menu') }}"><x-heroicon-o-bars-3 aria-hidden="true" /></label>
             <form class="app-search" method="GET" action="{{ route('courses.index') }}" role="search"><label class="sr-only" for="app-search">{{ __('Search courses') }}</label><x-heroicon-o-magnifying-glass aria-hidden="true" /><input type="search" id="app-search" name="q" maxlength="120" value="{{ is_string(request('q')) ? request('q') : '' }}" placeholder="{{ __('Search for courses, skills or tools…') }}" autocomplete="off"></form>
             <div class="app-topbar-actions">
-                <a class="app-bell" href="{{ route('notifications.index') }}" aria-label="{{ $unread ? trans_choice(':count unread notification|:count unread notifications', $unread, ['count' => $unread]) : __('Notifications') }}"><x-heroicon-o-bell aria-hidden="true" />@if($unread)<span class="app-bell-dot" aria-hidden="true"></span>@endif</a>
+                <details class="app-bell-menu" data-nav-search>
+                    <summary class="app-bell" aria-label="{{ $unread ? trans_choice(':count unread notification|:count unread notifications', $unread, ['count' => $unread]) : __('Notifications') }}"><x-heroicon-o-bell aria-hidden="true" />@if($unread)<span class="app-bell-count" aria-hidden="true">{{ $unread > 9 ? '9+' : $unread }}</span>@endif</summary>
+                    <div class="app-bell-panel">
+                        <div class="app-bell-head"><strong>{{ __('Notifications') }}</strong>@if($unread)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf<button type="submit">{{ __('Mark all as read') }}</button></form>@endif</div>
+                        <ul>
+                            @forelse($latestNotifications as $note)
+                                <li @class(['unread' => ! $note->read_at])><a href="{{ route('notifications.open', $note->id) }}"><b>{{ $note->data['title'] ?? __('Notification') }}</b><span>{{ \Illuminate\Support\Str::limit($note->data['body'] ?? '', 90) }}</span><small>{{ $note->created_at->diffForHumans() }}</small></a></li>
+                            @empty
+                                <li class="app-bell-empty">{{ __('You’re all caught up.') }}</li>
+                            @endforelse
+                        </ul>
+                        <a class="app-bell-all" href="{{ route('notifications.index') }}">{{ __('View all notifications') }}</a>
+                    </div>
+                </details>
                 <details class="app-user">
                     <summary><span class="app-avatar">@if($hasAvatar)<img src="{{ route('profile.avatar') }}" alt="">@else{{ $initials }}@endif</span><span class="app-user-name">{{ __('Hi, :name', ['name' => $firstName]) }}</span><x-heroicon-o-chevron-down class="app-user-chevron" aria-hidden="true" /></summary>
                     <div class="app-user-menu"><a href="{{ route('profile') }}">{{ __('Profile') }}</a><a href="{{ route('home') }}">{{ __('Public site') }}</a><form method="POST" action="{{ route('logout') }}">@csrf<button type="submit">{{ __('Logout') }}</button></form></div>
