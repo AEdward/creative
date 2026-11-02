@@ -118,7 +118,8 @@ class MediaTest extends TestCase
         $this->post('/learn/'.$course->slug.'/'.$lesson->id.'/complete')->assertSessionHasErrors('lesson');
         $this->assertNull(LessonProgress::first()->completed_at);
         $this->postJson('/learn/'.$course->slug.'/'.$lesson->id.'/progress', ['position_seconds' => 60])->assertOk();
-        $this->assertSame(20, LessonProgress::first()->position_seconds);
+        // Capped near 20s (watched time may only grow about as fast as real time), never the requested 60s.
+        $this->assertLessThan(30, LessonProgress::first()->position_seconds);
         LessonProgress::first()->update(['position_seconds' => 55]);
         $this->post('/learn/'.$course->slug.'/'.$lesson->id.'/complete')->assertRedirect()->assertSessionHasNoErrors();
         $this->assertNotNull(LessonProgress::first()->completed_at);

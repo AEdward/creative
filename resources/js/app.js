@@ -324,3 +324,15 @@ function initializeSecurePlayers() {
 }
 document.addEventListener("DOMContentLoaded", initializeSecurePlayers);
 document.addEventListener("livewire:navigated", initializeSecurePlayers);
+
+// Copy-to-clipboard buttons (e.g. bank account numbers at checkout).
+document.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-copy]");
+    if (!button) return;
+    const source = document.querySelector(button.dataset.copy);
+    if (!source || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(source.textContent.trim());
+    const label = button.textContent;
+    button.textContent = "✓";
+    setTimeout(() => (button.textContent = label), 1500);
+});

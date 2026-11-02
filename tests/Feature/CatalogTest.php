@@ -104,10 +104,11 @@ class CatalogTest extends TestCase
         }
     }
 
-    public function test_paid_courses_do_not_offer_live_checkout(): void
+    public function test_paid_courses_offer_bank_transfer_checkout_to_signed_in_learners(): void
     {
         $course = $this->course(['is_free' => false, 'price_minor' => 120000]);
-        $this->get('/courses/'.$course->slug)->assertOk()->assertSee('Checkout is not available yet');
+        $this->get('/courses/'.$course->slug)->assertOk()->assertSee('Sign in to buy')->assertDontSee(route('checkout.bank', $course->slug));
+        $this->actingAs(\App\Models\User::factory()->create())->get('/courses/'.$course->slug)->assertOk()->assertSee(route('checkout.bank', $course->slug));
     }
 
     public function test_html_filter_errors_redirect_to_a_clean_catalog_with_feedback(): void

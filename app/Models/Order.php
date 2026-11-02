@@ -31,6 +31,11 @@ class Order extends Model
         return $this->currency.' '.intdiv($this->total_minor, 100).'.'.str_pad((string) ($this->total_minor % 100), 2, '0', STR_PAD_LEFT);
     }
 
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(PaymentSubmission::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -17,7 +17,9 @@ class ExpireOrders extends Command
     public function handle(): int
     {
         $count = 0;
-        Order::whereIn('status', ['pending', 'awaiting_payment'])->where('created_at', '<', now()->subDay())->chunkById(100, function ($orders) use (&$count): void {
+        Order::whereIn('status', ['pending', 'awaiting_payment'])->where('created_at', '<', now()->subDay())
+            // Bank transfers waiting for an admin's review must not expire underneath them.
+            ->whereDoesntHave('submissions', fn ($q) => $q->where('status', 'pending'))->chunkById(100, function ($orders) use (&$count): void {
             foreach ($orders as $candidate) {
                 DB::transaction(function () use ($candidate, &$count): void {
                     User::whereKey($candidate->user_id)->lockForUpdate()->firstOrFail();
