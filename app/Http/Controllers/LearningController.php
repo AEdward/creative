@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AssessmentAttempt;
+use App\Models\AssignmentSubmission;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
@@ -10,6 +12,7 @@ use App\Models\LessonProgress;
 use App\Models\NotificationPreference;
 use App\Models\RecentlyViewed;
 use App\Notifications\EngagementNotification;
+use App\Services\CourseProgress;
 use App\Services\Media\MediaStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -51,7 +54,7 @@ class LearningController extends Controller
         return view('learning.index', compact('enrollments'));
     }
 
-    public function show(Course $course, Lesson $lesson): View|RedirectResponse
+    public function show(Request $request, Course $course, Lesson $lesson, CourseProgress $steps): View|RedirectResponse
     {
         $this->publishedLesson($course, $lesson);
         if (! $lesson->is_preview && ! auth()->check()) {
@@ -62,8 +65,30 @@ class LearningController extends Controller
         }
         $enrollment = $this->enrollment($course);
         abort_unless($lesson->is_preview || $enrollment, 403, 'Enroll in this course to access this lesson.');
+        // Enrolled learners go step by step: a locked step sends them to the one they need to finish first.
+        $unlockedIds = $enrollment ? $steps->unlockedIds($course, $enrollment) : [];
+        if ($enrollment && ! in_array($lesson->id, $unlockedIds, true)) {
+            $current = $steps->current($course, $enrollment);
+
+            return redirect()->route('learning.show', [$course->slug, $current?->id ?? $lesson->id])->with('status', 'Finish this step first to unlock the next one.');
+        }
         if ($enrollment) {
             RecentlyViewed::updateOrCreate(['user_id' => auth()->id(), 'lesson_id' => $lesson->id], ['viewed_at' => now()]);
+        }
+
+        // Text steps: pages are read in order, one at a time.
+        $pages = $lesson->type === 'text' ? $lesson->textPages() : [];
+        $page = 1;
+        if ($pages) {
+            $page = max(1, min(count($pages), (int) $request->query('page', 1)));
+            if ($enrollment) {
+                $record = LessonProgress::firstOrCreate(['enrollment_id' => $enrollment->id, 'lesson_id' => $lesson->id]);
+                if ($page > $record->pages_viewed + 1) {
+                    return redirect()->route('learning.show', [$course->slug, $lesson->id, 'page' => $record->pages_viewed + 1]);
+                }
+                // Reaching a page is recorded; the step finishes with "Finish & continue" on the last page.
+                LessonProgress::whereKey($record->id)->where('pages_viewed', '<', $page)->update(['pages_viewed' => $page]);
+            }
         }
         $course->load(['modules.lessons' => fn ($query) => $query->where('published', true)]);
         $lessons = $course->modules->flatMap->lessons;
@@ -71,6 +96,10 @@ class LearningController extends Controller
         $previous = $position > 0 ? $lessons[$position - 1] : null;
         $next = $position < $lessons->count() - 1 ? $lessons[$position + 1] : null;
         $progress = $enrollment?->progress()->where('lesson_id', $lesson->id)->first();
+        $quiz = $lesson->type === 'quiz' ? $lesson->assessment : null;
+        $attempts = $quiz && $enrollment ? AssessmentAttempt::where('assessment_id', $quiz->id)->where('enrollment_id', $enrollment->id)->latest('id')->get() : collect();
+        $assignment = $lesson->type === 'assignment' ? $lesson->assessment : null;
+        $submission = $assignment && $enrollment ? AssignmentSubmission::where('assessment_id', $assignment->id)->where('enrollment_id', $enrollment->id)->latest('id')->first() : null;
         $completedIds = $enrollment?->progress()->whereNotNull('completed_at')->pluck('lesson_id')->all() ?? [];
         $note = $enrollment ? LessonNote::where('enrollment_id', $enrollment->id)->where('lesson_id', $lesson->id)->first() : null;
 
@@ -80,41 +109,60 @@ class LearningController extends Controller
         $downloads = $files->get('resource', collect());
         $videoPlayable = $lesson->videoAsset?->status === 'ready' && app(MediaStorage::class)->available();
 
-        return view('learning.show', compact('course', 'lesson', 'enrollment', 'progress', 'previous', 'next', 'completedIds', 'note', 'captions', 'downloads', 'videoPlayable'));
+        $stepDone = in_array($lesson->id, $completedIds, true);
+
+        return view('learning.show', compact('course', 'lesson', 'enrollment', 'progress', 'previous', 'next', 'completedIds', 'note', 'captions', 'downloads', 'videoPlayable', 'unlockedIds', 'pages', 'page', 'quiz', 'attempts', 'assignment', 'submission', 'stepDone'));
     }
 
-    public function complete(Course $course, Lesson $lesson): RedirectResponse
+    /** Steps finish themselves (last text page, end of video, passed quiz, submitted work); this only re-checks. */
+    public function complete(Course $course, Lesson $lesson, CourseProgress $steps): RedirectResponse
     {
         $this->publishedLesson($course, $lesson);
         $enrollment = $this->enrollment($course);
-        abort_unless($enrollment, 403);
-        abort_unless($lesson->type === 'text' || ($lesson->type === 'video' && $lesson->videoAsset?->status === 'ready' && $lesson->videoAsset->course_id === $course->id && app(MediaStorage::class)->available()), 422, 'Video completion requires an attached playable asset.');
+        abort_unless($enrollment && $steps->isUnlocked($course, $enrollment, $lesson), 403);
         $progress = LessonProgress::firstOrCreate(['enrollment_id' => $enrollment->id, 'lesson_id' => $lesson->id]);
-        // Videos count as complete only once most of them has been watched.
-        if ($lesson->type === 'video' && $lesson->duration_seconds > 0 && ! $progress->completed_at && $progress->position_seconds < (int) floor($lesson->duration_seconds * 0.9)) {
-            return back()->withErrors(['lesson' => 'Watch the video to the end before marking it complete.']);
+        $finished = match ($lesson->type) {
+            'text' => $progress->pages_viewed >= count($lesson->textPages()),
+            'video' => $lesson->duration_seconds > 0 && $progress->max_position_seconds >= $lesson->duration_seconds - CourseProgress::VIDEO_END_SLACK,
+            default => (bool) $progress->completed_at,
+        };
+        if (! $finished) {
+            return back()->withErrors(['lesson' => $lesson->type === 'video' ? 'Watch the whole video to unlock the next step.' : 'Finish this step to unlock the next one.']);
         }
-        LessonProgress::whereKey($progress->id)->whereNull('completed_at')->update(['completed_at' => now()]);
+        $steps->complete($enrollment, $lesson);
 
-        return back()->with('status', 'Lesson completed. Keep creating.');
+        return back()->with('status', 'Step complete. The next one is unlocked.');
     }
 
-    public function progress(Request $request, Course $course, Lesson $lesson): JsonResponse
+    /**
+     * Video heartbeat. The furthest point watched can only grow at about real-time speed (no skipping ahead),
+     * and reaching the end completes the step.
+     */
+    public function progress(Request $request, Course $course, Lesson $lesson, CourseProgress $steps): JsonResponse
     {
         $this->publishedLesson($course, $lesson);
         $enrollment = $this->enrollment($course);
-        abort_unless($enrollment, 403);
+        abort_unless($enrollment && $steps->isUnlocked($course, $enrollment, $lesson), 403);
         $data = $request->validate(['position_seconds' => ['required', 'integer', 'min:0', 'max:'.$lesson->duration_seconds]]);
-        DB::transaction(function () use ($enrollment, $lesson, $data) {
+        $completed = DB::transaction(function () use ($enrollment, $lesson, $data, $steps) {
             $created = LessonProgress::firstOrCreate(['enrollment_id' => $enrollment->id, 'lesson_id' => $lesson->id])->wasRecentlyCreated;
             $progress = LessonProgress::where('enrollment_id', $enrollment->id)->where('lesson_id', $lesson->id)->lockForUpdate()->firstOrFail();
-            // Watched time can only grow about as fast as real time (2x playback plus slack); seeking back is always allowed.
             $elapsed = $created ? 0 : max(0, (int) $progress->updated_at?->diffInSeconds(now(), true));
-            $position = min($data['position_seconds'], $progress->position_seconds + $elapsed * 2 + 20);
-            LessonProgress::whereKey($progress->id)->update(['position_seconds' => $position, 'updated_at' => now()]);
+            // Real playback plus a little slack for network delay; seeking back never lowers the furthest point.
+            $reachable = $progress->max_position_seconds + (int) ceil($elapsed * 1.25) + 15;
+            $position = min($data['position_seconds'], $reachable);
+            $furthest = max($progress->max_position_seconds, $position);
+            LessonProgress::whereKey($progress->id)->update(['position_seconds' => $position, 'max_position_seconds' => $furthest, 'updated_at' => now()]);
+            if ($lesson->type === 'video' && $lesson->duration_seconds > 0 && $furthest >= $lesson->duration_seconds - CourseProgress::VIDEO_END_SLACK) {
+                $steps->complete($enrollment, $lesson);
+
+                return true;
+            }
+
+            return (bool) $progress->completed_at;
         });
 
-        return response()->json(['saved' => true]);
+        return response()->json(['saved' => true, 'completed' => $completed]);
     }
 
     public function notes(Request $request, Course $course, Lesson $lesson): RedirectResponse

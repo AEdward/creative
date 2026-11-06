@@ -61,7 +61,7 @@ class LearningTest extends TestCase
         $lesson = $this->lesson($course);
         Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
         $this->actingAs($user)->get('/learn/'.$course->slug.'/'.$lesson->id)->assertOk();
-        $this->assertDatabaseCount('lesson_progress', 0);
+        $this->assertSame(0, LessonProgress::whereNotNull('completed_at')->count()); // reading a page records progress, never completion
         $this->post('/learn/'.$course->slug.'/'.$lesson->id.'/complete')->assertRedirect();
         $this->assertDatabaseHas('lesson_progress', ['lesson_id' => $lesson->id]);
         $this->assertNotNull(LessonProgress::first()->completed_at);

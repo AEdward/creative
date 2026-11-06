@@ -49,18 +49,41 @@ function initializeMedia() {
                 status.textContent =
                     mediaText("Playback stopped or the link expired. Refresh playback to continue from your place.");
             });
-            video.addEventListener("timeupdate", async () => {
-                if (!root.dataset.progress || Date.now() - lastSave < 15000)
-                    return;
+            // Locked course steps: the learner can rewatch anything but not skip past the furthest point
+            // they've actually watched. The server applies the same rule, so this is just the friendly part.
+            let maxWatched = Number(root.dataset.maxWatched || 0);
+            const save = async (position) => {
+                if (!root.dataset.progress) return null;
                 lastSave = Date.now();
                 try {
-                    await api(root.dataset.progress, {
-                        position_seconds: Math.floor(video.currentTime),
+                    return await api(root.dataset.progress, {
+                        position_seconds: Math.floor(position),
                     });
                 } catch {
                     status.textContent =
                         mediaText("Your place could not be saved. Check your connection.");
+                    return null;
                 }
+            };
+            video.addEventListener("seeking", () => {
+                if (video.currentTime > maxWatched + 1) {
+                    video.currentTime = maxWatched;
+                    status.textContent = mediaText("You can’t skip ahead. Keep watching to unlock the rest.");
+                }
+            });
+            video.addEventListener("timeupdate", () => {
+                // Normal playback moves forward a fraction of a second at a time; jumps are handled by "seeking".
+                if (!video.seeking && video.currentTime <= maxWatched + 2)
+                    maxWatched = Math.max(maxWatched, video.currentTime);
+                if (Date.now() - lastSave >= 15000) save(video.currentTime);
+            });
+            video.addEventListener("pause", () => {
+                if (!video.ended) save(video.currentTime);
+            });
+            video.addEventListener("ended", async () => {
+                const result = await save(video.duration);
+                // Reload to show the unlocked "Next" step once the server agrees the video was watched.
+                if (result?.completed) window.location.reload();
             });
             root.querySelector("[data-reload-video]").addEventListener(
                 "click",

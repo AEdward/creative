@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Instructor;
 
+use App\Models\Assessment;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Course;
@@ -60,6 +61,17 @@ class CourseEditor extends Component
     public string $lessonBody = '';
 
     public bool $lessonPreview = false;
+
+    /** Step being added/edited: text (pages split by a line with ---), video, quiz or assignment. */
+    public string $stepType = 'text';
+
+    /** Quiz step: [['prompt' => '', 'options' => ['', '', '', ''], 'correct' => 0], ...] */
+    public array $quizQuestions = [];
+
+    public int $quizPass = 70;
+
+    /** Assignment step: "submit" = submitting unlocks the next step; "grade" = waits for an accepted grade. */
+    public string $assignmentAdvance = 'grade';
 
     public function mount(?Course $course = null): void
     {
@@ -144,38 +156,103 @@ class CourseEditor extends Component
     {
         $course = $this->editableCourse();
         abort_unless($course, 422);
-        $lesson = $course->lessons()->findOrFail($lessonId);
+        $lesson = $course->lessons()->with('assessment')->findOrFail($lessonId);
         $this->editingLessonId = $lesson->id;
         $this->lessonModuleId = $lesson->module_id;
         $this->lessonTitle = $lesson->title;
-        $this->lessonBody = $lesson->body ?? '';
         $this->lessonPreview = $lesson->is_preview;
+        $this->stepType = $lesson->type;
+        $this->lessonBody = match ($lesson->type) {
+            'text' => implode("\n---\n", $lesson->textPages()),
+            'quiz', 'assignment' => (string) ($lesson->assessment?->instructions ?? ''),
+            default => (string) ($lesson->body ?? ''),
+        };
+        $this->quizQuestions = $lesson->type === 'quiz' ? array_map(fn ($q) => ['prompt' => $q['prompt'] ?? '', 'options' => array_pad($q['options'] ?? [], 4, ''), 'correct' => (int) ($q['correct'] ?? 0)], $lesson->assessment?->questions ?? []) : [];
+        $this->quizPass = (int) ($lesson->assessment?->pass_percent ?: 70);
+        $this->assignmentAdvance = $lesson->assessment?->advance_on ?? 'grade';
     }
 
     public function cancelLessonEdit(): void
     {
         $this->editableCourse();
-        $this->reset('editingLessonId', 'lessonTitle', 'lessonBody', 'lessonPreview');
+        $this->resetStepForm();
     }
 
+    private function resetStepForm(): void
+    {
+        $this->reset('editingLessonId', 'lessonTitle', 'lessonBody', 'lessonPreview', 'stepType', 'quizQuestions', 'quizPass', 'assignmentAdvance');
+    }
+
+    public function updatedStepType(): void
+    {
+        if ($this->stepType === 'quiz' && $this->quizQuestions === []) {
+            $this->addQuestion();
+        }
+    }
+
+    public function addQuestion(): void
+    {
+        $this->quizQuestions[] = ['prompt' => '', 'options' => ['', '', '', ''], 'correct' => 0];
+    }
+
+    public function removeQuestion(int $index): void
+    {
+        unset($this->quizQuestions[$index]);
+        $this->quizQuestions = array_values($this->quizQuestions);
+    }
+
+    /** Add or save a step of any type. */
     public function addLesson(): void
     {
         $course = $this->editableCourse();
         abort_unless($course, 422);
-        $editing = $this->editingLessonId ? $course->lessons()->findOrFail($this->editingLessonId) : null;
-        $this->validate(['lessonModuleId' => ['required', 'integer'], 'lessonTitle' => ['required', 'string', 'max:180'], 'lessonBody' => [$editing?->type === 'video' ? 'nullable' : 'required', 'string', 'max:30000'], 'lessonPreview' => ['boolean']]);
+        $editing = $this->editingLessonId ? $course->lessons()->with('assessment')->findOrFail($this->editingLessonId) : null;
+        $type = $editing?->type ?? $this->stepType;
+        $rules = ['lessonModuleId' => ['required', 'integer'], 'lessonTitle' => ['required', 'string', 'max:180'], 'lessonPreview' => ['boolean'], 'stepType' => ['in:text,video,quiz,assignment']];
+        $rules['lessonBody'] = [in_array($type, ['text', 'assignment'], true) ? 'required' : 'nullable', 'string', 'max:30000'];
+        if ($type === 'quiz') {
+            $rules += [
+                'quizQuestions' => ['required', 'array', 'min:1', 'max:50'],
+                'quizQuestions.*.prompt' => ['required', 'string', 'max:500'],
+                'quizQuestions.*.options' => ['required', 'array', 'min:2', 'max:6'],
+                'quizQuestions.*.options.*' => ['nullable', 'string', 'max:200'],
+                'quizQuestions.*.correct' => ['required', 'integer', 'min:0', 'max:5'],
+                'quizPass' => ['required', 'integer', 'min:1', 'max:100'],
+            ];
+        }
+        if ($type === 'assignment') {
+            $rules['assignmentAdvance'] = ['in:submit,grade'];
+        }
+        $this->validate($rules, ['quizQuestions.required' => 'Add at least one question.', 'quizQuestions.*.prompt.required' => 'Every question needs its text.']);
+        $questions = $type === 'quiz' ? $this->cleanQuestions() : [];
         $module = $course->modules()->findOrFail($this->lessonModuleId);
-        DB::transaction(function () use ($course, $module) {
+
+        DB::transaction(function () use ($course, $module, $editing, $type, $questions) {
             Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
-            $data = ['title' => $this->lessonTitle, 'type' => 'text', 'body' => $this->lessonBody, 'is_preview' => $this->lessonPreview, 'published' => true];
-            if ($this->editingLessonId) {
-                $lesson = $course->lessons()->findOrFail($this->editingLessonId);
-                $data['type'] = $lesson->type;
-                $sourceModuleId = $lesson->module_id;
+            $data = ['title' => $this->lessonTitle, 'type' => $type, 'is_preview' => $this->lessonPreview];
+            if ($type === 'text') {
+                // A line containing only --- starts a new page.
+                $pages = array_values(array_filter(array_map('trim', preg_split('/^\s*-{3,}\s*$/m', $this->lessonBody) ?: []), fn ($page) => $page !== ''));
+                $data += ['pages' => $pages, 'body' => $pages[0] ?? ''];
+            } elseif ($type === 'video') {
+                $data['body'] = $this->lessonBody;
+            } else {
+                $assessmentData = ['course_id' => $course->id, 'type' => $type, 'title' => $this->lessonTitle, 'instructions' => $this->lessonBody, 'required' => false];
+                $assessmentData += $type === 'quiz'
+                    ? ['questions' => $questions, 'pass_percent' => $this->quizPass, 'attempt_limit' => 0]
+                    : ['questions' => null, 'pass_percent' => 70, 'attempt_limit' => 0, 'advance_on' => $this->assignmentAdvance];
+                $assessment = $editing?->assessment;
+                $assessment ? $assessment->update($assessmentData) : $assessment = Assessment::create($assessmentData);
+                $data['assessment_id'] = $assessment->id;
+            }
+
+            if ($editing) {
+                $sourceModuleId = $editing->module_id;
                 if ($sourceModuleId !== $module->id) {
                     $data['sort_order'] = (int) $module->lessons()->max('sort_order') + 1;
                 }
-                $lesson->update($data + ['module_id' => $module->id]);
+                // Saving a step shows it again, unless it's a video step still waiting for its video.
+                $editing->update($data + ['module_id' => $module->id, 'published' => $type !== 'video' || (bool) $editing->video_asset_id]);
                 if ($sourceModuleId !== $module->id) {
                     foreach ([$sourceModuleId, $module->id] as $moduleId) {
                         foreach ($course->modules()->findOrFail($moduleId)->lessons()->get() as $index => $orderedLesson) {
@@ -184,11 +261,52 @@ class CourseEditor extends Component
                     }
                 }
             } else {
-                $module->lessons()->create($data + ['sort_order' => (int) $module->lessons()->max('sort_order') + 1]);
+                // Video steps stay hidden until their video is attached; other steps are visible straight away.
+                $module->lessons()->create($data + ['published' => $type !== 'video', 'sort_order' => (int) $module->lessons()->max('sort_order') + 1]);
             }
             $this->returnToReview($course);
         });
-        $this->reset('editingLessonId', 'lessonTitle', 'lessonBody', 'lessonPreview');
+        session()->flash('editor-status', $type === 'video' && ! $editing ? 'Video step added. Upload its video below or in Admin → Media Library; it appears to learners once the video is attached.' : 'Step saved.');
+        $this->resetStepForm();
+    }
+
+    /** @return list<array{prompt: string, options: list<string>, correct: int}> */
+    private function cleanQuestions(): array
+    {
+        $clean = [];
+        foreach ($this->quizQuestions as $index => $question) {
+            $options = array_values(array_filter(array_map(fn ($o) => trim((string) $o), $question['options'] ?? []), fn ($o) => $o !== ''));
+            $correctText = trim((string) ($question['options'][(int) $question['correct']] ?? ''));
+            if (count($options) < 2 || $correctText === '') {
+                throw ValidationException::withMessages(["quizQuestions.$index.options" => 'Each question needs at least two answers, and the correct one can’t be empty.']);
+            }
+            $clean[] = ['prompt' => trim($question['prompt']), 'options' => $options, 'correct' => array_search($correctText, $options, true)];
+        }
+
+        return $clean;
+    }
+
+    /** Move a step up or down within its chapter. */
+    public function moveStep(int $lessonId, string $direction): void
+    {
+        $course = $this->editableCourse();
+        abort_unless($course && in_array($direction, ['up', 'down'], true), 422);
+        $lesson = $course->lessons()->findOrFail($lessonId);
+        DB::transaction(function () use ($course, $lesson, $direction) {
+            Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
+            $ordered = $lesson->module->lessons()->orderBy('sort_order')->orderBy('id')->get()->values();
+            $index = $ordered->search(fn ($item) => $item->id === $lesson->id);
+            $swap = $direction === 'up' ? $index - 1 : $index + 1;
+            if ($swap < 0 || $swap >= $ordered->count()) {
+                return;
+            }
+            $items = $ordered->all();
+            [$items[$index], $items[$swap]] = [$items[$swap], $items[$index]];
+            foreach ($items as $position => $item) {
+                $item->update(['sort_order' => $position + 1]);
+            }
+            $this->returnToReview($course);
+        });
     }
 
     public function unpublishLesson(int $lessonId): void

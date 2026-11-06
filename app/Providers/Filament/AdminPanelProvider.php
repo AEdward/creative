@@ -57,7 +57,6 @@ class AdminPanelProvider extends PanelProvider
                 NavigationItem::make('Enrollments & coupons')->url(fn () => route('academy-admin'))->icon('heroicon-o-user-plus')->sort(5),
                 NavigationItem::make('Reviews')->url(fn () => route('admin.reviews'))->icon('heroicon-o-star')->sort(11),
                 NavigationItem::make('Support queue')->url(fn () => route('admin.support'))->icon('heroicon-o-chat-bubble-left-right')->sort(12),
-                NavigationItem::make('Analytics & settings')->url(fn () => route('academy-admin'))->icon('heroicon-o-cog-6-tooth')->sort(13),
                 NavigationItem::make('Website')->url(fn () => route('home'), shouldOpenInNewTab: true)->icon('heroicon-o-globe-alt')->group('Platform'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

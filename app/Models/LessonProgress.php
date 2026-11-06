@@ -12,11 +12,11 @@ class LessonProgress extends Model
 
     protected $table = 'lesson_progress';
 
-    protected $fillable = ['enrollment_id', 'lesson_id', 'position_seconds', 'watched_seconds', 'completed_at'];
+    protected $fillable = ['enrollment_id', 'lesson_id', 'position_seconds', 'max_position_seconds', 'watched_seconds', 'pages_viewed', 'completed_at'];
 
     protected function casts(): array
     {
-        return ['completed_at' => 'datetime', 'position_seconds' => 'integer', 'watched_seconds' => 'integer'];
+        return ['completed_at' => 'datetime', 'position_seconds' => 'integer', 'max_position_seconds' => 'integer', 'watched_seconds' => 'integer', 'pages_viewed' => 'integer'];
     }
 
     public function enrollment(): BelongsTo

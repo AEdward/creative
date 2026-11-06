@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\VideoAsset;
+use App\Services\CourseProgress;
 use App\Services\Media\MediaStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -90,7 +91,10 @@ class MediaController extends Controller
         abort_unless($lesson->module->course_id === $course->id && $lesson->published && Course::published()->whereKey($course->id)->exists(), 404);
         if (! $lesson->is_preview) {
             $user = $request->user();
-            abort_unless($user && $user->status === 'active' && $user->hasVerifiedEmail() && Enrollment::active()->where('user_id', $user->id)->where('course_id', $course->id)->exists(), 403);
+            $enrollment = $user ? Enrollment::active()->where('user_id', $user->id)->where('course_id', $course->id)->first() : null;
+            abort_unless($user && $user->status === 'active' && $user->hasVerifiedEmail() && $enrollment, 403);
+            // A locked step doesn't stream either, so the video can't be fetched before its turn.
+            abort_unless(app(CourseProgress::class)->isUnlocked($course, $enrollment, $lesson), 403, 'Finish the earlier steps to unlock this video.');
         }
         $asset = $lesson->videoAsset;
         abort_unless($lesson->type === 'video' && $asset && $asset->course_id === $course->id && $asset->status === 'ready', 404);

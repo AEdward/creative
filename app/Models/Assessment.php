@@ -9,7 +9,7 @@ class Assessment extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['course_id', 'type', 'title', 'instructions', 'questions', 'pass_percent', 'attempt_limit', 'required'];
+    protected $fillable = ['course_id', 'type', 'title', 'instructions', 'questions', 'pass_percent', 'attempt_limit', 'required', 'advance_on'];
 
     protected function casts(): array
     {

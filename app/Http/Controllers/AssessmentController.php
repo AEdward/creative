@@ -10,8 +10,10 @@ use App\Models\Certificate;
 use App\Models\CertificateSetting;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\Lesson;
 use App\Models\NotificationPreference;
 use App\Notifications\EngagementNotification;
+use App\Services\CourseProgress;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +48,21 @@ class AssessmentController extends Controller
     private function matching(Course $course, Assessment $assessment, string $type): void
     {
         abort_unless($assessment->course_id === $course->id && $assessment->type === $type, 404);
+    }
+
+    /** The published course step this quiz/assignment sits in (null for a course-level assessment). */
+    private function stepFor(Assessment $assessment): ?Lesson
+    {
+        return Lesson::where('assessment_id', $assessment->id)->where('published', true)->first();
+    }
+
+    /** A quiz or assignment placed as a step can only be taken once the learner reaches that step. */
+    private function ensureReached(Course $course, Enrollment $enrollment, Assessment $assessment): ?Lesson
+    {
+        $step = $this->stepFor($assessment);
+        abort_if($step && ! app(CourseProgress::class)->isUnlocked($course, $enrollment, $step), 403, 'Finish the earlier steps first.');
+
+        return $step;
     }
 
     public function index(Course $course): View
@@ -90,11 +107,13 @@ class AssessmentController extends Controller
     {
         $enrollment = $this->enrolled($course);
         $this->matching($course, $assessment, 'quiz');
+        $step = $this->ensureReached($course, $enrollment, $assessment);
         $data = $request->validate(['answers' => 'required|array', 'answers.*' => 'required|integer|min:0|max:5']);
-        DB::transaction(function () use ($enrollment, $assessment, $data) {
+        $passed = DB::transaction(function () use ($enrollment, $assessment, $data) {
             Enrollment::active()->whereKey($enrollment->id)->lockForUpdate()->firstOrFail();
             $assessment = Assessment::whereKey($assessment->id)->firstOrFail();
-            abort_if(AssessmentAttempt::where('enrollment_id', $enrollment->id)->where('assessment_id', $assessment->id)->count() >= $assessment->attempt_limit, 422, 'Attempt limit reached.');
+            // attempt_limit 0 = unlimited retries (the default for quiz steps).
+            abort_if($assessment->attempt_limit > 0 && AssessmentAttempt::where('enrollment_id', $enrollment->id)->where('assessment_id', $assessment->id)->count() >= $assessment->attempt_limit, 422, 'Attempt limit reached.');
             $questions = $assessment->questions;
             abort_unless(count($data['answers']) === count($questions), 422);
             $correct = 0;
@@ -103,16 +122,26 @@ class AssessmentController extends Controller
                 $correct += (int) ((int) $data['answers'][$index] === (int) $question['correct']);
             }
             $score = (int) floor(100 * $correct / count($questions));
-            AssessmentAttempt::create(['assessment_id' => $assessment->id, 'enrollment_id' => $enrollment->id, 'snapshot' => ['title' => $assessment->title, 'questions' => $questions, 'pass_percent' => $assessment->pass_percent], 'answers' => $data['answers'], 'score' => $score, 'passed' => $score >= $assessment->pass_percent]);
+            $attempt = AssessmentAttempt::create(['assessment_id' => $assessment->id, 'enrollment_id' => $enrollment->id, 'snapshot' => ['title' => $assessment->title, 'questions' => $questions, 'pass_percent' => $assessment->pass_percent], 'answers' => $data['answers'], 'score' => $score, 'passed' => $score >= $assessment->pass_percent]);
+
+            return $attempt->passed;
         });
 
-        return back()->with('status', 'Attempt scored. Your result is below.');
+        // Passing a quiz step unlocks the next step straight away, no admin approval needed.
+        if ($passed && $step) {
+            app(CourseProgress::class)->complete($enrollment, $step);
+
+            return back()->with('status', 'You passed! The next step is unlocked.');
+        }
+
+        return back()->with('status', $passed ? 'Attempt scored. Your result is below.' : 'Not quite — review the lesson and try again.');
     }
 
     public function submit(Request $request, Course $course, Assessment $assessment): RedirectResponse
     {
         $enrollment = $this->enrolled($course);
         $this->matching($course, $assessment, 'assignment');
+        $step = $this->ensureReached($course, $enrollment, $assessment);
         $request->validate(['file' => 'required|file|mimes:pdf,jpg,jpeg,png,zip|max:10240']);
         $file = $request->file('file');
         $path = $file->store('assignments', 'local');
@@ -144,6 +173,13 @@ class AssessmentController extends Controller
             Storage::disk('local')->delete($replaced);
         }
 
+        // "Submitting is enough" assignments unlock the next step now; "wait for the grade" ones on acceptance.
+        if ($step && $assessment->advance_on === 'submit') {
+            app(CourseProgress::class)->complete($enrollment, $step);
+
+            return back()->with('status', 'Work submitted. The next step is unlocked.');
+        }
+
         return back()->with('status', 'Assignment submitted for review.');
     }
 
@@ -169,6 +205,10 @@ class AssessmentController extends Controller
             Course::whereKey($assessment->course_id)->lockForUpdate()->firstOrFail();
             $submission->update($data + ['reviewer_id' => auth()->id()]);
         });
+        // "Wait for the grade" assignments unlock the next step once the work is accepted.
+        if ($data['status'] === 'accepted' && ($step = $this->stepFor($assessment)) && ($enrollment = Enrollment::find($submission->enrollment_id))) {
+            app(CourseProgress::class)->complete($enrollment, $step);
+        }
 
         return back()->with('status', 'Review saved.');
     }

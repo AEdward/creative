@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LessonProgress;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -20,7 +21,7 @@ class RecentLearningTest extends TestCase
         Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
         $this->actingAs($user)->get('/learn/'.$course->slug.'/'.$lesson->id)->assertOk();
         $this->assertDatabaseHas('recently_vieweds', ['user_id' => $user->id, 'lesson_id' => $lesson->id]);
-        $this->assertDatabaseCount('lesson_progress', 0);
+        $this->assertSame(0, LessonProgress::whereNotNull('completed_at')->count()); // reading a page records progress, never completion
         $this->get('/dashboard')->assertOk()->assertSee('My recent lesson');
         $this->actingAs(User::factory()->create())->get('/dashboard')->assertDontSee('My recent lesson');
     }
