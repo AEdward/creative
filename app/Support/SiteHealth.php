@@ -45,20 +45,53 @@ class SiteHealth
         }
     }
 
+    /**
+     * Disk space for this hosting account. On cPanel the plan quota comes from `uapi Quota` (cached for
+     * an hour); a limit of 0 means unlimited. The shared server's own disk only matters if it is nearly full.
+     */
     private function disk(): array
     {
-        $free = @disk_free_space(storage_path());
-        $total = @disk_total_space(storage_path());
         $writable = is_writable(storage_path('framework')) && is_writable(storage_path('logs'));
         if (! $writable) {
-            return $this->check('disk', 'Server disk', 'fail', 'The storage folder is not writable.');
+            return $this->check('disk', 'Disk space', 'fail', 'The storage folder is not writable.');
         }
-        if ($free === false || ! $total) {
-            return $this->check('disk', 'Server disk', 'ok', 'Writable');
+        $free = @disk_free_space(storage_path());
+        $total = @disk_total_space(storage_path());
+        $serverPercentFree = $free !== false && $total ? $free / $total * 100 : 100;
+        if ($serverPercentFree < 3) {
+            return $this->check('disk', 'Disk space', 'fail', 'The shared hosting server is almost full ('.Number::fileSize((float) $free, 1).' left). Contact Yegara.');
         }
-        $percentFree = $free / $total * 100;
 
-        return $this->check('disk', 'Server disk', $percentFree < 5 ? 'fail' : ($percentFree < 15 ? 'warn' : 'ok'), Number::fileSize($free, 1).' free of '.Number::fileSize($total, 1));
+        $quota = $this->accountQuota();
+        if ($quota === null) {
+            return $this->check('disk', 'Disk space', 'ok', 'Writable · account usage not available here');
+        }
+        [$usedMb, $limitMb] = $quota;
+        $used = Number::fileSize($usedMb * 1024 * 1024, 1);
+        if ($limitMb <= 0) {
+            return $this->check('disk', 'Disk space', 'ok', $used.' used · plan has no fixed limit');
+        }
+        $percent = $usedMb / $limitMb * 100;
+
+        return $this->check('disk', 'Disk space', $percent >= 95 ? 'fail' : ($percent >= 85 ? 'warn' : 'ok'), $used.' used of '.Number::fileSize($limitMb * 1024 * 1024, 1).' ('.round($percent).'%)');
+    }
+
+    /** [usedMb, limitMb] from cPanel, or null when not on cPanel / shell commands are disabled. */
+    private function accountQuota(): ?array
+    {
+        return Cache::remember('health:account-quota', now()->addHour(), function (): ?array {
+            if (! function_exists('shell_exec') || in_array('shell_exec', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true)) {
+                return null;
+            }
+            $json = @shell_exec('uapi --output=json Quota get_quota_info 2>/dev/null');
+            $data = is_string($json) ? json_decode($json, true) : null;
+            $info = $data['result']['data'] ?? null;
+            if (! is_array($info) || ! isset($info['megabytes_used'])) {
+                return null;
+            }
+
+            return [(float) $info['megabytes_used'], (float) ($info['megabyte_limit'] ?? 0)];
+        });
     }
 
     private function scheduler(): array
