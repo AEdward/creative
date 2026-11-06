@@ -64,6 +64,7 @@ class AccountAdministration
         abort_unless(in_array($role, ['student', 'instructor', 'admin'], true), 422);
         DB::transaction(function () use ($actor, $subject, $role, $staffRole) {
             $user = User::whereKey($subject->id)->lockForUpdate()->firstOrFail();
+            abort_if($user->protectedFrom($actor), 403, 'This account is protected.');
             abort_if($user->id === $actor->id, 409, 'You can’t change your own role.');
             $previous = [$user->role, $user->staff_role];
             $newStaff = $role === 'admin' ? ($staffRole ?? 'super') : null;
@@ -84,6 +85,7 @@ class AccountAdministration
         abort_unless(in_array($status, ['active', 'suspended']), 422);
         DB::transaction(function () use ($actor, $subject, $status) {
             $user = User::whereKey($subject->id)->lockForUpdate()->firstOrFail();
+            abort_if($user->protectedFrom($actor), 403, 'This account is protected.');
             abort_if($user->role === 'admin' || $user->id === $actor->id, 409, 'Administrator status must be managed through a trusted operational process.');
             $previous = $user->status;
             $changes = ['status' => $status];

@@ -71,7 +71,7 @@ class Staff extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(User::query()->where('role', 'admin'))
+            ->query(User::query()->where('role', 'admin')->visibleToStaff(auth()->user()))
             ->columns([
                 TextColumn::make('name')->searchable()->description(fn (User $record) => $record->email),
                 TextColumn::make('staff_role')->label('Role')->badge()

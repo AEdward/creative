@@ -34,7 +34,8 @@ class AuditLogResource extends Resource
     {
         return $table->modifyQueryUsing(fn ($query) => $query->with('actor'))->columns([
             TextColumn::make('created_at')->label('When')->dateTime('M j, Y H:i')->sortable(),
-            TextColumn::make('actor.name')->label('Who')->placeholder('System'),
+            TextColumn::make('actor.name')->label('Who')->placeholder('System')
+                ->formatStateUsing(fn ($state, AuditLog $r) => $r->actor?->is_owner && ! auth()->user()?->is_owner ? 'Owner' : $state),
             TextColumn::make('action')->badge()->color('gray')->searchable(),
             TextColumn::make('subject_type')->label('Item')->formatStateUsing(fn ($state, AuditLog $r) => $state.' #'.$r->subject_id),
             TextColumn::make('changes')->label('Details')->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : (string) $state)->limit(80)->wrap(),

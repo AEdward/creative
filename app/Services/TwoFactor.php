@@ -71,6 +71,7 @@ class TwoFactor
     public function reset(User $actor, User $user): void
     {
         abort_unless($actor->staffCan('super'), 403);
+        abort_if($user->protectedFrom($actor), 403, 'This account is protected.');
         $user->forceFill(['two_factor_secret' => null, 'two_factor_recovery_codes' => null, 'two_factor_confirmed_at' => null])->save();
         AuditLog::create(['actor_id' => $actor->id, 'action' => 'two_factor.reset', 'subject_type' => 'user', 'subject_id' => $user->id, 'changes' => []]);
     }

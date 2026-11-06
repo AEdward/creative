@@ -52,7 +52,7 @@ class UserResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([TextColumn::make('name')->searchable(), TextColumn::make('email')->searchable(), TextColumn::make('role')->badge(), TextColumn::make('status')->badge(), TextColumn::make('created_at')->dateTime()->sortable()])->filters([SelectFilter::make('role')->options(['student' => 'Student', 'instructor' => 'Instructor', 'admin' => 'Administrator'])])->recordActions([
+        return $table->modifyQueryUsing(fn ($query) => $query->visibleToStaff(auth()->user()))->columns([TextColumn::make('name')->searchable(), TextColumn::make('email')->searchable(), TextColumn::make('role')->badge(), TextColumn::make('status')->badge(), TextColumn::make('created_at')->dateTime()->sortable()])->filters([SelectFilter::make('role')->options(['student' => 'Student', 'instructor' => 'Instructor', 'admin' => 'Administrator'])])->recordActions([
             Action::make('approveInstructor')->label('Approve instructor')->requiresConfirmation()->visible(fn (User $record) => $record->role === 'student' && $record->status === 'active')->action(fn (User $record) => app(AccountAdministration::class)->approveInstructor(auth()->user(), $record)),
             Action::make('changeRole')->label('Change role')->icon('heroicon-o-arrows-right-left')
                 ->schema([Select::make('role')->options(['student' => 'Student', 'instructor' => 'Instructor'])->required()])

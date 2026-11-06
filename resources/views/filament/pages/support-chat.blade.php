@@ -28,7 +28,7 @@
             </header>
             <ol class="cla-chat-thread">
                 @foreach($thread as $message)
-                    <li @class(['staff' => $message->sender?->role === 'admin'])><span>{{ $message->sender?->name }} · {{ $message->created_at->timezone('Africa/Nairobi')->format('M j, H:i') }}</span><p>{{ $message->body }}</p></li>
+                    <li @class(['staff' => $message->sender?->role === 'admin'])><span>{{ $message->sender?->is_owner && ! auth()->user()->is_owner ? __('Support team') : $message->sender?->name }} · {{ $message->created_at->timezone('Africa/Nairobi')->format('M j, H:i') }}</span><p>{{ $message->body }}</p></li>
                 @endforeach
             </ol>
             @if($active->status === 'open')

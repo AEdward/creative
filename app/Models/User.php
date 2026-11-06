@@ -9,6 +9,7 @@ use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -34,7 +35,23 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
     public function staffRole(): ?string
     {
-        return $this->role === 'admin' ? ($this->staff_role ?: 'super') : null;
+        if ($this->role !== 'admin') {
+            return null;
+        }
+
+        return $this->is_owner ? 'super' : ($this->staff_role ?: 'super');
+    }
+
+    /** Owner accounts are invisible to other staff (lists, pickers, activity log names). */
+    public function scopeVisibleToStaff(Builder $query, ?User $viewer): Builder
+    {
+        return $viewer?->is_owner ? $query : $query->where('is_owner', false);
+    }
+
+    /** Only the owner may change the owner account. */
+    public function protectedFrom(?User $actor): bool
+    {
+        return $this->is_owner && $actor?->id !== $this->id;
     }
 
     /**
@@ -87,6 +104,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            'is_owner' => 'boolean',
         ];
     }
 }

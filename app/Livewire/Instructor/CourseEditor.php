@@ -373,7 +373,7 @@ class CourseEditor extends Component
     /** Accounts an admin can assign as the course instructor. */
     public function instructorOptions(): Collection
     {
-        return User::where('status', 'active')->whereIn('role', ['instructor', 'admin'])->orderByRaw("role = 'admin'")->orderBy('name')->get(['id', 'name', 'role']);
+        return User::where('status', 'active')->whereIn('role', ['instructor', 'admin'])->visibleToStaff(auth()->user())->orderByRaw("role = 'admin'")->orderBy('name')->get(['id', 'name', 'role']);
     }
 
     public function render(): View
