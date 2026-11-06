@@ -45,7 +45,7 @@ class AuthController extends Controller
         RateLimiter::clear($key);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(Auth::user()->homeUrl());
     }
 
     public function logout(Request $request): RedirectResponse

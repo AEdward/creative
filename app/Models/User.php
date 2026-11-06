@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\AcademySettings;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -26,6 +27,17 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      *
      * @return array<string, string>
      */
+    /** Each role has its own workspace; this is where it starts (and where crossing attempts are sent back). */
+    public function homeUrl(): string
+    {
+        return match (true) {
+            $this->role === 'admin' => url('/admin'),
+            $this->role === 'instructor' && (bool) AcademySettings::get('instructor_portal_enabled') => route('instructor.dashboard'),
+            $this->role === 'instructor' => route('instructor.closed'),
+            default => route('dashboard'),
+        };
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $panel->getId() === 'admin' && $this->role === 'admin' && $this->status === 'active' && $this->hasVerifiedEmail();

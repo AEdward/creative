@@ -33,6 +33,9 @@ class CourseEditor extends Component
     /** Admin-only: who is shown as the course's instructor (an instructor account or an admin). */
     public ?int $instructorId = null;
 
+    /** Admin-only: name to show when the instructor has no account (then $instructorId is left empty). */
+    public string $instructorName = '';
+
     public string $level = 'beginner';
 
     public string $language = 'en';
@@ -62,7 +65,8 @@ class CourseEditor extends Component
     {
         $this->courseId = $course?->exists ? $course->id : null;
         $course = $this->editableCourse();
-        $this->instructorId = $course?->instructor_id ?? auth()->id();
+        $this->instructorId = $course?->instructor_name ? null : ($course?->instructor_id ?? auth()->id());
+        $this->instructorName = (string) ($course?->instructor_name ?? '');
         if ($course) {
             $this->fill(['title' => $course->title, 'slug' => $course->slug, 'summary' => $course->summary ?? '', 'description' => $course->description ?? '', 'categoryId' => $course->category_id, 'level' => $course->level, 'language' => $course->language, 'isFree' => $course->is_free, 'price' => intdiv($course->price_minor, 100).'.'.str_pad((string) ($course->price_minor % 100), 2, '0', STR_PAD_LEFT), 'outcomesText' => implode("\n", $course->outcomes ?? []), 'requirementsText' => implode("\n", $course->requirements ?? [])]);
         }
@@ -92,11 +96,17 @@ class CourseEditor extends Component
         $lines = fn (string $text): array => array_values(array_filter(array_map('trim', preg_split('/\R/u', $text) ?: []), fn ($line) => $line !== ''));
         $isAdmin = auth()->user()->can('administer-academy');
         if ($isAdmin) {
-            $this->validate(['instructorId' => ['required', 'integer', Rule::exists('users', 'id')->where('status', 'active')->whereIn('role', ['instructor', 'admin'])]], ['instructorId.exists' => 'Choose an active instructor or admin account.']);
+            $this->instructorName = trim($this->instructorName);
+            $this->validate([
+                'instructorId' => ['nullable', 'required_without:instructorName', 'integer', Rule::exists('users', 'id')->where('status', 'active')->whereIn('role', ['instructor', 'admin'])],
+                'instructorName' => ['nullable', 'required_without:instructorId', 'string', 'max:120'],
+            ], ['instructorId.exists' => 'Choose an active instructor or admin account.', 'instructorName.required_without' => 'Type the instructor’s name, or choose an account.', 'instructorId.required_without' => 'Type the instructor’s name, or choose an account.']);
         }
         $data = ['title' => $this->title, 'slug' => $this->slug, 'summary' => $this->summary, 'description' => $this->description, 'category_id' => $this->categoryId, 'level' => $this->level, 'language' => $this->language, 'is_free' => $this->isFree, 'price_minor' => $minor, 'outcomes' => $lines($this->outcomesText), 'requirements' => $lines($this->requirementsText)];
         if ($isAdmin) {
-            $data['instructor_id'] = $this->instructorId;
+            // No account chosen: the admin owns the course record and learners see the typed name.
+            $data['instructor_id'] = $this->instructorId ?: auth()->id();
+            $data['instructor_name'] = $this->instructorId ? null : $this->instructorName;
         }
         DB::transaction(function () use ($course, $data) {
             if ($course) {

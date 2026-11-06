@@ -79,7 +79,7 @@
                     @php $thumb = 'images/categories/'.$course->category?->slug.'.webp'; @endphp
                     <tr>
                         <td><span class="cla-course">@if($course->thumbnail_key)<img src="{{ route('courses.thumbnail', $course->slug) }}" alt="">@elseif(file_exists(public_path($thumb)))<img src="{{ asset($thumb) }}" alt="">@else<span class="cla-ph"></span>@endif<a href="{{ route('instructor.courses.edit', $course->slug) }}">{{ $course->title }}</a></span></td>
-                        <td><span class="cla-person"><span class="cla-ini">{{ mb_substr($course->instructor?->name ?? '?', 0, 1) }}</span>{{ $course->instructor?->name }}</span></td>
+                        <td><span class="cla-person"><span class="cla-ini">{{ mb_substr($course->instructor_display_name ?? '?', 0, 1) }}</span>{{ $course->instructor_display_name }}</span></td>
                         <td>{{ $course->lessons_count }}</td><td>{{ $course->enrollments_count }}</td>
                         <td><span class="cla-badge {{ $course->status === 'published' ? 'ok' : 'muted' }}">{{ __(ucfirst($course->status)) }}</span></td>
                         <td>{{ $course->created_at->translatedFormat('M j, Y') }}</td>

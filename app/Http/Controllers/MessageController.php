@@ -6,6 +6,7 @@ use App\Models\Conversation;
 use App\Models\Course;
 use App\Models\User;
 use App\Notifications\EngagementNotification;
+use App\Support\AcademySettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,8 @@ class MessageController extends Controller
     {
         $user = $request->user();
         $data = $request->validate([
-            'type' => ['required', Rule::in(['instructor', 'support'])],
+            // Teachers can only be messaged while the instructor workspace is open; otherwise the support team answers.
+            'type' => ['required', Rule::in(AcademySettings::get('instructor_portal_enabled') ? ['instructor', 'support'] : ['support'])],
             'course_id' => ['required_if:type,instructor', 'nullable', 'integer'],
             'subject' => ['required', 'string', 'max:160'],
             'body' => ['required', 'string', 'max:5000'],
@@ -78,10 +80,11 @@ class MessageController extends Controller
     {
         $user = $request->user();
         $conversations = Conversation::visibleTo($user)->with(['student', 'instructor', 'course'])->latest('last_message_at')->paginate(30);
-        $courses = Course::published()->whereHas('enrollments', fn ($q) => $q->active()->where('user_id', $user->id))
+        $courses = ! AcademySettings::get('instructor_portal_enabled') ? collect() : Course::published()->whereHas('enrollments', fn ($q) => $q->active()->where('user_id', $user->id))
             ->where('instructor_id', '!=', $user->id)->with('instructor')->orderBy('title')->get();
 
         return view('messages.index', [
+            'teacherMessaging' => (bool) AcademySettings::get('instructor_portal_enabled'),
             'conversations' => $conversations,
             'active' => $active?->load(['student', 'instructor', 'course']),
             'thread' => $active?->messages()->with('sender')->oldest('id')->get(),

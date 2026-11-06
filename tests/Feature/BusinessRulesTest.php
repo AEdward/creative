@@ -46,7 +46,7 @@ class BusinessRulesTest extends TestCase
         $this->get('/terms')->assertSee('Pending legal review');
         $this->get('/contact')->assertSee('hello@academy.test')->assertSee('+251 911 000000');
         Livewire::test(Settings::class)->set('settings.vat_percent', 90)->call('save')->assertHasErrors('settings.vat_percent');
-        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/settings')->assertRedirect(route('dashboard'));
+        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/settings')->assertRedirect(route('instructor.dashboard'));
     }
 
     public function test_coupon_and_vat_apply_to_bank_checkout_and_are_recorded(): void

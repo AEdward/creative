@@ -14,7 +14,7 @@ class Course extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['instructor_id', 'category_id', 'slug', 'title', 'summary', 'description', 'outcomes', 'requirements', 'level', 'language', 'price_minor', 'currency', 'is_free', 'status', 'published_at', 'thumbnail_key'];
+    protected $fillable = ['instructor_id', 'instructor_name', 'category_id', 'slug', 'title', 'summary', 'description', 'outcomes', 'requirements', 'level', 'language', 'price_minor', 'currency', 'is_free', 'status', 'published_at', 'thumbnail_key'];
 
     protected function casts(): array
     {
@@ -36,6 +36,12 @@ class Course extends Model
     public function instructor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'instructor_id');
+    }
+
+    /** Name shown to learners: a typed name (instructor without an account) or the assigned account's name. */
+    public function getInstructorDisplayNameAttribute(): string
+    {
+        return (string) ($this->instructor_name ?: $this->instructor?->name);
     }
 
     public function category(): BelongsTo

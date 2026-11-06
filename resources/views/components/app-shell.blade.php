@@ -7,19 +7,53 @@
     $firstName = \Illuminate\Support\Str::of($user->name)->before(' ')->limit(18);
     $initials = \Illuminate\Support\Str::of($user->name)->explode(' ')->filter()->take(2)->map(fn ($part) => mb_substr($part, 0, 1))->implode('');
     $hasAvatar = is_string($user->avatar_key) && $user->avatar_key !== '';
-    $nav = [
-        ['dashboard', 'academy.dashboard', 'heroicon-o-home', 'dashboard'],
-        ['courses.index', 'academy.courses', 'heroicon-o-squares-2x2', 'courses.*'],
-        ['learning.index', 'academy.learning', 'heroicon-o-book-open', 'learning.*'],
-        ['certificates.index', 'Certificates', 'heroicon-o-trophy', 'certificates.*'],
-        ['wishlist', 'Wishlist', 'heroicon-o-heart', 'wishlist'],
-        ['messages.index', 'Messages', 'heroicon-o-envelope', 'messages.*'],
-    ];
-    $account = [
-        ['profile', 'Profile', 'heroicon-o-user', 'profile'],
-        ['payments', 'Orders & payments', 'heroicon-o-credit-card', 'payments'],
-        ['support.index', 'Help & Support', 'heroicon-o-question-mark-circle', 'support.*'],
-    ];
+    // Each role has its own workspace and sidebar; nobody is shown another role's pages.
+    // Entries: [url, label, icon, route pattern(s) that mark it current].
+    $portalOpen = (bool) \App\Support\AcademySettings::get('instructor_portal_enabled');
+    if ($user->role === 'admin') {
+        $nav = [
+            [url('/admin'), 'Admin dashboard', 'heroicon-o-home', []],
+            [url('/admin/courses'), 'Courses', 'heroicon-o-book-open', ['instructor.courses.edit', 'instructor.materials', 'instructor.assessments', 'instructor.announcements', 'instructor.learners']],
+            [route('instructor.courses.create'), 'New course', 'heroicon-o-plus-circle', ['instructor.courses.create']],
+            [url('/admin/media-library'), 'Media Library', 'heroicon-o-photo', []],
+            [url('/admin/users'), 'Students & users', 'heroicon-o-users', []],
+            [url('/admin/payment-submissions'), 'Payment approvals', 'heroicon-o-banknotes', []],
+            [route('academy-admin'), 'Enrollments & coupons', 'heroicon-o-user-plus', ['academy-admin']],
+            [route('messages.index'), 'Support messages', 'heroicon-o-envelope', ['messages.*']],
+            [route('admin.support'), 'Support queue', 'heroicon-o-chat-bubble-left-right', ['admin.support']],
+            [route('admin.reviews'), 'Reviews', 'heroicon-o-star', ['admin.reviews']],
+        ];
+        $account = [
+            [route('profile'), 'Profile', 'heroicon-o-user', ['profile']],
+            [route('home'), 'Website', 'heroicon-o-globe-alt', []],
+        ];
+    } elseif ($user->role === 'instructor') {
+        $nav = $portalOpen ? [
+            [route('instructor.dashboard'), 'Instructor dashboard', 'heroicon-o-home', ['instructor.dashboard', 'instructor.courses.*', 'instructor.materials', 'instructor.assessments', 'instructor.announcements', 'instructor.learners']],
+            [route('messages.index'), 'Messages', 'heroicon-o-envelope', ['messages.*']],
+        ] : [
+            [route('instructor.closed'), 'Instructor workspace', 'heroicon-o-home', ['instructor.closed']],
+        ];
+        $account = array_values(array_filter([
+            [route('profile'), 'Profile', 'heroicon-o-user', ['profile']],
+            $portalOpen ? [route('instructor.profile.edit'), 'Public instructor profile', 'heroicon-o-identification', ['instructor.profile.*']] : null,
+        ]));
+    } else {
+        $nav = [
+            [route('dashboard'), 'academy.dashboard', 'heroicon-o-home', ['dashboard']],
+            [route('courses.index'), 'academy.courses', 'heroicon-o-squares-2x2', ['courses.*']],
+            [route('learning.index'), 'academy.learning', 'heroicon-o-book-open', ['learning.*']],
+            [route('certificates.index'), 'Certificates', 'heroicon-o-trophy', ['certificates.*']],
+            [route('wishlist'), 'Wishlist', 'heroicon-o-heart', ['wishlist']],
+            [route('messages.index'), 'Messages', 'heroicon-o-envelope', ['messages.*']],
+        ];
+        $account = [
+            [route('profile'), 'Profile', 'heroicon-o-user', ['profile']],
+            [route('payments'), 'Orders & payments', 'heroicon-o-credit-card', ['payments']],
+            [route('support.index'), 'Help & Support', 'heroicon-o-question-mark-circle', ['support.*']],
+        ];
+    }
+    $messagesUrl = route('messages.index');
 @endphp
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -38,16 +72,14 @@
     <aside class="app-sidebar" aria-label="{{ __('Your workspace') }}">
         <div class="app-sidebar-brand"><x-brand :on-dark="true" /></div>
         <nav class="app-nav">
-            @foreach($nav as [$route, $label, $icon, $active])
-                <a href="{{ route($route) }}" @if(request()->routeIs($active)) aria-current="page" @endif><x-dynamic-component :component="$icon" aria-hidden="true" /><span>{{ __($label) }}</span>@if($route === 'messages.index' && $unreadMessages)<b class="app-nav-badge" aria-label="{{ trans_choice(':count unread conversation|:count unread conversations', $unreadMessages, ['count' => $unreadMessages]) }}">{{ $unreadMessages }}</b>@endif</a>
+            @foreach($nav as [$url, $label, $icon, $active])
+                <a href="{{ $url }}" @if($active && request()->routeIs($active)) aria-current="page" @endif><x-dynamic-component :component="$icon" aria-hidden="true" /><span>{{ __($label) }}</span>@if($url === $messagesUrl && $unreadMessages)<b class="app-nav-badge" aria-label="{{ trans_choice(':count unread conversation|:count unread conversations', $unreadMessages, ['count' => $unreadMessages]) }}">{{ $unreadMessages }}</b>@endif</a>
             @endforeach
-            @can('instructor')<a href="{{ route('instructor.dashboard') }}" @if(request()->routeIs('instructor.*')) aria-current="page" @endif><x-heroicon-o-presentation-chart-line aria-hidden="true" /><span>{{ __('Instructor workspace') }}</span></a>@endcan
-            @can('administer-academy')<a href="{{ route('academy-admin') }}"><x-heroicon-o-shield-check aria-hidden="true" /><span>{{ __('Administration') }}</span></a>@endcan
         </nav>
         <p class="app-nav-heading">{{ __('Account') }}</p>
         <nav class="app-nav" aria-label="{{ __('Account') }}">
-            @foreach($account as [$route, $label, $icon, $active])
-                <a href="{{ route($route) }}" @if(request()->routeIs($active)) aria-current="page" @endif><x-dynamic-component :component="$icon" aria-hidden="true" /><span>{{ __($label) }}</span></a>
+            @foreach($account as [$url, $label, $icon, $active])
+                <a href="{{ $url }}" @if($active && request()->routeIs($active)) aria-current="page" @endif><x-dynamic-component :component="$icon" aria-hidden="true" /><span>{{ __($label) }}</span></a>
             @endforeach
         </nav>
         <form method="POST" action="{{ route('logout') }}" class="app-logout">@csrf<button type="submit"><x-heroicon-o-arrow-right-on-rectangle aria-hidden="true" /><span>{{ __('Logout') }}</span></button></form>

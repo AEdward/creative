@@ -34,9 +34,11 @@ class AdminCourseManagementTest extends TestCase
         $this->assertFalse(AcademySettings::get('instructor_portal_enabled'));
 
         $this->actingAs($instructor)->get('/instructor')->assertForbidden();
+        $this->get('/dashboard')->assertRedirect(route('instructor.closed'));
+        $this->get(route('instructor.closed'))->assertOk()->assertSee('isn’t open yet');
         $this->get(route('instructor.courses.edit', $course->slug))->assertForbidden();
         $this->get(route('instructor.assessments', $course))->assertForbidden();
-        $this->actingAs($this->admin())->get('/instructor')->assertOk();
+        $this->actingAs($this->admin())->get('/instructor')->assertRedirect(url('/admin/courses'));
         $this->get(route('instructor.courses.create'))->assertOk();
 
         AcademySettings::save(['instructor_portal_enabled' => true]);
@@ -66,6 +68,57 @@ class AdminCourseManagementTest extends TestCase
         $this->actingAs($admin)->get('/admin/courses')->assertOk()->assertSee('New course')->assertSee(route('instructor.materials', $course->slug), false);
     }
 
+    public function test_roles_stay_in_their_own_workspace(): void
+    {
+        config(['academy.instructor_portal_default' => false]);
+        $admin = $this->admin();
+        foreach (['/dashboard', '/my-learning', '/certificates', '/wishlist', '/payments', '/support'] as $page) {
+            $this->actingAs($admin)->get($page)->assertRedirect(url('/admin'));
+        }
+        // Admin pages outside Filament show the admin sidebar, never the learner one.
+        $this->get('/academy-admin')->assertOk()->assertSee('Admin dashboard')->assertSee('Media Library')->assertDontSee('My learning');
+        $this->get(route('instructor.courses.create'))->assertOk()->assertSee('Admin dashboard')->assertDontSee('Wishlist');
+
+        $student = User::factory()->create();
+        $this->actingAs($student)->get('/dashboard')->assertOk()->assertDontSee('Instructor workspace')->assertDontSee('Admin dashboard');
+        $this->get('/admin')->assertRedirect(route('dashboard'));
+        $this->get('/instructor')->assertForbidden();
+
+        $this->post('/logout');
+        $this->post('/login', ['email' => $admin->email, 'password' => 'password'])->assertRedirect(url('/admin'));
+    }
+
+    public function test_instructor_directory_and_teacher_messages_are_hidden_while_the_workspace_is_off(): void
+    {
+        config(['academy.instructor_portal_default' => false]);
+        $this->get('/')->assertOk()->assertDontSee(route('instructors.index'), false);
+        $this->get('/instructors')->assertNotFound();
+        $this->actingAs(User::factory()->create())->get(route('messages.index'))->assertOk()->assertDontSee('value="instructor"', false);
+        $this->post(route('messages.store'), ['type' => 'instructor', 'course_id' => 1, 'subject' => 'Hi', 'body' => 'Question'])->assertSessionHasErrors('type');
+
+        AcademySettings::save(['instructor_portal_enabled' => true]);
+        $this->get('/instructors')->assertOk();
+    }
+
+    public function test_admin_can_type_an_instructor_name_when_there_is_no_account(): void
+    {
+        $category = Category::factory()->create(['active' => true]);
+        $this->actingAs($this->admin());
+        $editor = Livewire::test(CourseEditor::class)->set('title', 'Sound Design')->set('summary', 'Sound.')->set('description', 'All about sound.')
+            ->set('categoryId', $category->id)->set('instructorId', null);
+        $editor->call('save')->assertHasErrors('instructorName');
+        $editor->set('instructorName', 'Abebe Kebede')->call('save')->assertHasNoErrors();
+        $course = Course::where('slug', 'sound-design')->firstOrFail();
+        $this->assertSame('Abebe Kebede', $course->instructor_display_name);
+        $course->update(['status' => 'published', 'published_at' => now()]);
+        $this->get(route('courses.show', $course->slug))->assertSee('By Abebe Kebede');
+
+        $teacher = User::factory()->create(['role' => 'instructor', 'name' => 'Real Account']);
+        Livewire::test(CourseEditor::class, ['course' => $course])->set('instructorId', $teacher->id)->call('save')->assertHasNoErrors();
+        $this->assertNull($course->fresh()->instructor_name);
+        $this->assertSame('Real Account', $course->fresh()->instructor_display_name);
+    }
+
     public function test_admin_creates_users_of_any_role_who_set_their_own_password(): void
     {
         Notification::fake();
@@ -81,7 +134,7 @@ class AdminCourseManagementTest extends TestCase
         Livewire::test(ManageUsers::class)->callTableAction('changeRole', $created, ['role' => 'instructor']);
         $this->assertSame('instructor', $created->fresh()->role);
         Livewire::test(ManageUsers::class)->assertTableActionHidden('changeRole', $admin);
-        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/users')->assertRedirect(route('dashboard'));
+        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/users')->assertRedirect(route('instructor.dashboard'));
     }
 
     public function test_media_page_picks_course_chapter_and_lesson_and_admin_upload_keeps_the_course_live(): void

@@ -16,7 +16,7 @@ class AuthenticateAdminPanel extends Authenticate
     {
         $user = Filament::auth()->user();
         if ($user && ! $user->canAccessPanel(Filament::getCurrentOrDefaultPanel())) {
-            throw new HttpResponseException(redirect()->route('dashboard')->with('status', 'The admin panel is only available to administrator accounts.'));
+            throw new HttpResponseException(redirect()->to($user->homeUrl())->with('status', 'The admin panel is only available to administrator accounts.'));
         }
 
         parent::authenticate($request, $guards);

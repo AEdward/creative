@@ -46,7 +46,7 @@
         $minutes = intdiv((int) $course->duration_seconds, 60);
         $duration = $minutes >= 60 ? intdiv($minutes, 60).'h '.($minutes % 60 ? ($minutes % 60).'m' : '') : ($minutes ? $minutes.'m' : null);
         $fallback = 'images/categories/'.$course->category->slug.'.webp';
-        $teacher = $course->instructor->name;
+        $teacher = $course->instructor_display_name;
     @endphp
     <article class="browse-card">
         <a class="browse-cover" href="{{ route('courses.show', $course->slug) }}" tabindex="-1" aria-hidden="true">

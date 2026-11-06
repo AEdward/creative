@@ -97,7 +97,7 @@ class BankTransferCheckoutTest extends TestCase
 
         $this->get(route('payment-proofs.show', $submission))->assertOk();
         $this->actingAs(User::factory()->create())->get(route('payment-proofs.show', $submission))->assertForbidden();
-        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/payment-submissions')->assertRedirect(route('dashboard'));
+        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/payment-submissions')->assertRedirect(route('instructor.dashboard'));
         $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/admin/payment-submissions')->assertOk();
         $this->get('/admin/payment-methods')->assertOk()->assertSee('Commercial Bank of Ethiopia');
         $this->get(route('payment-proofs.show', $submission))->assertOk();

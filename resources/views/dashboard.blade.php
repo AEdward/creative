@@ -58,7 +58,7 @@
                     <a class="dash-thumb" href="{{ route('courses.show', $course->slug) }}" tabindex="-1" aria-hidden="true">@if($course->thumbnail_key)<img src="{{ route('courses.thumbnail', $course->slug) }}" alt="" loading="lazy">@elseif(file_exists(public_path($thumb)))<img src="{{ asset($thumb) }}" alt="" loading="lazy">@endif</a>
                     <div class="dash-course-info">
                         <h3><a href="{{ route('courses.show', $course->slug) }}">{{ $course->title }}</a></h3>
-                        <span class="dash-teacher"><span class="dash-ini" aria-hidden="true">{{ mb_substr($course->instructor?->name ?? '?', 0, 1) }}</span>{{ $course->instructor?->name }}</span>
+                        <span class="dash-teacher"><span class="dash-ini" aria-hidden="true">{{ mb_substr($course->instructor_display_name ?? '?', 0, 1) }}</span>{{ $course->instructor_display_name }}</span>
                         <div class="dash-progress"><span class="dash-bar" role="progressbar" aria-valuenow="{{ $p }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ __('Progress in :course', ['course' => $course->title]) }}"><i style="width:{{ $p }}%"></i></span><b>{{ $p }}%</b></div>
                     </div>
                     <a class="dash-go {{ $p === 0 ? 'soft' : ($p === 100 ? 'soft' : '') }}" href="{{ route('courses.show', $course->slug) }}">{{ __($p === 0 ? 'Start' : ($p === 100 ? 'Review' : 'Continue')) }}</a>

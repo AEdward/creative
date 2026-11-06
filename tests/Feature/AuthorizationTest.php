@@ -29,7 +29,8 @@ class AuthorizationTest extends TestCase
     public function test_only_instructors_and_admins_can_enter_instructor_workspace(): void
     {
         foreach (['instructor', 'admin'] as $role) {
-            $this->actingAs(User::factory()->create(['role' => $role]))->get('/instructor')->assertOk();
+            $response = $this->actingAs(User::factory()->create(['role' => $role]))->get('/instructor');
+            $role === 'admin' ? $response->assertRedirect(url('/admin/courses')) : $response->assertOk();
         }
     }
 

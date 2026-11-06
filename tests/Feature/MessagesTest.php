@@ -65,8 +65,8 @@ class MessagesTest extends TestCase
     {
         [$teacher, $course, $student] = $this->enrolled();
         $this->actingAs($student)->post(route('messages.store'), ['type' => 'instructor', 'course_id' => $course->id, 'subject' => 'Q', 'body' => 'x']);
-        $this->actingAs($teacher)->get('/dashboard')->assertSee('app-nav-badge', false);
+        $this->actingAs($teacher)->get('/instructor')->assertSee('app-nav-badge', false);
         $this->get(route('messages.show', Conversation::first()));
-        $this->get('/dashboard')->assertDontSee('app-nav-badge', false);
+        $this->get('/instructor')->assertDontSee('app-nav-badge', false);
     }
 }

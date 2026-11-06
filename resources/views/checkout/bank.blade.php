@@ -23,7 +23,7 @@
     <aside class="pay-card pay-summary">
         <a class="pay-cover" href="{{ route('courses.show', $course->slug) }}">@if($course->thumbnail_key)<img src="{{ route('courses.thumbnail', $course->slug) }}" alt="">@elseif(file_exists(public_path($thumb)))<img src="{{ asset($thumb) }}" alt="">@endif<span class="pay-play" aria-hidden="true"><x-heroicon-s-play /></span></a>
         <h2>{{ $course->title }}</h2>
-        <p class="pay-teacher"><span class="dash-ini" aria-hidden="true">{{ mb_substr($course->instructor?->name ?? '?', 0, 1) }}</span>{{ $course->instructor?->name }}</p>
+        <p class="pay-teacher"><span class="dash-ini" aria-hidden="true">{{ mb_substr($course->instructor_display_name ?? '?', 0, 1) }}</span>{{ $course->instructor_display_name }}</p>
         <dl>
             <div><dt>{{ __('Course Price') }}</dt><dd>{{ $money($quote['subtotal']) }}</dd></div>
             @if($quote['discount'])<div><dt>{{ __('Coupon :code', ['code' => $quote['code']]) }}</dt><dd>−{{ $money($quote['discount']) }}</dd></div>@endif

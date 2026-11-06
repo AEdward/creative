@@ -24,7 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/verify-email/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
 
-        return redirect()->route('dashboard');
+        return redirect()->to($request->user()->homeUrl());
     })->middleware(['signed', 'throttle:6,1,verification.verify'])->name('verification.verify');
     Route::post('/email/verification-notification', function (Request $request) {
         if (! $request->user()->hasVerifiedEmail()) {
@@ -36,5 +36,7 @@ Route::middleware('auth')->group(function () {
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    // Instructor accounts land here while an admin keeps the instructor workspace switched off.
+    Route::view('/instructor/closed', 'instructor.closed')->name('instructor.closed');
     Route::get('/instructor', fn () => view('instructor.index', ['courses' => Course::with('category')->withCount(['enrollments as active_enrollments_count' => fn ($query) => $query->active()->whereHas('user', fn ($user) => $user->where('status', 'active')->whereNotNull('email_verified_at')), 'lessons' => fn ($query) => $query->where('published', true)])->when(auth()->user()->role !== 'admin', fn ($query) => $query->where('instructor_id', auth()->id()))->latest()->paginate(12)]))->middleware('can:instructor')->name('instructor.dashboard');
 });

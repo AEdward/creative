@@ -48,12 +48,12 @@
             <form method="POST" action="{{ route('messages.store') }}" class="msg-compose">@csrf
                 <h2>{{ __('Start a conversation') }}</h2>
                 <fieldset><legend>{{ __('Who do you want to talk to?') }}</legend>
-                    <label class="msg-choice"><input type="radio" name="type" value="instructor" @checked(old('type', $startType) === 'instructor' || (! old('type') && ! $startType && $courses->isNotEmpty())) @disabled($courses->isEmpty())><span><b>{{ __('A teacher') }}</b><small>{{ $courses->isEmpty() ? __('Enroll in a course to message its teacher.') : __('Ask about one of your courses.') }}</small></span></label>
+                    @if($teacherMessaging)<label class="msg-choice"><input type="radio" name="type" value="instructor" @checked(old('type', $startType) === 'instructor' || (! old('type') && ! $startType && $courses->isNotEmpty())) @disabled($courses->isEmpty())><span><b>{{ __('A teacher') }}</b><small>{{ $courses->isEmpty() ? __('Enroll in a course to message its teacher.') : __('Ask about one of your courses.') }}</small></span></label>@endif
                     <label class="msg-choice"><input type="radio" name="type" value="support" @checked(old('type', $startType) === 'support' || $courses->isEmpty())><span><b>{{ __('Support team') }}</b><small>{{ __('Account, payment or technical help.') }}</small></span></label>
                 </fieldset>
                 @if($courses->isNotEmpty())
                     <div class="form-field"><label for="msg-course">{{ __('Course') }}</label>
-                        <select id="msg-course" name="course_id">@foreach($courses as $course)<option value="{{ $course->id }}" @selected((int) old('course_id', $startCourse) === $course->id)>{{ $course->title }} — {{ $course->instructor?->name }}</option>@endforeach</select>
+                        <select id="msg-course" name="course_id">@foreach($courses as $course)<option value="{{ $course->id }}" @selected((int) old('course_id', $startCourse) === $course->id)>{{ $course->title }} — {{ $course->instructor_display_name }}</option>@endforeach</select>
                         @error('course_id')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror</div>
                 @endif
                 <div class="form-field"><label for="msg-subject">{{ __('Subject') }}</label><input id="msg-subject" name="subject" maxlength="160" required value="{{ is_string(old('subject')) ? old('subject') : '' }}">@error('subject')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror</div>

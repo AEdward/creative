@@ -151,7 +151,9 @@ class AssessmentTest extends TestCase
         $this->actingAs($owner)->get('/instructor/courses/'.$course->slug.'/assessments')->assertOk()->assertSee('Create assessment');
         $certificate = Certificate::factory()->create(['enrollment_id' => $enrollment->id]);
         $this->actingAs(User::factory()->create())->get('/certificates')->assertOk()->assertDontSee($certificate->course_title);
-        $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/certificates')->assertOk()->assertSee($certificate->course_title);
+        // Admins find issued certificates in the admin panel; the learner certificates page is students-only.
+        $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/certificates')->assertRedirect(url('/admin'));
+        $this->get('/admin/certificates')->assertOk()->assertSee($certificate->course_title);
         $this->get('/certificates/'.$certificate->id.'/print')->assertOk()->assertSee('Revoke certificate');
     }
 

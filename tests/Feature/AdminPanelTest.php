@@ -34,7 +34,7 @@ class AdminPanelTest extends TestCase
     public function test_signed_in_non_admins_are_sent_to_their_dashboard_instead_of_403(): void
     {
         $this->actingAs(User::factory()->create())->get('/admin')->assertRedirect(route('dashboard'))->assertSessionHas('status');
-        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/certificates')->assertRedirect(route('dashboard'));
+        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/certificates')->assertRedirect(route('instructor.dashboard'));
     }
 
     public function test_admin_can_edit_the_certificate_and_issued_certificates_use_it(): void
