@@ -4018,3 +4018,12 @@ form[aria-busy="true"] button[disabled]{opacity:.7;cursor:progress}
 .legal-table th{background:#f6f4fc}
 .footer-bottom a{color:#c9cfe0;text-decoration:underline;text-underline-offset:2px}
 .footer-bottom a:hover{color:#fff}
+
+/* Bell dropdown on phones: the bell isn't at the screen edge (the avatar is), so a panel anchored
+   to it ran off the left side. Pin it to the screen instead, just under the top bar (the bar's backdrop-filter makes it the
+   containing block, so 100% is the bar's height). */
+@media (max-width:640px){
+    .app-bell-menu{position:static}
+    .app-bell-panel{position:fixed;left:12px;right:12px;top:calc(100% + 6px);width:auto;max-height:calc(100dvh - 96px);display:flex;flex-direction:column}
+    .app-bell-panel ul{max-height:none;flex:1;min-height:0}
+}

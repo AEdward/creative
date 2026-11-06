@@ -5,10 +5,14 @@ namespace Tests\Feature;
 use App\Filament\Resources\Courses\Pages\ManageCourses;
 use App\Livewire\Instructor\CourseEditor;
 use App\Models\Assessment;
+use App\Models\AssignmentSubmission;
+use App\Models\Certificate;
 use App\Models\Coupon;
+use App\Models\CouponRedemption;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\LessonResource;
+use App\Models\Order;
 use App\Models\User;
 use App\Models\VideoAsset;
 use App\Services\CourseDeletion;
@@ -68,7 +72,8 @@ class CourseDeletionTest extends TestCase
         $course = $this->fullCourse();
         $course->update(['status' => 'published', 'published_at' => now()]);
         Enrollment::factory()->create(['course_id' => $course->id]);
-        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        // Content admins can't delete a course people joined (super admins can — see below).
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'staff_role' => 'content']));
 
         $this->assertStringStartsWith('1 learner is enrolled, so this course can’t be deleted.', app(CourseDeletion::class)->blocker($course));
         $this->assertThrows(fn () => app(CourseDeletion::class)->delete($course, auth()->user(), 'Test Course'), ValidationException::class);
@@ -96,5 +101,42 @@ class CourseDeletionTest extends TestCase
         $editor->set('deleteConfirmation', 'nope')->call('deleteCourse')->assertHasErrors('confirmation');
         $editor->set('deleteConfirmation', 'Quiz Only')->call('deleteCourse')->assertRedirect(url('/admin/courses'));
         $this->assertModelMissing($course);
+    }
+
+    public function test_super_admin_can_delete_a_course_with_learners_and_orders_stay_in_the_books(): void
+    {
+        $course = $this->fullCourse();
+        $learner = User::factory()->create();
+        $enrollment = Enrollment::factory()->create(['course_id' => $course->id, 'user_id' => $learner->id]);
+        Certificate::factory()->create(['enrollment_id' => $enrollment->id]);
+        Storage::disk('local')->put('student-work/a.zip', 'zip');
+        AssignmentSubmission::factory()->create(['enrollment_id' => $enrollment->id, 'disk' => 'local', 'path' => 'student-work/a.zip']);
+        $paid = Order::create(['user_id' => $learner->id, 'reference' => 'ORD-PAID', 'checkout_key' => 'k-paid', 'currency' => 'ETB', 'subtotal_minor' => 1000, 'discount_minor' => 0, 'total_minor' => 1000, 'status' => 'paid']);
+        $paid->items()->create(['course_id' => $course->id, 'title_snapshot' => 'Test Course', 'unit_price_minor' => 1000]);
+        CouponRedemption::create(['coupon_id' => Coupon::firstOrFail()->id, 'user_id' => $learner->id, 'order_id' => $paid->id, 'status' => 'applied', 'discount_minor' => 0]);
+        $open = Order::create(['user_id' => User::factory()->create()->id, 'reference' => 'ORD-OPEN', 'checkout_key' => 'k-open', 'currency' => 'ETB', 'subtotal_minor' => 1000, 'discount_minor' => 0, 'total_minor' => 1000, 'status' => 'awaiting_payment']);
+        $open->items()->create(['course_id' => $course->id, 'title_snapshot' => 'Test Course', 'unit_price_minor' => 1000]);
+
+        $content = User::factory()->create(['role' => 'admin', 'staff_role' => 'content']);
+        $this->assertNotNull(app(CourseDeletion::class)->blocker($course, $content));
+        $super = User::factory()->create(['role' => 'admin', 'staff_role' => 'super']);
+        $this->actingAs($super);
+        $this->assertNull(app(CourseDeletion::class)->blocker($course, $super));
+        $this->assertStringContainsString('1 learner(s) will lose access', app(CourseDeletion::class)->impact($course));
+
+        Livewire::test(ManageCourses::class)->callTableAction('delete', $course, ['confirmation' => 'Test Course'])->assertHasNoTableActionErrors();
+
+        $this->assertModelMissing($course);
+        $this->assertDatabaseCount('enrollments', 0);
+        $this->assertDatabaseCount('certificates', 0);
+        $this->assertDatabaseCount('assignment_submissions', 0);
+        Storage::disk('local')->assertMissing('student-work/a.zip');
+        // Money records stay, under the title they were bought with.
+        $this->assertDatabaseHas('order_items', ['order_id' => $paid->id, 'course_id' => null, 'title_snapshot' => 'Test Course']);
+        $this->assertSame('paid', $paid->fresh()->status);
+        $this->assertSame('cancelled', $open->fresh()->status);
+        // The used course coupon is kept but switched off, so it can't turn into a site-wide code.
+        $this->assertDatabaseHas('coupons', ['code' => 'ONLYTHIS', 'course_id' => null, 'active' => false]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'course.deleted', 'actor_id' => $super->id]);
     }
 }

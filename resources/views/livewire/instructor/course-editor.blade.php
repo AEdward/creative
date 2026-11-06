@@ -225,6 +225,7 @@
 @if($deleteBlocker = app(\App\Services\CourseDeletion::class)->blocker($course))<p class="small">{{ $deleteBlocker }}</p>
 @else
 <p class="small">{{ __('Permanently removes the course with its chapters, steps, quizzes, files and videos. This can’t be undone.') }}</p>
+@if($deleteImpact = app(\App\Services\CourseDeletion::class)->impact($course))<p class="small" role="alert"><strong>{{ $deleteImpact }}</strong></p>@endif
 <form wire:submit="deleteCourse">
 <div class="form-field">
 <label for="delete-confirm">{{ __('Type the course title to confirm') }}</label><input id="delete-confirm" wire:model="deleteConfirmation" autocomplete="off" placeholder="{{ $course->title }}">

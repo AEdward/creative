@@ -46,7 +46,7 @@ class CourseResource extends Resource
             Action::make('delete')->label('Delete')->icon('heroicon-o-trash')->color('danger')
                 ->modalHeading(fn (Course $record) => 'Delete “'.$record->title.'”?')
                 ->modalDescription(fn (Course $record) => app(CourseDeletion::class)->blocker($record)
-                    ?? 'This permanently removes the course with its chapters, steps, quizzes, files and videos. It can’t be undone.')
+                    ?? 'This permanently removes the course with its chapters, steps, quizzes, files and videos. '.(app(CourseDeletion::class)->impact($record) ?? 'It can’t be undone.'))
                 ->schema(fn (Course $record) => app(CourseDeletion::class)->blocker($record) ? [] : [
                     TextInput::make('confirmation')->label('Type the course title to confirm')->required()->placeholder($record->title)
                         ->in([$record->title])->validationMessages(['in' => 'That doesn’t match the course title.']),
