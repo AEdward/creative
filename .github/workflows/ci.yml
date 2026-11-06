@@ -41,6 +41,7 @@ jobs:
       - run: php artisan key:generate
       - run: php artisan migrate --force
       - run: vendor/bin/pint --test
-      - run: php artisan test
+      # Pages load the built CSS/JS manifest, so build before the tests.
       - run: npm ci --ignore-scripts
       - run: npm run build
+      - run: php artisan test
