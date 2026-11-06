@@ -26,7 +26,7 @@ class AssessmentController extends Controller
 {
     private function owner(Course $course): void
     {
-        abort_unless(Gate::allows('administer-academy') || (auth()->user()->role === 'instructor' && $course->instructor_id === auth()->id()), 403);
+        abort_unless(Gate::allows('administer-academy') || (Gate::allows('instructor') && $course->instructor_id === auth()->id()), 403);
     }
 
     private function enrollment(Course $course): Enrollment

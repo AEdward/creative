@@ -27,7 +27,11 @@ class CourseResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([TextColumn::make('title')->searchable()->sortable(), TextColumn::make('instructor.name'), TextColumn::make('category.name'), TextColumn::make('status')->badge(), TextColumn::make('published_at')->dateTime()])->filters([SelectFilter::make('status')->options(['draft' => 'Draft', 'published' => 'Published'])])->recordActions([Action::make('review')->label('Review course')->url(fn (Course $record) => route('instructor.courses.edit', $record->slug))]);
+        return $table->columns([TextColumn::make('title')->searchable()->sortable(), TextColumn::make('instructor.name'), TextColumn::make('category.name'), TextColumn::make('status')->badge(), TextColumn::make('published_at')->dateTime()])->filters([SelectFilter::make('status')->options(['draft' => 'Draft', 'published' => 'Published'])])->recordActions([
+            Action::make('edit')->label('Edit & lessons')->icon('heroicon-o-pencil-square')->url(fn (Course $record) => route('instructor.courses.edit', $record->slug)),
+            Action::make('materials')->label('Files')->icon('heroicon-o-paper-clip')->url(fn (Course $record) => route('instructor.materials', $record->slug)),
+            Action::make('assessments')->label('Quizzes')->icon('heroicon-o-academic-cap')->url(fn (Course $record) => route('instructor.assessments', $record)),
+        ]);
     }
 
     public static function getPages(): array

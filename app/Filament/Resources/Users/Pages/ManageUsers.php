@@ -11,8 +11,6 @@ class ManageUsers extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-
-        ];
+        return [UserResource::newUserAction()];
     }
 }

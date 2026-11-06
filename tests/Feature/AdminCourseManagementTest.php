@@ -1,0 +1,113 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Filament\Pages\MediaLibrary;
+use App\Filament\Resources\Users\Pages\ManageUsers;
+use App\Livewire\Instructor\CourseEditor;
+use App\Models\Category;
+use App\Models\Course;
+use App\Models\User;
+use App\Models\VideoAsset;
+use App\Notifications\AccountInvitation;
+use App\Services\Media\MediaStorage;
+use App\Support\AcademySettings;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class AdminCourseManagementTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function admin(): User
+    {
+        return User::factory()->create(['role' => 'admin']);
+    }
+
+    public function test_instructor_workspace_is_closed_by_default_on_a_live_site_but_admins_keep_it(): void
+    {
+        config(['academy.instructor_portal_default' => false]);
+        $instructor = User::factory()->create(['role' => 'instructor']);
+        $course = Course::factory()->create(['instructor_id' => $instructor->id]);
+        $this->assertFalse(AcademySettings::get('instructor_portal_enabled'));
+
+        $this->actingAs($instructor)->get('/instructor')->assertForbidden();
+        $this->get(route('instructor.courses.edit', $course->slug))->assertForbidden();
+        $this->get(route('instructor.assessments', $course))->assertForbidden();
+        $this->actingAs($this->admin())->get('/instructor')->assertOk();
+        $this->get(route('instructor.courses.create'))->assertOk();
+
+        AcademySettings::save(['instructor_portal_enabled' => true]);
+        $this->actingAs($instructor)->get(route('instructor.courses.edit', $course->slug))->assertOk();
+    }
+
+    public function test_admin_creates_a_course_and_assigns_its_instructor(): void
+    {
+        $admin = $this->admin();
+        $teacher = User::factory()->create(['role' => 'instructor', 'name' => 'Selam Teacher']);
+        $student = User::factory()->create(['role' => 'student']);
+        $category = Category::factory()->create(['active' => true]);
+
+        $this->actingAs($admin);
+        $editor = Livewire::test(CourseEditor::class)->assertSee('Selam Teacher')
+            ->set('title', 'Colour Grading')->set('summary', 'Grade footage.')->set('description', 'Full course.')
+            ->set('categoryId', $category->id);
+        $editor->set('instructorId', $student->id)->call('save')->assertHasErrors('instructorId');
+        $editor->set('instructorId', $teacher->id)->call('save')->assertHasNoErrors();
+        $course = Course::where('slug', 'colour-grading')->firstOrFail();
+        $this->assertSame($teacher->id, $course->instructor_id);
+
+        // An instructor editing (portal on) can't reassign the course to someone else.
+        $this->actingAs($teacher);
+        Livewire::test(CourseEditor::class, ['course' => $course])->set('instructorId', $admin->id)->call('save');
+        $this->assertSame($teacher->id, $course->fresh()->instructor_id);
+        $this->actingAs($admin)->get('/admin/courses')->assertOk()->assertSee('New course')->assertSee(route('instructor.materials', $course->slug), false);
+    }
+
+    public function test_admin_creates_users_of_any_role_who_set_their_own_password(): void
+    {
+        Notification::fake();
+        $admin = $this->admin();
+        $this->actingAs($admin);
+        Livewire::test(ManageUsers::class)->callAction('newUser', ['name' => 'Second Admin', 'email' => 'Boss@Academy.test', 'role' => 'admin'])->assertHasNoActionErrors();
+        $created = User::where('email', 'boss@academy.test')->firstOrFail();
+        $this->assertSame(['admin', 'active'], [$created->role, $created->status]);
+        $this->assertTrue($created->hasVerifiedEmail());
+        Notification::assertSentTo($created, AccountInvitation::class, fn ($note) => str_contains($note->toMail($created)->actionUrl, '/reset-password/'));
+        Livewire::test(ManageUsers::class)->callAction('newUser', ['name' => 'Dup', 'email' => 'boss@academy.test', 'role' => 'student'])->assertHasActionErrors(['email']);
+
+        Livewire::test(ManageUsers::class)->callTableAction('changeRole', $created, ['role' => 'instructor']);
+        $this->assertSame('instructor', $created->fresh()->role);
+        Livewire::test(ManageUsers::class)->assertTableActionHidden('changeRole', $admin);
+        $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/users')->assertRedirect(route('dashboard'));
+    }
+
+    public function test_media_page_picks_course_chapter_and_lesson_and_admin_upload_keeps_the_course_live(): void
+    {
+        $storage = \Mockery::mock(MediaStorage::class);
+        $storage->shouldReceive('available')->andReturn(true);
+        $storage->shouldReceive('upload')->andReturn(['url' => 'https://storage.example.test/put', 'headers' => ['Content-Type' => 'video/mp4']]);
+        $storage->shouldReceive('finalize');
+        $this->app->instance(MediaStorage::class, $storage);
+        $course = Course::factory()->create(['title' => 'Motion Basics']);
+        $this->actingAs($this->admin());
+
+        $page = Livewire::test(MediaLibrary::class)->set('courseId', $course->id)
+            ->set('newChapter', 'Getting started')->call('addChapter')
+            ->set('newLesson', 'Keyframes')->call('addLesson');
+        $lesson = $course->lessons()->where('lessons.title', 'Keyframes')->firstOrFail();
+        $this->assertFalse((bool) $lesson->published);
+        $page->assertSet('lessonId', $lesson->id)->assertSee('data-video-upload="'.route('media.store', $course->slug).'"', false);
+
+        $base = '/instructor/courses/'.$course->slug.'/videos';
+        $this->postJson($base, ['filename' => 'keyframes.mp4', 'bytes' => 32, 'mime' => 'video/mp4'])->assertCreated();
+        $asset = VideoAsset::firstOrFail();
+        $this->postJson($base.'/'.$asset->id.'/confirm')->assertOk();
+        $this->postJson($base.'/'.$asset->id.'/attach', ['lesson_id' => $lesson->id, 'duration_seconds' => 95])->assertOk();
+        $this->assertSame('published', $course->fresh()->status);
+        $this->assertTrue((bool) $lesson->fresh()->published);
+        $this->assertSame(95, $lesson->fresh()->duration_seconds);
+    }
+}

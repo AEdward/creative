@@ -5,6 +5,8 @@ namespace App\Livewire\Instructor;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Course;
+use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -27,6 +29,9 @@ class CourseEditor extends Component
     public string $description = '';
 
     public ?int $categoryId = null;
+
+    /** Admin-only: who is shown as the course's instructor (an instructor account or an admin). */
+    public ?int $instructorId = null;
 
     public string $level = 'beginner';
 
@@ -57,6 +62,7 @@ class CourseEditor extends Component
     {
         $this->courseId = $course?->exists ? $course->id : null;
         $course = $this->editableCourse();
+        $this->instructorId = $course?->instructor_id ?? auth()->id();
         if ($course) {
             $this->fill(['title' => $course->title, 'slug' => $course->slug, 'summary' => $course->summary ?? '', 'description' => $course->description ?? '', 'categoryId' => $course->category_id, 'level' => $course->level, 'language' => $course->language, 'isFree' => $course->is_free, 'price' => intdiv($course->price_minor, 100).'.'.str_pad((string) ($course->price_minor % 100), 2, '0', STR_PAD_LEFT), 'outcomesText' => implode("\n", $course->outcomes ?? []), 'requirementsText' => implode("\n", $course->requirements ?? [])]);
         }
@@ -84,13 +90,20 @@ class CourseEditor extends Component
             throw ValidationException::withMessages(['price' => 'Paid courses require a price greater than zero.']);
         }
         $lines = fn (string $text): array => array_values(array_filter(array_map('trim', preg_split('/\R/u', $text) ?: []), fn ($line) => $line !== ''));
+        $isAdmin = auth()->user()->can('administer-academy');
+        if ($isAdmin) {
+            $this->validate(['instructorId' => ['required', 'integer', Rule::exists('users', 'id')->where('status', 'active')->whereIn('role', ['instructor', 'admin'])]], ['instructorId.exists' => 'Choose an active instructor or admin account.']);
+        }
         $data = ['title' => $this->title, 'slug' => $this->slug, 'summary' => $this->summary, 'description' => $this->description, 'category_id' => $this->categoryId, 'level' => $this->level, 'language' => $this->language, 'is_free' => $this->isFree, 'price_minor' => $minor, 'outcomes' => $lines($this->outcomesText), 'requirements' => $lines($this->requirementsText)];
+        if ($isAdmin) {
+            $data['instructor_id'] = $this->instructorId;
+        }
         DB::transaction(function () use ($course, $data) {
             if ($course) {
                 $course->update($data);
                 $this->returnToReview($course);
             } else {
-                $created = Course::create($data + ['instructor_id' => auth()->id(), 'currency' => 'ETB', 'status' => 'draft']);
+                $created = Course::create($data + ['instructor_id' => auth()->id(), 'currency' => 'ETB', 'status' => 'draft']); // $data wins for admins
                 $this->courseId = $created->id;
             }
         });
@@ -194,6 +207,12 @@ class CourseEditor extends Component
             AuditLog::create(['actor_id' => auth()->id(), 'action' => 'course.published', 'subject_type' => 'course', 'subject_id' => $locked->id, 'changes' => ['status' => ['from' => $previous, 'to' => 'published']]]);
         });
         session()->flash('editor-status', 'Course published.');
+    }
+
+    /** Accounts an admin can assign as the course instructor. */
+    public function instructorOptions(): Collection
+    {
+        return User::where('status', 'active')->whereIn('role', ['instructor', 'admin'])->orderByRaw("role = 'admin'")->orderBy('name')->get(['id', 'name', 'role']);
     }
 
     public function render(): View

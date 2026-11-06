@@ -7,6 +7,7 @@ use App\Services\Media\MediaStorage;
 use App\Services\Media\R2Storage;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\UnavailableGateway;
+use App\Support\AcademySettings;
 use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -45,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
                 throw new \RuntimeException('Storage is not writable.');
             }
         });
-        Gate::define('instructor', fn (User $user) => $user->status === 'active' && in_array($user->role, ['instructor', 'admin']));
+        // Admins can always build courses; instructors only while the instructor portal is switched on.
+        Gate::define('instructor', fn (User $user) => $user->status === 'active' && ($user->role === 'admin' || ($user->role === 'instructor' && (bool) AcademySettings::get('instructor_portal_enabled'))));
     }
 }

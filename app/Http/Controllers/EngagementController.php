@@ -29,7 +29,7 @@ class EngagementController extends Controller
     private function owner(Request $request, Course $course): void
     {
         $this->active($request);
-        abort_unless($request->user()->can('instructor') && $course->instructor_id === $request->user()->id, 403);
+        abort_unless($request->user()->can('administer-academy') || ($request->user()->can('instructor') && $course->instructor_id === $request->user()->id), 403);
     }
 
     private function eligible(Request $request, Course $course): bool
@@ -86,7 +86,7 @@ class EngagementController extends Controller
     public function announcements(Request $request, Course $course): View
     {
         $this->active($request);
-        $managing = $request->user()->can('instructor') && $course->instructor_id === $request->user()->id;
+        $managing = $request->user()->can('administer-academy') || ($request->user()->can('instructor') && $course->instructor_id === $request->user()->id);
         abort_unless($managing || Enrollment::active()->where('user_id', $request->user()->id)->where('course_id', $course->id)->exists(), 403);
 
         return view('engagement.announcements', ['course' => $course, 'managing' => $managing, 'announcements' => Announcement::where('course_id', $course->id)->latest()->paginate(15)]);

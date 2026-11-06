@@ -20,6 +20,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -47,6 +48,8 @@ class AdminPanelProvider extends PanelProvider
             ->defaultAvatarProvider(InitialsAvatarProvider::class)
             ->sidebarWidth('17rem')
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => new HtmlString('<link rel="stylesheet" href="'.asset('css/admin-theme.css').'?v='.@filemtime(public_path('css/admin-theme.css')).'">'))
+            // The private-video uploader (Media Library) lives in its own Vite entry so the admin panel can load it.
+            ->renderHook(PanelsRenderHook::BODY_END, fn () => Vite::__invoke('resources/js/video-upload.js'))
             ->renderHook(PanelsRenderHook::SIDEBAR_LOGO_AFTER, fn () => '<span class="cla-panel-tag">ADMIN PANEL</span>')
             ->navigationGroups(['Platform'])
             ->navigationItems([

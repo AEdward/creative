@@ -66,13 +66,20 @@ class MediaController extends Controller
     {
         $this->owned($course, $asset);
         $data = $request->validate(['lesson_id' => ['required', 'integer'], 'duration_seconds' => ['required', 'integer', 'min:1', 'max:86400']]);
-        DB::transaction(function () use ($course, $asset, $data): void {
+        $byAdmin = $request->user()->can('administer-academy');
+        DB::transaction(function () use ($course, $asset, $data, $byAdmin): void {
             $locked = Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
             $asset = VideoAsset::whereKey($asset->id)->lockForUpdate()->firstOrFail();
             abort_unless($asset->status === 'ready', 422, 'Verify the upload before attaching it.');
             $lesson = $locked->lessons()->findOrFail($data['lesson_id']);
-            $lesson->update(['video_asset_id' => $asset->id, 'type' => 'video', 'duration_seconds' => $data['duration_seconds']]);
-            $locked->update(['status' => 'draft', 'published_at' => null]);
+            if ($byAdmin) {
+                // Admins publish directly: the course stays live and the lesson becomes visible with its video.
+                $lesson->update(['video_asset_id' => $asset->id, 'type' => 'video', 'duration_seconds' => $data['duration_seconds'], 'published' => true]);
+            } else {
+                // Instructor changes go back to draft until an admin reviews them.
+                $lesson->update(['video_asset_id' => $asset->id, 'type' => 'video', 'duration_seconds' => $data['duration_seconds']]);
+                $locked->update(['status' => 'draft', 'published_at' => null]);
+            }
         });
 
         return response()->json(['attached' => true]);

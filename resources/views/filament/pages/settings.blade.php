@@ -26,6 +26,13 @@
         </section>
     </div>
     <section class="cla-card">
+        <header><h2><x-filament::icon icon="heroicon-o-academic-cap" />{{ __('Instructors') }}</h2></header>
+        <div class="cla-form">
+            <label class="cla-check"><input type="checkbox" wire:model="settings.instructor_portal_enabled"> {{ __('Open the instructor workspace') }}</label>
+            <p class="cla-muted">{{ __('Off: only admins create and edit courses (you still pick the instructor shown on each course). On: instructor accounts can also edit their own courses; their changes wait for an admin to publish.') }}</p>
+        </div>
+    </section>
+    <section class="cla-card">
         <header><h2><x-filament::icon icon="heroicon-o-circle-stack" />{{ __('Video storage') }}</h2></header>
         @php $percent = min(100, (int) round($usedBytes / $limitBytes * 100)); @endphp
         <p class="cla-muted">{{ __(':used of :limit used (:percent%)', ['used' => \Illuminate\Support\Number::fileSize($usedBytes, 1), 'limit' => \Illuminate\Support\Number::fileSize($limitBytes), 'percent' => $percent]) }}</p>

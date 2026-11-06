@@ -13,6 +13,8 @@ class AcademySettings
         'contact_phone' => '',
         'contact_address' => '',
         'bank_checkout_enabled' => true,
+        // Owner decision 2026-11-07: admins build every course; the instructor workspace stays closed unless switched on.
+        'instructor_portal_enabled' => false,
         'vat_enabled' => false,
         'vat_percent' => 15,
         'storage_limit_gb' => 10,
@@ -29,8 +31,10 @@ class AcademySettings
     {
         return once(function (): array {
             $saved = SiteSetting::where('key', 'academy_settings')->first()?->value ?? [];
+            // Live default is "off"; the test suite opens it (phpunit.xml) because most legacy tests act as instructors.
+            $defaults = ['instructor_portal_enabled' => (bool) config('academy.instructor_portal_default', false)] + self::DEFAULTS;
 
-            return array_merge(self::DEFAULTS, array_intersect_key(is_array($saved) ? $saved : [], self::DEFAULTS));
+            return array_merge($defaults, array_intersect_key(is_array($saved) ? $saved : [], self::DEFAULTS));
         });
     }
 

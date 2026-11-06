@@ -4,12 +4,13 @@ namespace App\Policies;
 
 use App\Models\Course;
 use App\Models\User;
+use App\Support\AcademySettings;
 
 class CoursePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->status === 'active' && in_array($user->role, ['instructor', 'admin']);
+        return $user->status === 'active' && ($user->role === 'admin' || ($user->role === 'instructor' && (bool) AcademySettings::get('instructor_portal_enabled')));
     }
 
     public function create(User $user): bool

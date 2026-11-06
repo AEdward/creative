@@ -34,6 +34,7 @@ class Settings extends Page
             'settings.contact_phone' => ['nullable', 'string', 'max:40', 'regex:/^\+?[0-9 ()-]{0,40}$/'],
             'settings.contact_address' => ['nullable', 'string', 'max:255'],
             'settings.bank_checkout_enabled' => ['boolean'],
+            'settings.instructor_portal_enabled' => ['boolean'],
             'settings.vat_enabled' => ['boolean'],
             'settings.vat_percent' => ['required', 'numeric', 'min:0', 'max:50'],
             'settings.storage_limit_gb' => ['required', 'integer', 'min:1', 'max:100000'],
