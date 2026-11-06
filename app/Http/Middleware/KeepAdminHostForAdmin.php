@@ -9,13 +9,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * The admin subdomain only serves the admin panel. Website pages opened on it (they share the same
- * server folder) are sent to the main site; the panel's own requests never pass through here.
+ * server folder) are sent to the main site; the panel's own requests (including Livewire's
+ * 'livewire-<hash>/update' calls) are let through — redirecting those broke admin sign-in.
  */
 class KeepAdminHostForAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Admin::isAdminHost($request->getHost()) || $request->routeIs('livewire.*', 'filament.*') || $request->is('up', 'livewire/*')) {
+        if (! Admin::isAdminHost($request->getHost()) || $request->routeIs('livewire.*', '*-livewire.*', 'filament.*') || $request->is('up', 'livewire/*', 'livewire-*/*')) {
             return $next($request);
         }
 
