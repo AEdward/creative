@@ -262,3 +262,22 @@ body.fi-body,.fi-body{background:#F5F6FB;font-family:Poppins,ui-sans-serif,syste
 .cla-studio .danger-zone{margin-top:16px;border:1px solid #F5C2CA;border-radius:12px;padding:8px 14px;background:#FFF7F8}
 .cla-studio .danger-zone summary{color:#C8102E;font-weight:600;cursor:pointer}
 .cla-studio .danger-button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;border:0;border-radius:10px;background:#C8102E;color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.cla-stat-note{display:block;color:#7A7E98;font-size:12px;margin-top:2px}
+.cla-range-presets .cla-primary{width:auto;min-height:36px;padding:0 14px;text-decoration:none}
+.cla-btn-icon{width:18px;height:18px}
+.cla-bar-cell{width:30%}.cla-bar-cell .cla-meter-sm{width:100%}
+.cla-subhead{margin-top:18px}
+.cla-health-summary{display:flex;gap:16px;align-items:center}.cla-health-summary h2{margin:0;font-size:20px}
+.cla-health-big{width:44px;height:44px;flex:none}
+.cla-health-ok .cla-health-big,.cla-health-list .cla-health-ok .cla-health-icon{color:#11865A}
+.cla-health-warn .cla-health-big,.cla-health-list .cla-health-warn .cla-health-icon{color:#C77700}
+.cla-health-fail .cla-health-big,.cla-health-list .cla-health-fail .cla-health-icon{color:#C8102E}
+.cla-health-summary.cla-health-fail{border-color:#F5C2CA;background:#FFF7F8}
+.cla-health-list{list-style:none;margin:0;padding:0}
+.cla-health-list li{display:grid;grid-template-columns:24px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid #F0F1F6}
+.cla-health-list li:first-child{border-top:0}
+.cla-health-list li div{display:flex;flex-direction:column;gap:2px}.cla-health-list li div span{color:#5B5F7A;font-size:13px}
+.cla-health-icon{width:22px;height:22px}
+.cla-health-btn{width:auto!important;min-height:32px;padding:0 12px}
+.cla-steps-list{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.cla-steps-list code{background:#F4F3FA;padding:2px 8px;border-radius:6px}

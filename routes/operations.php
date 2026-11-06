@@ -3,6 +3,7 @@
 use App\Http\Controllers\AcademyController;
 use App\Models\Category;
 use App\Models\Course;
+use App\Support\FinanceReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,3 +22,19 @@ Route::middleware(['auth', 'verified', 'can:administer-academy'])->prefix('/acad
     Route::get('/', fn () => redirect('/admin/enrollments'))->name('academy-admin');
     Route::get('/export', [AcademyController::class, 'export'])->middleware('throttle:5,1,exports')->name('academy-admin.export');
 });
+
+// Finance staff: one CSV row per order in a date range, for the accountant.
+Route::middleware(['auth', 'verified', 'throttle:10,1,finance.export'])->get('/admin-exports/finance', function (Request $request) {
+    abort_unless($request->user()->can('staff', 'finance'), 403);
+    $data = $request->validate(['from' => ['required', 'date_format:Y-m-d'], 'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from']]);
+    $report = FinanceReport::forDays($data['from'], $data['to']);
+
+    return response()->streamDownload(function () use ($report): void {
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel shows Amharic names correctly
+        foreach ($report->csvRows() as $row) {
+            fputcsv($out, $row);
+        }
+        fclose($out);
+    }, 'creative-lab-finance-'.$data['from'].'-to-'.$data['to'].'.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store, private']);
+})->name('finance.export');

@@ -15,3 +15,4 @@ Schedule::command('academy:prune-video-uploads')->hourly()->withoutOverlapping()
 Schedule::command('academy:check-storage')->dailyAt('06:00')->withoutOverlapping();
 Schedule::command('academy:backup')->dailyAt('02:30')->withoutOverlapping()->onFailure(fn () => logger()->error('Scheduled database backup failed.'));
 Schedule::call(fn () => BackgroundHealth::beat())->everyMinute()->name('scheduler-heartbeat');
+Schedule::command('academy:health-alerts')->everyFifteenMinutes()->withoutOverlapping();
