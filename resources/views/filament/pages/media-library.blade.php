@@ -61,6 +61,8 @@
             @else
                 <p class="cla-warning" role="alert"><x-filament::icon icon="heroicon-o-exclamation-triangle" />{{ __('Video storage isn’t connected yet. Add the Cloudflare R2 keys to the server’s .env, then uploads work here.') }}</p>
             @endif
+        @elseif($course)
+            <p class="cla-muted cla-uploader">{{ __('4. MP4 video — choose a chapter and a lesson above (or add new ones) and the upload box appears here.') }}</p>
         @endif
     </section>
 
