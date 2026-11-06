@@ -117,6 +117,8 @@ class OperationsTest extends TestCase
         // The panel's Livewire calls (sign-in button etc.) must stay on the admin host, never be redirected.
         $update = collect(Route::getRoutes())->first(fn ($r) => str_ends_with($r->uri(), '/update') && str_starts_with($r->uri(), 'livewire'))->uri();
         $this->assertFalse($this->post('http://creativeadmin2026.creativelabet.com/'.$update, [])->isRedirect(), 'Livewire update was redirected off the admin host');
+        // Media Library uploads call these from the admin host; they must not be bounced either.
+        $this->assertFalse($this->actingAs(User::factory()->create(['role' => 'admin']))->postJson('http://creativeadmin2026.creativelabet.com/instructor/courses/'.Course::factory()->create()->slug.'/videos', [])->isRedirect(), 'Video upload call was redirected off the admin host');
     }
 
     public function test_analytics_uses_inclusive_nairobi_day_boundaries(): void
