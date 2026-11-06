@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
-    protected $fillable = ['user_id', 'reference', 'checkout_key', 'currency', 'subtotal_minor', 'discount_minor', 'total_minor', 'status'];
+    protected $fillable = ['user_id', 'reference', 'checkout_key', 'currency', 'subtotal_minor', 'discount_minor', 'total_minor', 'vat_minor', 'vat_percent', 'status', 'refund_status', 'refund_reason', 'refund_note', 'refund_requested_at', 'refund_reviewed_at', 'refund_reviewer_id'];
 
     protected function casts(): array
     {
-        return ['subtotal_minor' => 'integer', 'discount_minor' => 'integer', 'total_minor' => 'integer'];
+        return ['subtotal_minor' => 'integer', 'discount_minor' => 'integer', 'total_minor' => 'integer', 'vat_minor' => 'integer', 'vat_percent' => 'float', 'refund_requested_at' => 'datetime', 'refund_reviewed_at' => 'datetime'];
     }
 
     public function items(): HasMany
@@ -28,7 +28,18 @@ class Order extends Model
 
     public function totalLabel(): string
     {
-        return $this->currency.' '.intdiv($this->total_minor, 100).'.'.str_pad((string) ($this->total_minor % 100), 2, '0', STR_PAD_LEFT);
+        return $this->money($this->total_minor);
+    }
+
+    public function money(int $minor): string
+    {
+        return $this->currency.' '.number_format($minor / 100, 2);
+    }
+
+    /** A paid order can have one refund request open at a time; the admin decides each case. */
+    public function canRequestRefund(): bool
+    {
+        return $this->status === 'paid' && $this->refund_status === null;
     }
 
     public function submissions(): HasMany

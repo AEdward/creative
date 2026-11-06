@@ -3839,3 +3839,23 @@ input[type="radio"] {
 .pay-facts dd{margin:0;font-weight:600}
 @media (max-width:1000px){.pay-grid{grid-template-columns:1fr}}
 @media (max-width:600px){.pay-method{grid-template-columns:22px 1fr;}.pay-logo{display:none}.pay-steps li{font-size:12px;text-align:center}.pay-actions{flex-direction:column-reverse;align-items:stretch}}
+.legal-text p{margin:0 0 1em;line-height:1.7}
+.contact-details{list-style:none;padding:0;margin:0 0 24px;display:flex;flex-direction:column;gap:8px}
+.footer-grid>div:first-child a{display:block;margin-top:6px}
+.pay-coupon{margin:0 0 20px;display:flex;flex-direction:column;gap:6px}
+.pay-coupon label{font-weight:600;font-size:14px}
+.pay-coupon>div{display:flex;gap:10px}
+.pay-coupon input{flex:1;text-transform:uppercase}
+.order-card{margin-bottom:16px}
+.order-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:12px}
+.order-head h2{margin:0 0 4px;font-size:18px}
+.order-badge{padding:5px 12px;border-radius:99px;font-size:13px;font-weight:600;white-space:nowrap;background:#FFE5E8;color:#C8102E}
+.order-badge.ok{background:#DDF6E8;color:#11865A}.order-badge.muted{background:#EEEFF4;color:#5B5F7A}.order-badge.warn{background:#FFF1DC;color:#A65C00}
+.order-lines{margin:0 0 12px;display:flex;flex-direction:column;gap:6px;max-width:420px}
+.order-lines div{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.order-lines dd{margin:0;font-weight:600}
+.order-total{border-top:1px solid #F0F1F6;padding-top:8px;font-size:16px!important}
+.order-refund summary{cursor:pointer;color:var(--color-brand-primary);font-weight:600;font-size:14px}
+.order-refund form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:560px}
+.order-refund .dash-outline{align-self:flex-start}
+.upload-progress{width:100%;height:10px;accent-color:var(--color-brand-primary);margin-top:10px}

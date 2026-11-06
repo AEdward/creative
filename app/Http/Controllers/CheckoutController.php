@@ -8,6 +8,8 @@ use App\Services\Payments\CheckoutService;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentProcessor;
 use Illuminate\Http\JsonResponse;
+use App\Services\Payments\RefundService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -16,6 +18,15 @@ class CheckoutController extends Controller
     public function index(): View
     {
         return view('payments', ['orders' => Order::where('user_id', auth()->id())->with('items', 'payment')->latest()->paginate(12)]);
+    }
+
+    public function refund(Request $request, Order $order, RefundService $refunds): RedirectResponse
+    {
+        abort_unless($order->user_id === $request->user()->id, 404);
+        $data = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:1000']]);
+        $refunds->request($request->user(), $order, $data['reason']);
+
+        return back()->with('status', 'Refund request sent. An admin will review it and you’ll get a notification.');
     }
 
     public function store(Request $request, Course $course, CheckoutService $checkout): JsonResponse

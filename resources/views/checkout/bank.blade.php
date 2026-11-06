@@ -2,7 +2,8 @@
 @php
     $step = $pending ? 2 : ($selected ? 2 : 1);
     $thumb = 'images/categories/'.$course->category?->slug.'.webp';
-    $amount = $course->priceLabel();
+    $money = fn (int $minor) => $course->currency.' '.number_format($minor / 100, 2);
+    $amount = $money($quote['total']);
 @endphp
 <div class="pay-head">
     <span class="pay-head-icon" aria-hidden="true"><x-heroicon-s-wallet /></span>
@@ -24,7 +25,9 @@
         <h2>{{ $course->title }}</h2>
         <p class="pay-teacher"><span class="dash-ini" aria-hidden="true">{{ mb_substr($course->instructor?->name ?? '?', 0, 1) }}</span>{{ $course->instructor?->name }}</p>
         <dl>
-            <div><dt>{{ __('Course Price') }}</dt><dd>{{ $amount }}</dd></div>
+            <div><dt>{{ __('Course Price') }}</dt><dd>{{ $money($quote['subtotal']) }}</dd></div>
+            @if($quote['discount'])<div><dt>{{ __('Coupon :code', ['code' => $quote['code']]) }}</dt><dd>−{{ $money($quote['discount']) }}</dd></div>@endif
+            @if($quote['vat'])<div><dt>{{ __('Includes VAT (:rate%)', ['rate' => rtrim(rtrim(number_format($quote['vat_percent'], 2), '0'), '.')]) }}</dt><dd>{{ $money($quote['vat']) }}</dd></div>@endif
             <div class="pay-total"><dt>{{ __('Total Amount') }}</dt><dd>{{ $amount }}</dd></div>
         </dl>
     </aside>
@@ -43,6 +46,13 @@
                 </dl>
                 <a class="dash-outline" href="{{ route('messages.index', ['to' => 'support']) }}"><x-heroicon-o-chat-bubble-left-right aria-hidden="true" />{{ __('Questions? Message support') }}</a>
             </div>
+        @elseif(! $enabled)
+            <div class="pay-waiting">
+                <span class="pay-waiting-icon" aria-hidden="true"><x-heroicon-o-pause-circle /></span>
+                <h2>{{ __('Payments are paused') }}</h2>
+                <p>{{ __('We’re not taking payments right now. Please check back soon or message support.') }}</p>
+                <a class="dash-outline" href="{{ route('messages.index', ['to' => 'support']) }}"><x-heroicon-o-chat-bubble-left-right aria-hidden="true" />{{ __('Message support') }}</a>
+            </div>
         @elseif(! $selected)
             <h2 class="pay-title"><x-heroicon-o-credit-card aria-hidden="true" />{{ __('Choose Payment Method') }}</h2>
             @if($lastRejected)<div class="notice notice-error" role="alert">{{ __('Your last payment couldn’t be confirmed: :reason', ['reason' => $lastRejected->rejection_reason]) }}</div>@endif
@@ -59,6 +69,7 @@
                             </label>
                         @endforeach
                     </fieldset>
+                    @if($quote['code'])<input type="hidden" name="coupon" value="{{ $quote['code'] }}">@endif
                     <button type="submit" class="pay-primary"><x-heroicon-s-lock-closed aria-hidden="true" />{{ __('Proceed to Pay') }}<x-heroicon-o-arrow-right aria-hidden="true" /></button>
                 </form>
             @endif
@@ -73,8 +84,16 @@
                 </dl>
                 @if($selected->instructions)<p class="pay-instructions preserve-lines">{{ $selected->instructions }}</p>@endif
             </div>
+            <form method="GET" action="{{ route('checkout.bank', $course->slug) }}" class="pay-coupon">
+                <input type="hidden" name="method" value="{{ $selected->id }}">
+                <label for="pay-coupon">{{ __('Have a coupon?') }}</label>
+                <div><input id="pay-coupon" name="coupon" maxlength="40" autocomplete="off" value="{{ $quote['code'] ?? (is_string(request('coupon')) ? request('coupon') : '') }}"><button type="submit" class="dash-outline">{{ __('Apply') }}</button></div>
+                @if($quote['error'])<p class="field-error" role="alert">{{ $quote['error'] }}</p>@elseif($quote['code'])<p class="small">{{ __('Coupon applied.') }}</p>@endif
+            </form>
             <form method="POST" action="{{ route('checkout.bank.submit', $course->slug) }}" enctype="multipart/form-data" class="pay-confirm">@csrf
                 <input type="hidden" name="payment_method_id" value="{{ $selected->id }}">
+                @if($quote['code'])<input type="hidden" name="coupon" value="{{ $quote['code'] }}">@endif
+                @error('coupon')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror
                 <h3>{{ __('After you pay, confirm it here') }}</h3>
                 <div class="form-field"><label for="pay-ref">{{ __('Transaction ID') }}</label><input id="pay-ref" name="transaction_reference" maxlength="120" autocomplete="off" value="{{ is_string(old('transaction_reference')) ? old('transaction_reference') : '' }}" placeholder="{{ __('e.g. FT24312ABC12') }}">@error('transaction_reference')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror</div>
                 <div class="form-field"><label for="pay-proof">{{ __('Receipt screenshot (optional if you entered the ID)') }}</label><input id="pay-proof" type="file" name="proof" accept="image/jpeg,image/png,image/webp,application/pdf"><p class="small">{{ __('JPG, PNG, WebP or PDF, up to 5 MB.') }}</p>@error('proof')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror</div>

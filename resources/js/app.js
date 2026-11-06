@@ -56,7 +56,19 @@ function initializeMedia() {
                         Math.max(0, video.duration - 1),
                     );
             });
+            // Signed links last 5 minutes; when one expires mid-lesson, fetch a fresh one and continue from the same second.
+            let renewals = 0;
+            video.addEventListener("playing", () => (renewals = 0));
             video.addEventListener("error", () => {
+                const wasPlaying = !video.paused || video.currentTime > 0;
+                if (renewals < 3) {
+                    renewals++;
+                    status.textContent = mediaText("Reconnecting…");
+                    load().then(() => {
+                        if (wasPlaying) video.play().catch(() => {});
+                    });
+                    return;
+                }
                 status.textContent =
                     mediaText("Playback stopped or the link expired. Refresh playback to continue from your place.");
             });
@@ -85,6 +97,7 @@ function initializeMedia() {
             form.dataset.initialized = "true";
             const status = form.querySelector('[role="status"]');
             const submit = form.querySelector('[type="submit"]');
+            const bar = form.querySelector("[data-upload-progress]");
             let xhr;
             form.querySelector("[data-cancel-upload]").addEventListener(
                 "click",
@@ -102,6 +115,10 @@ function initializeMedia() {
                     return;
                 }
                 submit.disabled = true;
+                if (bar) {
+                    bar.value = 0;
+                    bar.hidden = false;
+                }
                 try {
                     const intent = await api(form.dataset.videoUpload, {
                         filename: file.name,
@@ -125,6 +142,8 @@ function initializeMedia() {
                             },
                         );
                         xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable && bar)
+                                bar.value = Math.round((e.loaded / e.total) * 100);
                             if (e.lengthComputable)
                                 status.textContent = `${mediaText("Uploading:")} ${Math.round((e.loaded / e.total) * 100)}%`;
                         };
@@ -168,6 +187,8 @@ function initializeMedia() {
                     window.location.reload();
                 } catch (error) {
                     status.textContent = error.message;
+                    if (bar) bar.hidden = true;
+                    submit.textContent = mediaText("Retry upload");
                 } finally {
                     submit.disabled = false;
                     xhr = null;

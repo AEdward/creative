@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\PaymentMethod;
 use App\Models\PaymentSubmission;
 use App\Services\Payments\BankTransferService;
+use App\Support\AcademySettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -33,6 +34,8 @@ class BankCheckoutController extends Controller
             'methods' => $methods,
             'selected' => $selected,
             'pending' => $bank->pendingSubmission($request->user(), $course)?->load('method'),
+            'enabled' => (bool) AcademySettings::get('bank_checkout_enabled'),
+            'quote' => $bank->quote($request->user(), $course, is_string($request->query('coupon')) ? mb_substr($request->query('coupon'), 0, 40) : null),
             'lastRejected' => PaymentSubmission::where('user_id', $request->user()->id)->where('status', 'rejected')->whereHas('order.items', fn ($q) => $q->where('course_id', $course->id))->latest('reviewed_at')->first(),
         ]);
     }
@@ -43,8 +46,9 @@ class BankCheckoutController extends Controller
             'payment_method_id' => ['required', 'integer', Rule::exists('payment_methods', 'id')->where('active', true)],
             'transaction_reference' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9 \-_\/.#]+$/'],
             'proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+            'coupon' => ['nullable', 'string', 'max:40'],
         ]);
-        $bank->submit($request->user(), $course, PaymentMethod::findOrFail($data['payment_method_id']), $data['transaction_reference'] ?? null, $request->file('proof'));
+        $bank->submit($request->user(), $course, PaymentMethod::findOrFail($data['payment_method_id']), $data['transaction_reference'] ?? null, $request->file('proof'), $data['coupon'] ?? null);
 
         return redirect()->route('checkout.bank', $course->slug)->with('status', 'Payment submitted. We’ll review it and unlock your course once it’s confirmed.');
     }

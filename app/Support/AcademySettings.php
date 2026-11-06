@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Support;
+
+use App\Models\SiteSetting;
+
+/** Admin-editable business settings (contact, payments, VAT, storage, legal pages), stored in site_settings. */
+class AcademySettings
+{
+    public const DEFAULTS = [
+        'contact_email' => '',
+        'contact_phone' => '',
+        'contact_address' => '',
+        'bank_checkout_enabled' => true,
+        'vat_enabled' => false,
+        'vat_percent' => 15,
+        'storage_limit_gb' => 10,
+        'storage_alert_percent' => 80,
+        'privacy' => '',
+        'terms' => '',
+        'refund-policy' => '',
+    ];
+
+    public const LEGAL_PAGES = ['privacy', 'terms', 'refund-policy'];
+
+    public static function all(): array
+    {
+        $saved = SiteSetting::where('key', 'academy_settings')->first()?->value ?? [];
+
+        return array_merge(self::DEFAULTS, array_intersect_key(is_array($saved) ? $saved : [], self::DEFAULTS));
+    }
+
+    public static function get(string $key): mixed
+    {
+        return self::all()[$key] ?? null;
+    }
+
+    public static function save(array $values): void
+    {
+        SiteSetting::updateOrCreate(['key' => 'academy_settings'], ['value' => array_intersect_key(array_merge(self::all(), $values), self::DEFAULTS)]);
+    }
+
+    /** VAT in minor units on a VAT-inclusive price; zero when VAT is switched off. */
+    public static function vatIncluded(int $totalMinor): int
+    {
+        $settings = self::all();
+        if (! $settings['vat_enabled'] || $settings['vat_percent'] <= 0) {
+            return 0;
+        }
+
+        return (int) round($totalMinor * $settings['vat_percent'] / (100 + $settings['vat_percent']));
+    }
+}

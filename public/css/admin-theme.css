@@ -154,3 +154,11 @@ body.fi-body,.fi-body{background:#F5F6FB;font-family:Poppins,ui-sans-serif,syste
 .cla-row-2{grid-template-columns:minmax(0,1.8fr) minmax(320px,1fr)}
 .cla-table td{padding:11px 10px}
 .cla-course{min-width:170px}
+.cla-form textarea,.cla-two input{width:100%;box-sizing:border-box;border:1px solid var(--cla-line);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;background:#fff}
+.cla-two input{min-height:44px;padding:0 12px}
+.cla-two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cla-check{display:flex!important;align-items:center;gap:10px;font-weight:500!important}
+.cla-check input{width:18px;height:18px;accent-color:var(--cla-primary)}
+.cla-meter{height:10px;border-radius:99px;background:#EEEFF4;overflow:hidden;margin:0 0 14px}
+.cla-meter span{display:block;height:100%;background:var(--cla-primary)}.cla-meter span.bad{background:#C8102E}
+@media (max-width:700px){.cla-two{grid-template-columns:1fr}}

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payments', [CheckoutController::class, 'index'])->name('payments');
+    Route::post('/payments/{order:reference}/refund', [CheckoutController::class, 'refund'])->middleware('throttle:5,1,payments.refund')->name('payments.refund');
     Route::get('/checkout/{course:slug}/pay', [BankCheckoutController::class, 'show'])->name('checkout.bank');
     Route::post('/checkout/{course:slug}/pay', [BankCheckoutController::class, 'submit'])->middleware('throttle:6,1,checkout.bank')->name('checkout.bank.submit');
     Route::get('/payment-proofs/{submission}', [BankCheckoutController::class, 'proof'])->name('payment-proofs.show');

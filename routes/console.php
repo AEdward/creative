@@ -11,3 +11,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('academy:expire-orders')->hourly()->withoutOverlapping();
 Schedule::command('academy:prune-video-uploads')->hourly()->withoutOverlapping()->when(fn () => app(MediaStorage::class)->available());
+Schedule::command('academy:check-storage')->dailyAt('06:00')->withoutOverlapping();
+Schedule::command('academy:backup')->dailyAt('02:30')->withoutOverlapping()->onFailure(fn () => logger()->error('Scheduled database backup failed.'));
