@@ -62,6 +62,10 @@ class PaymentSubmissionResource extends Resource
                 ->schema([Textarea::make('reason')->label('Reason shown to the learner')->required()->maxLength(500)])
                 ->visible(fn (PaymentSubmission $r) => $r->status === 'pending')
                 ->action(fn (PaymentSubmission $r, array $data) => app(BankTransferService::class)->reject($r, auth()->user(), $data['reason'])),
+            Action::make('reopen')->label('Reopen')->color('gray')->icon('heroicon-o-arrow-path')->requiresConfirmation()
+                ->modalDescription('Use this if the payment was rejected by mistake. It goes back to the pending list so you can approve it.')
+                ->visible(fn (PaymentSubmission $r) => $r->status === 'rejected')
+                ->action(fn (PaymentSubmission $r) => app(BankTransferService::class)->reopen($r, auth()->user())),
         ])->defaultSort('created_at', 'desc');
     }
 

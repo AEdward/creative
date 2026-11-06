@@ -126,7 +126,7 @@ class EngagementController extends Controller
     {
         $this->active($request);
 
-        return view('engagement.notifications', ['notifications' => $request->user()->notifications()->paginate(20), 'preferences' => NotificationPreference::firstOrNew(['user_id' => $request->user()->id], ['announcements' => true, 'support' => true, 'learning' => true])]);
+        return view('engagement.notifications', ['notifications' => $request->user()->notifications()->paginate(20), 'preferences' => NotificationPreference::firstOrNew(['user_id' => $request->user()->id], ['announcements' => true, 'support' => true, 'learning' => true, 'email' => true])]);
     }
 
     public function read(Request $request, string $notification): RedirectResponse
@@ -144,9 +144,25 @@ class EngagementController extends Controller
         $note = $request->user()->notifications()->findOrFail($notification);
         $note->markAsRead();
         $url = is_string($note->data['url'] ?? null) ? $note->data['url'] : '';
-        $sameSite = str_starts_with($url, '/') && ! str_starts_with($url, '//') || str_starts_with($url, url('/').'/');
 
-        return $sameSite ? redirect($url) : redirect()->route('notifications.index');
+        return $this->isSameSite($url) ? redirect($url) : redirect()->route('notifications.index');
+    }
+
+    /** Only follow links back into this site: browsers read "/\evil.test" and "//evil.test" as other hosts. */
+    private function isSameSite(string $url): bool
+    {
+        if ($url === '' || preg_match('/[\\\\\x00-\x1F\x7F]/', $url)) {
+            return false;
+        }
+        $parts = parse_url($url);
+        if ($parts === false) {
+            return false;
+        }
+        if (! isset($parts['host']) && ! isset($parts['scheme'])) {
+            return str_starts_with($url, '/') && ! str_starts_with($url, '//');
+        }
+
+        return in_array($parts['scheme'] ?? '', ['http', 'https'], true) && strcasecmp($parts['host'] ?? '', (string) parse_url(url('/'), PHP_URL_HOST)) === 0;
     }
 
     public function readAll(Request $request): RedirectResponse
@@ -160,7 +176,7 @@ class EngagementController extends Controller
     public function preferences(Request $request): RedirectResponse
     {
         $this->active($request);
-        $data = $request->validate(['announcements' => ['required', 'boolean'], 'support' => ['required', 'boolean'], 'learning' => ['sometimes', 'boolean']]);
+        $data = $request->validate(['announcements' => ['required', 'boolean'], 'support' => ['required', 'boolean'], 'learning' => ['sometimes', 'boolean'], 'email' => ['sometimes', 'boolean']]);
         NotificationPreference::updateOrCreate(['user_id' => $request->user()->id], $data);
 
         return back()->with('status', 'Notification preferences saved.');

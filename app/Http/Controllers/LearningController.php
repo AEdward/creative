@@ -74,7 +74,13 @@ class LearningController extends Controller
         $completedIds = $enrollment?->progress()->whereNotNull('completed_at')->pluck('lesson_id')->all() ?? [];
         $note = $enrollment ? LessonNote::where('enrollment_id', $enrollment->id)->where('lesson_id', $lesson->id)->first() : null;
 
-        return view('learning.show', compact('course', 'lesson', 'enrollment', 'progress', 'previous', 'next', 'completedIds', 'note'));
+        // Load the lesson's files once and decide playability once, instead of re-querying from the view.
+        $files = $lesson->resources()->get()->groupBy('kind');
+        $captions = $files->get('caption', collect());
+        $downloads = $files->get('resource', collect());
+        $videoPlayable = $lesson->videoAsset?->status === 'ready' && app(MediaStorage::class)->available();
+
+        return view('learning.show', compact('course', 'lesson', 'enrollment', 'progress', 'previous', 'next', 'completedIds', 'note', 'captions', 'downloads', 'videoPlayable'));
     }
 
     public function complete(Course $course, Lesson $lesson): RedirectResponse

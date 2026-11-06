@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\SiteSetting;
+use Illuminate\Support\Once;
 
 /** Admin-editable business settings (contact, payments, VAT, storage, legal pages), stored in site_settings. */
 class AcademySettings
@@ -23,11 +24,14 @@ class AcademySettings
 
     public const LEGAL_PAGES = ['privacy', 'terms', 'refund-policy'];
 
+    /** Read once per request (several checkout and layout lookups share it); save() clears it. */
     public static function all(): array
     {
-        $saved = SiteSetting::where('key', 'academy_settings')->first()?->value ?? [];
+        return once(function (): array {
+            $saved = SiteSetting::where('key', 'academy_settings')->first()?->value ?? [];
 
-        return array_merge(self::DEFAULTS, array_intersect_key(is_array($saved) ? $saved : [], self::DEFAULTS));
+            return array_merge(self::DEFAULTS, array_intersect_key(is_array($saved) ? $saved : [], self::DEFAULTS));
+        });
     }
 
     public static function get(string $key): mixed
@@ -38,6 +42,7 @@ class AcademySettings
     public static function save(array $values): void
     {
         SiteSetting::updateOrCreate(['key' => 'academy_settings'], ['value' => array_intersect_key(array_merge(self::all(), $values), self::DEFAULTS)]);
+        Once::flush();
     }
 
     /** VAT in minor units on a VAT-inclusive price; zero when VAT is switched off. */

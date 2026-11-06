@@ -52,7 +52,11 @@ class BankTransferService
         try {
             $submission = DB::transaction(function () use ($user, $course, $method, $reference, $path, $coupon) {
                 User::whereKey($user->id)->lockForUpdate()->firstOrFail();
-                if (Enrollment::where('user_id', $user->id)->where('course_id', $course->id)->exists()) {
+                $existing = Enrollment::where('user_id', $user->id)->where('course_id', $course->id)->first();
+                if ($existing?->status === 'revoked') {
+                    throw ValidationException::withMessages(['course' => 'Your access to this course was removed by an admin. Please message support before paying again.']);
+                }
+                if ($existing && $existing->status === 'active' && ! $existing->expires_at?->isPast()) {
                     throw ValidationException::withMessages(['course' => 'You already have access to this course.']);
                 }
                 if ($this->pendingSubmission($user, $course)) {
@@ -94,10 +98,14 @@ class BankTransferService
             }
             foreach ($order->items as $item) {
                 $existing = Enrollment::where('user_id', $order->user_id)->where('course_id', $item->course_id)->first();
-                if ($existing && ($existing->status !== 'active' || $existing->expires_at?->isPast())) {
-                    throw ValidationException::withMessages(['submission' => 'This learner has a revoked or expired enrollment that needs review first.']);
+                if ($existing?->status === 'revoked') {
+                    throw ValidationException::withMessages(['submission' => 'An admin removed this learner’s access to the course. Restore or review it before approving a new payment.']);
                 }
-                Enrollment::firstOrCreate(['user_id' => $order->user_id, 'course_id' => $item->course_id], ['source_order_item_id' => $item->id, 'source' => 'bank_transfer', 'status' => 'active', 'enrolled_at' => now()]);
+                if ($existing && $existing->status === 'active' && ! $existing->expires_at?->isPast()) {
+                    continue; // already has access; the payment is still recorded
+                }
+                // New learner, or one coming back after a refund or expiry: (re)open access from this order.
+                Enrollment::updateOrCreate(['user_id' => $order->user_id, 'course_id' => $item->course_id], ['source_order_item_id' => $item->id, 'source' => 'bank_transfer', 'status' => 'active', 'enrolled_at' => now(), 'expires_at' => null]);
             }
             Payment::where('order_id', $order->id)->update(['status' => 'verified_success', 'verified_at' => now(), 'provider_reference' => $submission->transaction_reference ? $submission->payment_method_id.':'.$submission->transaction_reference : null]);
             $order->update(['status' => 'paid']);
@@ -122,7 +130,33 @@ class BankTransferService
             $submission->update(['status' => 'rejected', 'reviewer_id' => $admin->id, 'reviewed_at' => now(), 'rejection_reason' => $reason]);
             AuditLog::create(['actor_id' => $admin->id, 'action' => 'payment.bank_transfer_rejected', 'subject_type' => 'order', 'subject_id' => $order->id, 'changes' => ['submission' => $submission->id, 'reason' => $reason]]);
         }, 3);
-        $this->tell($submission, __('Payment not confirmed'), __('We couldn’t confirm your payment for :course: :reason', ['course' => $this->courseTitle($submission), 'reason' => $reason]), '/payments');
+        $this->tell($submission, __('Payment not confirmed'), __('We couldn’t confirm your payment for :course: :reason', ['course' => $this->courseTitle($submission), 'reason' => $reason]).' '.__('If the money did leave your account, message support — we can reopen this payment without you sending it again.'), '/payments');
+    }
+
+    /**
+     * Undo a mistaken rejection: the submission goes back to "pending" so it can be approved with its original
+     * transaction ID (which can't be submitted twice). Refused if the learner has since paid another way.
+     */
+    public function reopen(PaymentSubmission $submission, User $admin): void
+    {
+        DB::transaction(function () use ($submission, $admin) {
+            $submission = PaymentSubmission::whereKey($submission->id)->lockForUpdate()->firstOrFail();
+            $order = Order::whereKey($submission->order_id)->lockForUpdate()->with('items')->firstOrFail();
+            if ($submission->status !== 'rejected' || $order->status !== 'failed') {
+                throw ValidationException::withMessages(['submission' => 'Only a rejected payment can be reopened.']);
+            }
+            $courseIds = $order->items->pluck('course_id');
+            $otherPending = PaymentSubmission::where('user_id', $submission->user_id)->where('status', 'pending')
+                ->whereHas('order.items', fn ($q) => $q->whereIn('course_id', $courseIds))->exists();
+            if ($otherPending) {
+                throw ValidationException::withMessages(['submission' => 'The learner already has another payment waiting for review for this course.']);
+            }
+            Payment::where('order_id', $order->id)->update(['status' => 'pending', 'verified_at' => null]);
+            $order->update(['status' => 'awaiting_payment']);
+            CouponRedemption::where('order_id', $order->id)->where('status', 'released')->update(['status' => 'reserved']);
+            $submission->update(['status' => 'pending', 'reviewer_id' => null, 'reviewed_at' => null, 'rejection_reason' => null]);
+            AuditLog::create(['actor_id' => $admin->id, 'action' => 'payment.bank_transfer_reopened', 'subject_type' => 'order', 'subject_id' => $order->id, 'changes' => ['submission' => $submission->id]]);
+        }, 3);
     }
 
     /** Price preview for the checkout page: checks a coupon without reserving it. */
@@ -130,20 +164,12 @@ class BankTransferService
     {
         $discount = 0;
         $error = null;
-        $code = filled($code) ? Str::upper(trim($code)) : null;
+        $code = CouponService::normalize($code);
         if ($code) {
-            $c = Coupon::where('code', $code)->first();
-            $uses = fn () => CouponRedemption::where('coupon_id', $c->id)->whereIn('status', ['reserved', 'redeemed']);
-            $error = match (true) {
-                ! $c || ! $c->active || $c->percent < 1 || $c->percent > 99 => __('This coupon is not valid.'),
-                $c->starts_at?->isFuture() => __('This coupon is not active yet.'),
-                $c->expires_at?->isPast() => __('This coupon has expired.'),
-                $c->course_id && $c->course_id !== $course->id => __('This coupon does not apply to this course.'),
-                $uses()->count() >= $c->max_uses => __('This coupon has reached its usage limit.'),
-                $uses()->where('user_id', $user->id)->count() >= $c->per_user_limit => __('You have already used this coupon.'),
-                default => null,
-            };
-            $discount = $error ? 0 : intdiv($course->price_minor * $c->percent, 100);
+            $coupon = Coupon::where('code', $code)->first();
+            $reason = app(CouponService::class)->rejection($coupon, $user->id, $course->id);
+            $error = $reason ? __($reason) : null;
+            $discount = $error ? 0 : CouponService::discount($coupon, $course->price_minor);
         }
         $total = $course->price_minor - $discount;
 

@@ -8,6 +8,7 @@ use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -36,7 +37,7 @@ class DemoCourseSeeder extends Seeder
             ['video-editing', 'Advanced Editing Techniques', 'advanced', 26, 555, 200000],
         ];
         foreach ($courses as $i => [$categorySlug, $title, $level, $lessonCount, $minutes, $price]) {
-            $course = Course::updateOrCreate(['slug' => \Illuminate\Support\Str::slug($title)], [
+            $course = Course::updateOrCreate(['slug' => Str::slug($title)], [
                 'instructor_id' => $instructor->id,
                 'category_id' => Category::where('slug', $categorySlug)->value('id'),
                 'title' => $title,

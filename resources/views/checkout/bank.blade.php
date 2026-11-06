@@ -46,6 +46,13 @@
                 </dl>
                 <a class="dash-outline" href="{{ route('messages.index', ['to' => 'support']) }}"><x-heroicon-o-chat-bubble-left-right aria-hidden="true" />{{ __('Questions? Message support') }}</a>
             </div>
+        @elseif($blocked)
+            <div class="pay-waiting">
+                <span class="pay-waiting-icon" aria-hidden="true"><x-heroicon-o-lock-closed /></span>
+                <h2>{{ __('Please contact support first') }}</h2>
+                <p>{{ __('Your access to this course was removed by an admin, so it can’t be bought again yet. Message support and we’ll sort it out — please don’t send a payment until then.') }}</p>
+                <a class="dash-outline" href="{{ route('messages.index', ['to' => 'support']) }}"><x-heroicon-o-chat-bubble-left-right aria-hidden="true" />{{ __('Message support') }}</a>
+            </div>
         @elseif(! $enabled)
             <div class="pay-waiting">
                 <span class="pay-waiting-icon" aria-hidden="true"><x-heroicon-o-pause-circle /></span>
@@ -87,7 +94,7 @@
             <form method="GET" action="{{ route('checkout.bank', $course->slug) }}" class="pay-coupon">
                 <input type="hidden" name="method" value="{{ $selected->id }}">
                 <label for="pay-coupon">{{ __('Have a coupon?') }}</label>
-                <div><input id="pay-coupon" name="coupon" maxlength="40" autocomplete="off" value="{{ $quote['code'] ?? (is_string(request('coupon')) ? request('coupon') : '') }}"><button type="submit" class="dash-outline">{{ __('Apply') }}</button></div>
+                <div><input id="pay-coupon" name="coupon" maxlength="{{ \App\Services\CouponService::MAX_CODE_LENGTH }}" autocomplete="off" value="{{ $quote['code'] ?? (is_string(request('coupon')) ? request('coupon') : '') }}"><button type="submit" class="dash-outline">{{ __('Apply') }}</button></div>
                 @if($quote['error'])<p class="field-error" role="alert">{{ $quote['error'] }}</p>@elseif($quote['code'])<p class="small">{{ __('Coupon applied.') }}</p>@endif
             </form>
             <form method="POST" action="{{ route('checkout.bank.submit', $course->slug) }}" enctype="multipart/form-data" class="pay-confirm">@csrf
@@ -97,7 +104,7 @@
                 <h3>{{ __('After you pay, confirm it here') }}</h3>
                 <div class="form-field"><label for="pay-ref">{{ __('Transaction ID') }}</label><input id="pay-ref" name="transaction_reference" maxlength="120" autocomplete="off" value="{{ is_string(old('transaction_reference')) ? old('transaction_reference') : '' }}" placeholder="{{ __('e.g. FT24312ABC12') }}">@error('transaction_reference')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror</div>
                 <div class="form-field"><label for="pay-proof">{{ __('Receipt screenshot (optional if you entered the ID)') }}</label><input id="pay-proof" type="file" name="proof" accept="image/jpeg,image/png,image/webp,application/pdf"><p class="small">{{ __('JPG, PNG, WebP or PDF, up to 5 MB.') }}</p>@error('proof')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror</div>
-                <div class="pay-actions"><a href="{{ route('checkout.bank', $course->slug) }}" class="dash-outline">{{ __('Change method') }}</a><button type="submit" class="pay-primary">{{ __('Submit payment') }}<x-heroicon-o-arrow-right aria-hidden="true" /></button></div>
+                <div class="pay-actions"><a href="{{ route('checkout.bank', $course->slug) }}" class="dash-outline">{{ __('Change method') }}</a><button type="submit" class="pay-primary" data-busy-label="{{ __('Submitting…') }}">{{ __('Submit payment') }}<x-heroicon-o-arrow-right aria-hidden="true" /></button></div>
             </form>
         @endif
         <p class="pay-secure"><x-heroicon-o-shield-check aria-hidden="true" />{{ __('Your course unlocks only after an admin confirms the transfer.') }}</p>

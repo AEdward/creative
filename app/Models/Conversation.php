@@ -59,6 +59,15 @@ class Conversation extends Model
             || ($this->type === 'support' && $user->can('administer-academy'));
     }
 
+    /** SQL version of isUnreadFor(), so the sidebar badge is one COUNT query. */
+    public function scopeUnreadFor(Builder $query, User $user): Builder
+    {
+        return $query->whereNotNull('last_message_at')->where(function (Builder $q) use ($user) {
+            $q->where(fn ($s) => $s->where('student_id', $user->id)->where(fn ($r) => $r->whereNull('student_read_at')->orWhereColumn('student_read_at', '<', 'last_message_at')))
+                ->orWhere(fn ($s) => $s->where('student_id', '!=', $user->id)->where(fn ($r) => $r->whereNull('staff_read_at')->orWhereColumn('staff_read_at', '<', 'last_message_at')));
+        });
+    }
+
     public function isUnreadFor(User $user): bool
     {
         $seen = $this->isStudent($user) ? $this->student_read_at : $this->staff_read_at;

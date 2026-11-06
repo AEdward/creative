@@ -34,8 +34,8 @@ $side = min($w, $h);
 $small = imagescale($mark, 176, 176, IMG_BICUBIC);
 imagesavealpha($small, true);
 imagewebp($small, "$dir/logo-mark-176.webp", 90);
-echo "wrote logo-mark-176.webp
-";
+echo 'wrote logo-mark-176.webp
+';
 
 // Browsers and iOS still expect PNG for tab and home-screen icons.
 foreach (['favicon-32.png' => 32, 'favicon-192.png' => 192, 'apple-touch-icon.png' => 180] as $name => $size) {

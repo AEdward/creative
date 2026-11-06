@@ -880,5 +880,13 @@
     "You have already used this coupon.": "ይህን ኩፖን አስቀድመው ተጠቅመዋል።",
     "Refund approved": "የገንዘብ ተመላሽ ጸድቋል",
     "Your refund for :course was approved. Course access has been removed.": "ለ:course የጠየቁት የገንዘብ ተመላሽ ጸድቋል። የኮርሱ መዳረሻ ተወግዷል።",
-    "Refund declined": "የገንዘብ ተመላሽ ውድቅ ተደርጓል"
+    "Refund declined": "የገንዘብ ተመላሽ ውድቅ ተደርጓል",
+    "Submitting…": "በመላክ ላይ…",
+    "Please contact support first": "እባክዎ መጀመሪያ የድጋፍ ቡድኑን ያነጋግሩ",
+    "Your access to this course was removed by an admin, so it can’t be bought again yet. Message support and we’ll sort it out — please don’t send a payment until then.": "የዚህ ኮርስ መዳረሻዎ በአስተዳዳሪ ተወግዷል፤ ስለዚህ ገና እንደገና መግዛት አይቻልም። ለድጋፍ ቡድኑ መልእክት ይላኩ፤ እናስተካክለዋለን — እስከዚያው እባክዎ ክፍያ አይላኩ።",
+    "Your access to this course was removed by an admin. Please message support before paying again.": "የዚህ ኮርስ መዳረሻዎ በአስተዳዳሪ ተወግዷል። እንደገና ከመክፈልዎ በፊት እባክዎ ለድጋፍ ቡድኑ መልእክት ይላኩ።",
+    "If the money did leave your account, message support — we can reopen this payment without you sending it again.": "ገንዘቡ ከሂሳብዎ ወጥቶ ከሆነ ለድጋፍ ቡድኑ መልእክት ይላኩ — እንደገና ሳይልኩ ይህን ክፍያ ልንከፍተው እንችላለን።",
+    "Lesson navigation": "የትምህርት አሰሳ",
+    "Completed:": "ተጠናቋል፦",
+    "Not completed:": "አልተጠናቀቀም፦"
 }

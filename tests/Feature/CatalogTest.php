@@ -4,6 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Course;
+use App\Models\CourseReview;
+use App\Models\Enrollment;
+use App\Models\User;
+use App\Models\Wishlist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -108,7 +112,7 @@ class CatalogTest extends TestCase
     {
         $course = $this->course(['is_free' => false, 'price_minor' => 120000]);
         $this->get('/courses/'.$course->slug)->assertOk()->assertSee('Sign in to buy')->assertDontSee(route('checkout.bank', $course->slug));
-        $this->actingAs(\App\Models\User::factory()->create())->get('/courses/'.$course->slug)->assertOk()->assertSee(route('checkout.bank', $course->slug));
+        $this->actingAs(User::factory()->create())->get('/courses/'.$course->slug)->assertOk()->assertSee(route('checkout.bank', $course->slug));
     }
 
     public function test_html_filter_errors_redirect_to_a_clean_catalog_with_feedback(): void
@@ -121,15 +125,15 @@ class CatalogTest extends TestCase
 
     public function test_signed_in_catalogue_shows_enrollment_wishlist_and_real_counts(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $course = Course::factory()->create(['title' => 'Enrolled course', 'is_free' => true, 'price_minor' => 0]);
         $other = Course::factory()->create(['title' => 'Other course']);
         $module = $course->modules()->create(['title' => 'One']);
         $module->lessons()->create(['title' => 'A', 'type' => 'text', 'body' => 'x', 'duration_seconds' => 5400, 'published' => true]);
         $module->lessons()->create(['title' => 'Draft', 'type' => 'text', 'body' => 'x', 'duration_seconds' => 600, 'published' => false]);
-        \App\Models\Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
-        \App\Models\Wishlist::create(['user_id' => $user->id, 'course_id' => $other->id]);
-        \App\Models\CourseReview::create(['course_id' => $other->id, 'user_id' => $user->id, 'rating' => 4, 'body' => 'Good', 'status' => 'pending']);
+        Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
+        Wishlist::create(['user_id' => $user->id, 'course_id' => $other->id]);
+        CourseReview::create(['course_id' => $other->id, 'user_id' => $user->id, 'rating' => 4, 'body' => 'Good', 'status' => 'pending']);
 
         $this->actingAs($user)->get('/courses')->assertOk()
             ->assertSee('class="app-sidebar"', false)
@@ -144,13 +148,13 @@ class CatalogTest extends TestCase
 
     public function test_signed_in_pages_use_the_sidebar_and_public_pages_do_not(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         foreach (['/dashboard', '/my-learning', '/certificates', '/wishlist', '/profile', '/payments', '/notifications', '/support'] as $page) {
             $this->actingAs($user)->get($page)->assertOk()->assertSee('class="app-sidebar"', false)->assertDontSee('class="site-footer"', false);
         }
         $this->get('/')->assertOk()->assertDontSee('class="app-sidebar"', false);
         $this->get('/about')->assertOk()->assertDontSee('class="app-sidebar"', false);
-        $unverified = \App\Models\User::factory()->unverified()->create();
+        $unverified = User::factory()->unverified()->create();
         $this->actingAs($unverified)->get('/verify-email')->assertOk()->assertDontSee('class="app-sidebar"', false);
     }
 }

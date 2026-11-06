@@ -162,3 +162,4 @@ body.fi-body,.fi-body{background:#F5F6FB;font-family:Poppins,ui-sans-serif,syste
 .cla-meter{height:10px;border-radius:99px;background:#EEEFF4;overflow:hidden;margin:0 0 14px}
 .cla-meter span{display:block;height:100%;background:var(--cla-primary)}.cla-meter span.bad{background:#C8102E}
 @media (max-width:700px){.cla-two{grid-template-columns:1fr}}
+.cla-warning{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:12px;background:#FFF1DC;color:#7A4300;font-size:14px;font-weight:500}.cla-warning svg{width:20px;height:20px;flex:none}

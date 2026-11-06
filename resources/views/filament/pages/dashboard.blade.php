@@ -14,6 +14,7 @@
     $usedPct = $storage['quota'] > 0 ? min(100, round($storage['used'] / $storage['quota'] * 100)) : 0;
 @endphp
 <div class="cla-dash">
+    @foreach($background as $problem)<div class="cla-warning" role="alert"><x-filament::icon icon="heroicon-o-exclamation-triangle" />{{ $problem }}</div>@endforeach
     <div class="cla-dash-head">
         <div><h1>{{ __('Dashboard') }}</h1><p>{{ __('Welcome back! Here’s what’s happening with your academy.') }}</p></div>
         <span class="cla-dash-range"><x-filament::icon icon="heroicon-o-calendar" />{{ now()->startOfMonth()->translatedFormat('M j') }} – {{ now()->translatedFormat('M j, Y') }}</span>

@@ -10,6 +10,8 @@ use App\Models\LessonResource;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\VideoAsset;
+use App\Support\AcademySettings;
+use App\Support\BackgroundHealth;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -53,9 +55,10 @@ class Dashboard extends BaseDashboard
 
         $videoBytes = (int) VideoAsset::where('status', 'ready')->sum('expected_bytes');
         $fileBytes = (int) LessonResource::sum('bytes');
-        $quota = (float) config('academy.storage_quota_gb', 10) * 1024 ** 3;
+        $quota = (float) AcademySettings::get('storage_limit_gb') * 1024 ** 3;
 
         return [
+            'background' => BackgroundHealth::problems(),
             'stats' => $stats,
             'growth' => $growth,
             'byCategory' => $byCategory,

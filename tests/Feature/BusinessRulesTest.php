@@ -94,7 +94,7 @@ class BusinessRulesTest extends TestCase
         $this->actingAs($admin);
         Livewire::test(ManageOrders::class)->callTableAction('refund', $order, ['note' => 'Sent back to your CBE account.']);
         $this->assertSame(['refunded', 'refunded'], [$order->fresh()->status, $order->fresh()->refund_status]);
-        $this->assertSame('revoked', Enrollment::where('user_id', $learner->id)->value('status'));
+        $this->assertSame('refunded', Enrollment::where('user_id', $learner->id)->value('status'));
         $this->assertSame('refunded', $order->payment()->value('status'));
         $this->assertTrue($learner->notifications()->where('data->title', 'Refund approved')->exists());
     }

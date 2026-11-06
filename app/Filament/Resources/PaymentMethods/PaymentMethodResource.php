@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PaymentMethods;
 
 use App\Filament\Resources\PaymentMethods\Pages\ManagePaymentMethods;
 use App\Models\PaymentMethod;
+use App\Models\PaymentSubmission;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
@@ -54,7 +55,7 @@ class PaymentMethodResource extends Resource
         ])->recordActions([
             EditAction::make(),
             // Methods already used by learners are deactivated instead of deleted.
-            DeleteAction::make()->visible(fn (PaymentMethod $record) => ! \App\Models\PaymentSubmission::where('payment_method_id', $record->id)->exists()),
+            DeleteAction::make()->visible(fn (PaymentMethod $record) => ! PaymentSubmission::where('payment_method_id', $record->id)->exists()),
         ])->defaultSort('sort_order');
     }
 

@@ -20,19 +20,19 @@ class ExpireOrders extends Command
         Order::whereIn('status', ['pending', 'awaiting_payment'])->where('created_at', '<', now()->subDay())
             // Bank transfers waiting for an admin's review must not expire underneath them.
             ->whereDoesntHave('submissions', fn ($q) => $q->where('status', 'pending'))->chunkById(100, function ($orders) use (&$count): void {
-            foreach ($orders as $candidate) {
-                DB::transaction(function () use ($candidate, &$count): void {
-                    User::whereKey($candidate->user_id)->lockForUpdate()->firstOrFail();
-                    $order = Order::whereKey($candidate->id)->lockForUpdate()->firstOrFail();
-                    if (! in_array($order->status, ['pending', 'awaiting_payment']) || ! $order->created_at->lt(now()->subDay())) {
-                        return;
-                    }
-                    $order->update(['status' => 'expired']);
-                    CouponRedemption::where('order_id', $order->id)->where('status', 'reserved')->update(['status' => 'released']);
-                    $count++;
-                });
-            }
-        });
+                foreach ($orders as $candidate) {
+                    DB::transaction(function () use ($candidate, &$count): void {
+                        User::whereKey($candidate->user_id)->lockForUpdate()->firstOrFail();
+                        $order = Order::whereKey($candidate->id)->lockForUpdate()->firstOrFail();
+                        if (! in_array($order->status, ['pending', 'awaiting_payment']) || ! $order->created_at->lt(now()->subDay())) {
+                            return;
+                        }
+                        $order->update(['status' => 'expired']);
+                        CouponRedemption::where('order_id', $order->id)->where('status', 'reserved')->update(['status' => 'released']);
+                        $count++;
+                    });
+                }
+            });
         $this->info('Expired unpaid orders: '.$count.'. Late provider evidence requires operator reconciliation.');
 
         return self::SUCCESS;

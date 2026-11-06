@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\SiteSetting;
 use App\Models\User;
 use App\Models\VideoAsset;
+use App\Services\CouponService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,7 +91,7 @@ class AcademyController extends Controller
     public function coupon(Request $request): RedirectResponse
     {
         $request->merge(['code' => is_string($request->input('code')) ? Str::upper(trim($request->input('code'))) : $request->input('code')]);
-        $data = $request->validate(['code' => ['required', 'string', 'regex:/^[A-Z0-9_-]{3,50}$/', 'unique:coupons,code'], 'percent' => ['required', 'integer', 'min:1', 'max:99'], 'max_uses' => ['required', 'integer', 'min:1', 'max:100000'], 'per_user_limit' => ['required', 'integer', 'min:1', 'max:100'], 'course_id' => ['nullable', 'integer', 'exists:courses,id'], 'starts_at' => ['nullable', 'date'], 'expires_at' => ['nullable', 'date', 'after:starts_at']]);
+        $data = $request->validate(['code' => ['required', 'string', 'regex:/^[A-Z0-9_-]{3,'.CouponService::MAX_CODE_LENGTH.'}$/', 'unique:coupons,code'], 'percent' => ['required', 'integer', 'min:1', 'max:99'], 'max_uses' => ['required', 'integer', 'min:1', 'max:100000'], 'per_user_limit' => ['required', 'integer', 'min:1', 'max:100'], 'course_id' => ['nullable', 'integer', 'exists:courses,id'], 'starts_at' => ['nullable', 'date'], 'expires_at' => ['nullable', 'date', 'after:starts_at']]);
         DB::transaction(function () use ($request, $data): void {
             $coupon = Coupon::create($data + ['active' => true]);
             $this->audit($request, 'coupon.created', 'coupon', $coupon->id, ['percent' => $coupon->percent]);

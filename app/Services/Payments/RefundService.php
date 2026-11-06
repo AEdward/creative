@@ -43,7 +43,7 @@ class RefundService
             if ($order->status !== 'paid' || ! in_array($order->refund_status, [null, 'requested'], true)) {
                 throw ValidationException::withMessages(['order' => 'This order can’t be refunded.']);
             }
-            Enrollment::where('user_id', $order->user_id)->whereIn('source_order_item_id', $order->items->pluck('id'))->update(['status' => 'revoked']);
+            Enrollment::where('user_id', $order->user_id)->whereIn('source_order_item_id', $order->items->pluck('id'))->update(['status' => 'refunded']);
             Payment::where('order_id', $order->id)->update(['status' => 'refunded']);
             $order->update(['status' => 'refunded', 'refund_status' => 'refunded', 'refund_note' => $note, 'refund_reviewed_at' => now(), 'refund_reviewer_id' => $admin->id]);
             AuditLog::create(['actor_id' => $admin->id, 'action' => 'order.refunded', 'subject_type' => 'order', 'subject_id' => $order->id, 'changes' => ['amount_minor' => $order->total_minor, 'note' => $note]]);

@@ -3,7 +3,7 @@
     $user = auth()->user();
     $unread = $user->unreadNotifications()->count();
     $latestNotifications = $user->notifications()->latest()->limit(5)->get();
-    $unreadMessages = \App\Models\Conversation::visibleTo($user)->latest('last_message_at')->limit(50)->get()->filter(fn ($c) => $c->isUnreadFor($user))->count();
+    $unreadMessages = \App\Models\Conversation::visibleTo($user)->unreadFor($user)->count();
     $firstName = \Illuminate\Support\Str::of($user->name)->before(' ')->limit(18);
     $initials = \Illuminate\Support\Str::of($user->name)->explode(' ')->filter()->take(2)->map(fn ($part) => mb_substr($part, 0, 1))->implode('');
     $hasAvatar = is_string($user->avatar_key) && $user->avatar_key !== '';

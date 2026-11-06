@@ -29,6 +29,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // A copied development .env must never show stack traces or send cookies over plain HTTP in production.
+        if ($this->app->isProduction()) {
+            if (config('app.debug')) {
+                config(['app.debug' => false]);
+                logger()->critical('APP_DEBUG=true in production was ignored. Set APP_DEBUG=false in .env.');
+            }
+            config(['session.secure' => true]); // the live site is HTTPS-only
+        }
         Gate::define('administer-academy', fn (User $user) => $user->role === 'admin' && $user->status === 'active' && $user->hasVerifiedEmail());
         // /up fails (HTTP 500) when the database or writable storage is unavailable, so uptime monitors catch it.
         Event::listen(DiagnosingHealth::class, function (): void {

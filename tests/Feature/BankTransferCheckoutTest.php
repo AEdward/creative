@@ -9,9 +9,11 @@ use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\PaymentSubmission;
 use App\Models\User;
+use App\Services\Payments\BankTransferService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -80,7 +82,7 @@ class BankTransferCheckoutTest extends TestCase
         $this->assertSame('paid', $second->order->fresh()->status);
         $this->assertDatabaseHas('enrollments', ['user_id' => $learner->id, 'course_id' => $course->id, 'source' => 'bank_transfer', 'status' => 'active']);
         $this->assertTrue($learner->notifications()->where('data->title', 'Payment approved')->exists());
-        $this->assertThrows(fn () => app(\App\Services\Payments\BankTransferService::class)->approve($second, $admin), \Illuminate\Validation\ValidationException::class);
+        $this->assertThrows(fn () => app(BankTransferService::class)->approve($second, $admin), ValidationException::class);
         $this->assertSame(1, Enrollment::count());
 
         $this->actingAs($learner)->get(route('checkout.bank', $course->slug))->assertRedirect(route('learning.index'));

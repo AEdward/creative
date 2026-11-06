@@ -9,6 +9,7 @@ use App\Models\Enrollment;
 use App\Models\User;
 use App\Support\CertificateTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -49,7 +50,7 @@ class AdminPanelTest extends TestCase
 
         $learner = User::factory()->create();
         $enrollment = Enrollment::factory()->create(['user_id' => $learner->id]);
-        $certificate = Certificate::create(['enrollment_id' => $enrollment->id, 'reference' => (string) \Illuminate\Support\Str::uuid(), 'learner_name' => 'Sara Bekele', 'course_title' => 'Motion', 'issued_at' => now()]);
+        $certificate = Certificate::create(['enrollment_id' => $enrollment->id, 'reference' => (string) Str::uuid(), 'learner_name' => 'Sara Bekele', 'course_title' => 'Motion', 'issued_at' => now()]);
         $this->actingAs($learner)->get(route('certificates.print', $certificate))->assertOk()->assertSee('Diploma of Creativity')->assertSee('Sara Bekele')->assertSee('#3054F5', false);
     }
 

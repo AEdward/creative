@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\Course;
-use App\Models\Enrollment;
 use App\Models\User;
 use App\Notifications\EngagementNotification;
 use Illuminate\Http\RedirectResponse;

@@ -1,0 +1,54 @@
+name: Release bundle
+# After "Application checks" passes on main, build a ready-to-run copy (vendor/ + public/build included)
+# and force-push it to the `deploy` branch. The cPanel server only ever pulls that branch, so it needs
+# neither Composer nor Node. See docs/HOSTING.md.
+on:
+  workflow_run:
+    workflows: ["Application checks"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: true
+jobs:
+  bundle:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, intl, mbstring, pdo_mysql, dom, xml, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+      - run: npm ci --ignore-scripts && npm run build
+      - name: Assemble bundle
+        run: |
+          set -e
+          mkdir -p ../bundle
+          # Everything the server runs; no tests, Node sources, CI config or local env files.
+          rsync -a --exclude '.git' --exclude 'node_modules' --exclude 'tests' --exclude '.github' \
+            --exclude '.env' --exclude 'storage/logs/*' --exclude 'storage/app/backups' ./ ../bundle/
+          # Built assets and vendor are normally git-ignored; this branch must carry them.
+          printf '/node_modules\n/.env\n/storage/*.key\n' > ../bundle/.gitignore
+          echo "${GITHUB_SHA::7} $(date -u +%Y-%m-%dT%H:%MZ)" > ../bundle/RELEASE
+      - name: Push to deploy branch
+        run: |
+          set -e
+          cd ../bundle
+          git init -q -b deploy
+          git config user.name "release-bot"
+          git config user.email "release-bot@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Release $(cat RELEASE)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy

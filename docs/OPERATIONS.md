@@ -15,6 +15,20 @@ One cron entry runs everything (cPanel → Cron Jobs, every minute):
 | `academy:backup` | 02:30 daily | MySQL dump → `storage/app/backups/db-*.sql.gz`, keeps 14 |
 | `academy:check-storage` | 06:00 daily | Notifies admins when video storage passes the alert % set in **Admin → Site settings** |
 
+## Queue worker
+
+Notifications and emails are queued (`QUEUE_CONNECTION=database`). Keep a worker running:
+
+```
+php artisan queue:work --stop-when-empty --max-time=55
+```
+
+On shared hosting without a process manager, run that as a second every-minute cron entry; with a VPS,
+run `php artisan queue:work` under systemd or Supervisor.
+
+The scheduler stamps a heartbeat every minute. **Admin → Dashboard** shows a warning when scheduled jobs
+haven't run for 10 minutes or queued jobs have waited over 15 minutes.
+
 ## Health check
 
 `GET /up` returns 200 when the app boots, the database answers and storage is writable; otherwise 500.

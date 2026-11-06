@@ -313,6 +313,8 @@ document.addEventListener("keydown", (event) => {
     if (event.target.closest?.(".app-menu-button") && (event.key === "Enter" || event.key === " ")) {
         event.preventDefault();
         toggle.checked = !toggle.checked;
+        // Opening from the keyboard: move focus to the first menu link once the drawer is visible.
+        if (toggle.checked) requestAnimationFrame(() => document.querySelector(".app-sidebar a")?.focus());
     } else if (event.key === "Escape" && toggle.checked) {
         toggle.checked = false;
         document.querySelector(".app-menu-button")?.focus();
@@ -356,4 +358,33 @@ document.addEventListener("click", async (event) => {
     const label = button.textContent;
     button.textContent = "✓";
     setTimeout(() => (button.textContent = label), 1500);
+});
+
+// Double-submit guard for ordinary POST forms (slow mobile connections invite a second tap).
+// Buttons are disabled on the next tick so their own name/value is still sent with the first submit.
+document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.method.toLowerCase() !== "post") return;
+    if (form.matches('[data-video-upload], [wire\\:submit], [data-no-guard]') || form.target === "_blank" || event.defaultPrevented) return;
+    if (form.dataset.submitting) {
+        event.preventDefault();
+        return;
+    }
+    form.dataset.submitting = "true";
+    form.setAttribute("aria-busy", "true");
+    setTimeout(() => {
+        form.querySelectorAll('button[type="submit"], button:not([type]), input[type="submit"]').forEach((button) => {
+            button.disabled = true;
+            if (button.dataset.busyLabel) button.textContent = button.dataset.busyLabel;
+        });
+    });
+});
+// Back/forward cache restores the page as it was; re-enable forms so they can be used again.
+window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    document.querySelectorAll("form[data-submitting]").forEach((form) => {
+        delete form.dataset.submitting;
+        form.removeAttribute("aria-busy");
+        form.querySelectorAll("button, input[type=submit]").forEach((button) => (button.disabled = false));
+    });
 });

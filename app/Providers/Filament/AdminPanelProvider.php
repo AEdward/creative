@@ -4,12 +4,12 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
 use App\Filament\Support\InitialsAvatarProvider;
-use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\AuthenticateAdminPanel;
+use App\Http\Middleware\EnsureAccountActive;
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\FontProviders\LocalFontProvider;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;

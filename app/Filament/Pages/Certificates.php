@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\AuditLog;
 use App\Models\Certificate;
 use App\Support\CertificateTemplate;
 use Filament\Notifications\Notification;
@@ -41,7 +42,7 @@ class Certificates extends Page
             'template.accent' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ])['template'];
         CertificateTemplate::save($data);
-        \App\Models\AuditLog::create(['actor_id' => auth()->id(), 'action' => 'certificate.template_updated', 'subject_type' => 'site_setting', 'subject_id' => 0, 'changes' => $data]);
+        AuditLog::create(['actor_id' => auth()->id(), 'action' => 'certificate.template_updated', 'subject_type' => 'site_setting', 'subject_id' => 0, 'changes' => $data]);
         Notification::make()->title('Certificate design saved')->success()->send();
     }
 

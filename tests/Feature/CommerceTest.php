@@ -11,6 +11,7 @@ use App\Services\Payments\CheckoutService;
 use App\Services\Payments\FakeGateway;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentProcessor;
+use App\Services\Payments\PaymentSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -215,7 +216,7 @@ class CommerceTest extends TestCase
         config(['academy.payments_enabled' => true]);
         $broken = new class extends FakeGateway
         {
-            public function initiate(\App\Models\Order $order): \App\Services\Payments\PaymentSession
+            public function initiate(Order $order): PaymentSession
             {
                 throw new \RuntimeException('provider down');
             }

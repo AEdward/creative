@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\Order;
+use App\Services\CouponService;
 use App\Services\Payments\CheckoutService;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentProcessor;
-use Illuminate\Http\JsonResponse;
 use App\Services\Payments\RefundService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -31,7 +32,7 @@ class CheckoutController extends Controller
 
     public function store(Request $request, Course $course, CheckoutService $checkout): JsonResponse
     {
-        $data = $request->validate(['idempotency_key' => ['required', 'uuid'], 'coupon' => ['nullable', 'string', 'max:50']]);
+        $data = $request->validate(['idempotency_key' => ['required', 'uuid'], 'coupon' => ['nullable', 'string', 'max:'.CouponService::MAX_CODE_LENGTH]]);
         $order = $checkout->create($request->user(), $course, $data['idempotency_key'], $data['coupon'] ?? null);
 
         return response()->json(['order_reference' => $order->reference, 'status' => $order->status]);
