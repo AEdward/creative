@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\EngagementNotification;
+use App\Support\Admin;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
@@ -32,7 +33,7 @@ class RefundService
 
         $admins = User::staffFor('finance');
         if ($admins->isNotEmpty()) {
-            Notification::send($admins, new EngagementNotification(['title' => __('Refund requested'), 'body' => $user->name.' · '.$order->items()->value('title_snapshot'), 'url' => '/admin/orders']));
+            Notification::send($admins, new EngagementNotification(['title' => __('Refund requested'), 'body' => $user->name.' · '.$order->items()->value('title_snapshot'), 'url' => Admin::url('orders')]));
         }
     }
 

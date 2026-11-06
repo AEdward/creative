@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\TwoFactor;
+use App\Support\Admin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -44,7 +45,7 @@ class TwoFactorController extends Controller
         $request->session()->forget('two_factor_setup_secret');
         $request->session()->put(TwoFactor::SESSION_KEY, $user->id);
 
-        return view('auth.two-factor-recovery', ['codes' => $codes, 'next' => $request->session()->pull('url.intended', url('/admin'))]);
+        return view('auth.two-factor-recovery', ['codes' => $codes, 'next' => $request->session()->pull('url.intended', Admin::url())]);
     }
 
     /** Every later sign-in: enter the current code (or a recovery code). */
@@ -75,6 +76,6 @@ class TwoFactorController extends Controller
         $request->session()->regenerate();
         $request->session()->put(TwoFactor::SESSION_KEY, $user->id);
 
-        return redirect()->intended(url('/admin'));
+        return redirect()->intended(Admin::url());
     }
 }

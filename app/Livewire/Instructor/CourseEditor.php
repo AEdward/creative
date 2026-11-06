@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Course;
 use App\Models\User;
 use App\Services\CourseDeletion;
+use App\Support\Admin;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -350,7 +351,7 @@ class CourseEditor extends Component
         abort_unless($course && auth()->user()->can('staff', 'content'), 403);
         app(CourseDeletion::class)->delete($course, auth()->user(), $this->deleteConfirmation);
         session()->flash('status', 'Course deleted.');
-        $this->redirect(url('/admin/courses'));
+        $this->redirect(Admin::url('courses'));
     }
 
     public function publish(): void

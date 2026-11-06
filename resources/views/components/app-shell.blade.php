@@ -13,16 +13,16 @@
     if ($user->role === 'admin') {
         $can = fn (string $area) => $user->staffCan($area);
         $nav = array_values(array_filter([
-            [url('/admin'), 'Admin dashboard', 'heroicon-o-home', []],
-            $can('content') ? [url('/admin/courses'), 'Courses', 'heroicon-o-book-open', ['instructor.courses.edit', 'instructor.materials', 'instructor.assessments', 'instructor.announcements', 'instructor.learners']] : null,
+            [\App\Support\Admin::url(), 'Admin dashboard', 'heroicon-o-home', []],
+            $can('content') ? [\App\Support\Admin::url('courses'), 'Courses', 'heroicon-o-book-open', ['instructor.courses.edit', 'instructor.materials', 'instructor.assessments', 'instructor.announcements', 'instructor.learners']] : null,
             $can('content') ? [\App\Filament\Pages\CourseStudio::getUrl(), 'New course', 'heroicon-o-plus-circle', []] : null,
-            $can('content') ? [url('/admin/media-library'), 'Media Library', 'heroicon-o-photo', []] : null,
-            $can('super') ? [url('/admin/users'), 'Students & users', 'heroicon-o-users', []] : null,
-            $can('finance') ? [url('/admin/payment-submissions'), 'Payment approvals', 'heroicon-o-banknotes', []] : null,
-            $can('enrollments') ? [url('/admin/enrollments'), 'Enrollments', 'heroicon-o-user-plus', []] : null,
-            [url('/admin/analytics'), 'Analytics', 'heroicon-o-chart-bar', []],
+            $can('content') ? [\App\Support\Admin::url('media-library'), 'Media Library', 'heroicon-o-photo', []] : null,
+            $can('super') ? [\App\Support\Admin::url('users'), 'Students & users', 'heroicon-o-users', []] : null,
+            $can('finance') ? [\App\Support\Admin::url('payment-submissions'), 'Payment approvals', 'heroicon-o-banknotes', []] : null,
+            $can('enrollments') ? [\App\Support\Admin::url('enrollments'), 'Enrollments', 'heroicon-o-user-plus', []] : null,
+            [\App\Support\Admin::url('analytics'), 'Analytics', 'heroicon-o-chart-bar', []],
             $can('support') ? [route('messages.index'), 'Support messages', 'heroicon-o-envelope', ['messages.*']] : null,
-            $can('support') ? [url('/admin/support-tickets'), 'Support tickets', 'heroicon-o-lifebuoy', ['support.show']] : null,
+            $can('support') ? [\App\Support\Admin::url('support-tickets'), 'Support tickets', 'heroicon-o-lifebuoy', ['support.show']] : null,
         ]));
         $account = [
             [route('profile'), 'Profile', 'heroicon-o-user', ['profile']],

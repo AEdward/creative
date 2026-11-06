@@ -3973,3 +3973,8 @@ form[aria-busy="true"] button[disabled]{opacity:.7;cursor:progress}
 .chat-signin{margin:0;text-align:center}
 .chat-signin a{color:var(--color-brand-primary);font-weight:600}
 @media (max-width:600px){.chat-widget{right:12px;bottom:12px}.chat-panel{bottom:68px}}
+/* Buttons inside empty states keep their own white text (the empty-state link colour is for text links). */
+.dash-empty a.button,.dash-empty .button{color:#fff;display:inline-flex;margin-top:12px}
+.dash-card.dash-empty{padding:24px 26px}
+.dash-card.dash-empty h2{margin:0 0 6px;font-size:18px;color:var(--color-brand-dark)}
+.dash-card.dash-empty p{margin:0}

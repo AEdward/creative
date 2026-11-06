@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Payments\CheckoutService;
 use App\Services\Payments\FakeGateway;
 use App\Services\Payments\PaymentGateway;
+use App\Support\Admin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -99,7 +100,10 @@ class OperationsTest extends TestCase
         $visible = Course::factory()->create(['slug' => 'visible-course']);
         Course::factory()->create(['slug' => 'secret-draft', 'status' => 'draft']);
         $this->get('/sitemap.xml')->assertOk()->assertSee('visible-course')->assertDontSee('secret-draft')->assertDontSee('/admin');
-        $this->get('/robots.txt')->assertOk()->assertSee('Disallow: /admin');
+        // robots.txt must not advertise where the admin panel is.
+        $this->get('/robots.txt')->assertOk()->assertSee('Disallow: /my-learning')->assertDontSee('Disallow: /admin'."\n", false);
+        config(['academy.admin_path' => '/hub-k7m2x9/']);
+        $this->assertSame(url('hub-k7m2x9/courses'), Admin::url('courses'));
         $this->post('/locale', ['locale' => 'am'])->assertRedirect();
         $this->get('/')->assertSee('lang="am"', false);
         $this->post('/locale', ['locale' => 'invalid'])->assertSessionHasErrors('locale');

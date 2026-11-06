@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Notifications\EngagementNotification;
 use App\Services\CouponService;
 use App\Support\AcademySettings;
+use App\Support\Admin;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -82,7 +83,7 @@ class BankTransferService
 
         $admins = User::staffFor('finance');
         if ($admins->isNotEmpty()) {
-            Notification::send($admins, new EngagementNotification(['title' => __('Payment to review'), 'body' => $user->name.' · '.$course->title.' · '.$method->name, 'url' => '/admin/payment-submissions']));
+            Notification::send($admins, new EngagementNotification(['title' => __('Payment to review'), 'body' => $user->name.' · '.$course->title.' · '.$method->name, 'url' => Admin::url('payment-submissions')]));
         }
 
         return $submission;

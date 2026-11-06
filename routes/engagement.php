@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EngagementController as Engagement;
+use App\Support\Admin;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/courses/{course:slug}/reviews', [Engagement::class, 'reviews'])->name('reviews.index');
@@ -20,7 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/support/{ticket}/replies', [Engagement::class, 'reply'])->middleware('throttle:20,1,support-reply')->name('support.reply');
     Route::post('/support/{ticket}/status', [Engagement::class, 'ticketStatus'])->name('support.status');
     Route::middleware('can:administer-academy')->prefix('academy-admin')->group(function () {
-        Route::get('/reviews', fn () => redirect('/admin/reviews'))->name('admin.reviews');
-        Route::get('/support', fn () => redirect('/admin/support-tickets'))->name('admin.support');
+        Route::get('/reviews', fn () => redirect(Admin::url('reviews')))->name('admin.reviews');
+        Route::get('/support', fn () => redirect(Admin::url('support-tickets')))->name('admin.support');
     });
 });

@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Filament\Pages\CourseStudio;
 use App\Support\AcademySettings;
+use App\Support\Admin;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -47,7 +48,7 @@ class EnforceRoleWorkspace
     private function studioUrl(Request $request): ?string
     {
         if ($request->routeIs('instructor.dashboard')) {
-            return url('/admin/courses');
+            return Admin::url('courses');
         }
         if ($request->routeIs('instructor.courses.create')) {
             return CourseStudio::getUrl();

@@ -7,6 +7,7 @@ use App\Filament\Support\InitialsAvatarProvider;
 use App\Http\Middleware\AuthenticateAdminPanel;
 use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\RequireTwoFactor;
+use App\Support\Admin;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -32,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path(Admin::path())
             ->login()
             ->brandName('Creative Lab Academy')
             ->brandLogo(fn () => asset('images/brand/wordmark-on-light-60.webp'))

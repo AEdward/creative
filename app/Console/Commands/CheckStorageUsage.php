@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\VideoAsset;
 use App\Notifications\EngagementNotification;
 use App\Support\AcademySettings;
+use App\Support\Admin;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Number;
@@ -32,7 +33,7 @@ class CheckStorageUsage extends Command
             Notification::send($admins, new EngagementNotification([
                 'title' => __('Video storage at :percent%', ['percent' => $percent]),
                 'body' => __(':used of your :limit storage budget is used. Remove unused videos or raise the budget in Site settings.', ['used' => Number::fileSize($used, 1), 'limit' => Number::fileSize($limit)]),
-                'url' => '/admin/settings',
+                'url' => Admin::url('settings'),
             ]));
             $state->value = ['alerted' => true, 'at' => now()->toIso8601String()];
             $state->save();

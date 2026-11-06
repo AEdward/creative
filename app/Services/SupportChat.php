@@ -6,6 +6,7 @@ use App\Models\Conversation;
 use App\Models\ConversationMessage;
 use App\Models\User;
 use App\Notifications\EngagementNotification;
+use App\Support\Admin;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -74,7 +75,7 @@ class SupportChat
         if (! $this->staffOnline()) {
             $staff = User::staffFor('support');
             if ($staff->isNotEmpty()) {
-                Notification::send($staff, new EngagementNotification(['title' => __('New support chat message from :name', ['name' => $learner->name]), 'body' => Str::limit($body, 200), 'url' => '/admin/support-chat?chat='.$chat->id]));
+                Notification::send($staff, new EngagementNotification(['title' => __('New support chat message from :name', ['name' => $learner->name]), 'body' => Str::limit($body, 200), 'url' => Admin::url('support-chat?chat=').$chat->id]));
             }
         }
 

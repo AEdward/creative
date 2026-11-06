@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\AcademySettings;
+use App\Support\Admin;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -78,7 +79,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function homeUrl(): string
     {
         return match (true) {
-            $this->role === 'admin' => url('/admin'),
+            $this->role === 'admin' => Admin::url(),
             $this->role === 'instructor' && (bool) AcademySettings::get('instructor_portal_enabled') => route('instructor.dashboard'),
             $this->role === 'instructor' => route('instructor.closed'),
             default => route('dashboard'),

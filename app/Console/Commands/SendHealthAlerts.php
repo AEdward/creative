@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\SiteSetting;
 use App\Models\User;
 use App\Notifications\EngagementNotification;
+use App\Support\Admin;
 use App\Support\SiteHealth;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Notification;
@@ -35,7 +36,7 @@ class SendHealthAlerts extends Command
                 Notification::send($supers, new EngagementNotification([
                     'title' => $new->isNotEmpty() ? __('Creative Lab: something needs attention') : __('Creative Lab: problem fixed'),
                     'body' => $lines->implode("\n"),
-                    'url' => '/admin/site-health',
+                    'url' => Admin::url('site-health'),
                 ]));
             }
             $state->value = ['failing' => $failing->keys()->values()->all(), 'changed_at' => now()->toIso8601String()];
