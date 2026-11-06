@@ -51,7 +51,7 @@
         $account = [
             [route('profile'), 'Profile', 'heroicon-o-user', ['profile']],
             [route('payments'), 'Orders & payments', 'heroicon-o-credit-card', ['payments']],
-            [route('support.index'), 'Help & Support', 'heroicon-o-question-mark-circle', ['support.*']],
+            [route('messages.index', ['to' => 'support']), 'Help & Support', 'heroicon-o-question-mark-circle', ['support.*']],
         ];
     }
     $messagesUrl = route('messages.index');
@@ -114,6 +114,7 @@
         <main id="main" tabindex="-1" class="app-content">{{ $slot }}</main>
     </div>
 </div>
+<x-chat-widget />
 @livewireScripts
 </body>
 </html>

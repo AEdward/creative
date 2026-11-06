@@ -91,5 +91,6 @@ $mediaLabels = collect([
 @endunless @endguest
 <div hidden id="media-localization" data-messages="{{ json_encode($mediaLabels, JSON_UNESCAPED_UNICODE) }}"></div>
 @livewireScripts
+<x-chat-widget />
 </body></html>
 @endif

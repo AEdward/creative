@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Conversation extends Model
 {
-    protected $fillable = ['student_id', 'type', 'course_id', 'instructor_id', 'subject', 'last_message_at', 'student_read_at', 'staff_read_at'];
+    protected $fillable = ['student_id', 'type', 'course_id', 'instructor_id', 'subject', 'status', 'closed_at', 'closed_by', 'last_message_at', 'student_read_at', 'staff_read_at'];
 
     protected function casts(): array
     {
-        return ['last_message_at' => 'datetime', 'student_read_at' => 'datetime', 'staff_read_at' => 'datetime'];
+        return ['last_message_at' => 'datetime', 'student_read_at' => 'datetime', 'staff_read_at' => 'datetime', 'closed_at' => 'datetime'];
     }
 
     public function student(): BelongsTo

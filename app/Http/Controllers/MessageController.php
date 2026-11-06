@@ -66,6 +66,9 @@ class MessageController extends Controller
     {
         $user = $request->user();
         abort_unless($conversation->canBeSeenBy($user), 404);
+        if ($conversation->status === 'closed') {
+            return back()->withErrors(['body' => 'This conversation was closed. Use the chat bubble to start a new one.']);
+        }
         $data = $request->validate(['body' => ['required', 'string', 'max:5000']]);
         DB::transaction(function () use ($conversation, $user, $data) {
             $conversation->messages()->create(['sender_id' => $user->id, 'body' => $data['body']]);

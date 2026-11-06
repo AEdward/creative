@@ -327,3 +327,121 @@ document.addEventListener("submit", async (event) => {
         if (button) button.disabled = false;
     }
 });
+
+// Live support chat bubble. No websockets on shared hosting: poll every 4 s while open, every 60 s
+// (for the unread badge) while closed. Help search runs before chatting.
+(function initChat() {
+    const root = document.querySelector("[data-chat]");
+    if (!root) return;
+    const labels = JSON.parse(document.getElementById("chat-labels")?.dataset.labels || "{}");
+    const panel = root.querySelector(".chat-panel");
+    const thread = root.querySelector("[data-chat-thread]");
+    const articles = root.querySelector("[data-chat-articles]");
+    const search = root.querySelector("[data-chat-search]");
+    const form = root.querySelector("[data-chat-form]");
+    const input = root.querySelector("[data-chat-input]");
+    const status = root.querySelector("[data-chat-status]");
+    const hint = root.querySelector("[data-chat-hint]");
+    const badge = root.querySelector("[data-chat-badge]");
+    let lastId = 0;
+    let timer = null;
+    let open = false;
+    let unseen = 0;
+    const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    const escape = (s) => String(s).replace(/[&<>"']/g, (c) => entities[c]);
+
+    const render = (messages) => {
+        messages.forEach((m) => {
+            if (m.id <= lastId) return;
+            lastId = m.id;
+            const li = document.createElement("li");
+            li.className = m.mine ? "mine" : "staff";
+            li.innerHTML = `<span class="chat-who">${escape(m.mine ? labels.you : m.name)} · ${escape(m.at)}</span><p>${escape(m.body)}</p>`;
+            thread.appendChild(li);
+            if (!open && !m.mine) unseen++;
+        });
+        thread.hidden = thread.children.length === 0;
+        root.querySelector("[data-chat-help]").hidden = thread.children.length > 0 && !search.value;
+        badge.hidden = unseen === 0;
+        badge.textContent = unseen;
+        if (open) thread.lastElementChild?.scrollIntoView({ block: "end" });
+    };
+    const poll = async () => {
+        try {
+            const data = await api(`${root.dataset.stateUrl}?after=${lastId}`);
+            status.className = `chat-status ${data.online ? "on" : ""}`;
+            status.innerHTML = `<i></i>${escape(data.online ? labels.online : labels.offline)}`;
+            if (hint) hint.textContent = data.online ? "" : labels.offlineHint;
+            if (data.messages) render(data.messages);
+        } catch {
+            // Offline or server busy: try again on the next tick.
+        }
+    };
+    const schedule = () => {
+        clearInterval(timer);
+        timer = setInterval(poll, open ? 4000 : 60000);
+    };
+    const helpSearch = async () => {
+        try {
+            const data = await api(`${root.dataset.helpUrl}?q=${encodeURIComponent(search.value)}`);
+            articles.innerHTML = data.articles.length
+                ? data.articles.map((a) => `<li><details><summary>${escape(a.q)}</summary><p>${escape(a.a)}</p>${a.url ? `<a href="${escape(a.url)}">→</a>` : ""}</details></li>`).join("")
+                : `<li class="chat-empty">${escape(labels.noResults)}</li>`;
+        } catch {
+            // Help search is optional; the chat still works.
+        }
+    };
+    let searchTimer;
+    search?.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(helpSearch, 250);
+    });
+    const toggle = () => {
+        open = !open;
+        panel.hidden = !open;
+        root.querySelector(".chat-bubble").setAttribute("aria-expanded", String(open));
+        if (open) {
+            unseen = 0;
+            badge.hidden = true;
+            if (!articles.children.length) helpSearch();
+            poll();
+            (input || search)?.focus();
+        }
+        schedule();
+    };
+    root.querySelectorAll("[data-chat-toggle]").forEach((button) => button.addEventListener("click", toggle));
+    // "Help & Support" links elsewhere open the chat directly.
+    document.querySelectorAll("[data-chat-open]").forEach((link) =>
+        link.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (!open) toggle();
+        }),
+    );
+    form?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const body = input.value.trim();
+        if (!body) return;
+        input.disabled = true;
+        try {
+            await api(root.dataset.sendUrl, { body });
+            input.value = "";
+            search.value = "";
+            await poll();
+        } catch {
+            if (hint) hint.textContent = labels.failed;
+        } finally {
+            input.disabled = false;
+            input.focus();
+        }
+    });
+    input?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            form.requestSubmit();
+        }
+    });
+    if (root.dataset.signedIn === "1") {
+        poll();
+        schedule();
+    }
+})();
