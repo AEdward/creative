@@ -31,7 +31,7 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        return (bool) auth()->user()?->can('administer-academy');
+        return (bool) auth()->user()?->can('staff', 'super');
     }
 
     public static function newUserAction(): Action
@@ -41,7 +41,8 @@ class UserResource extends Resource
             ->schema([
                 TextInput::make('name')->required()->maxLength(120),
                 TextInput::make('email')->email()->required()->maxLength(255)->unique('users', 'email'),
-                Select::make('role')->options(['student' => 'Student', 'instructor' => 'Instructor', 'admin' => 'Administrator'])->default('student')->required(),
+                Select::make('role')->options(['student' => 'Student', 'instructor' => 'Instructor'])->default('student')->required()
+                    ->helperText('Staff (admins) are added on the Staff page.'),
             ])
             ->action(function (array $data): void {
                 app(AccountAdministration::class)->createAccount(auth()->user(), $data['name'], $data['email'], $data['role']);
@@ -54,9 +55,9 @@ class UserResource extends Resource
         return $table->columns([TextColumn::make('name')->searchable(), TextColumn::make('email')->searchable(), TextColumn::make('role')->badge(), TextColumn::make('status')->badge(), TextColumn::make('created_at')->dateTime()->sortable()])->filters([SelectFilter::make('role')->options(['student' => 'Student', 'instructor' => 'Instructor', 'admin' => 'Administrator'])])->recordActions([
             Action::make('approveInstructor')->label('Approve instructor')->requiresConfirmation()->visible(fn (User $record) => $record->role === 'student' && $record->status === 'active')->action(fn (User $record) => app(AccountAdministration::class)->approveInstructor(auth()->user(), $record)),
             Action::make('changeRole')->label('Change role')->icon('heroicon-o-arrows-right-left')
-                ->schema([Select::make('role')->options(['student' => 'Student', 'instructor' => 'Instructor', 'admin' => 'Administrator'])->required()])
+                ->schema([Select::make('role')->options(['student' => 'Student', 'instructor' => 'Instructor'])->required()])
                 ->fillForm(fn (User $record) => ['role' => $record->role])
-                ->visible(fn (User $record) => $record->id !== auth()->id())
+                ->visible(fn (User $record) => $record->id !== auth()->id() && $record->role !== 'admin')
                 ->action(fn (User $record, array $data) => app(AccountAdministration::class)->setRole(auth()->user(), $record, $data['role'])),
             Action::make('suspend')->label('Suspend account')->color('danger')->requiresConfirmation()->visible(fn (User $record) => $record->role !== 'admin' && $record->status === 'active')->action(fn (User $record) => app(AccountAdministration::class)->setStatus(auth()->user(), $record, 'suspended')),
             Action::make('reactivate')->label('Reactivate account')->requiresConfirmation()->visible(fn (User $record) => $record->role !== 'admin' && $record->status === 'suspended')->action(fn (User $record) => app(AccountAdministration::class)->setStatus(auth()->user(), $record, 'active')),

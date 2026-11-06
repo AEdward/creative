@@ -14,6 +14,11 @@ use Filament\Tables\Table;
 
 class ContactMessageResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->can('staff', 'support');
+    }
+
     protected static ?string $model = ContactMessage::class;
 
     protected static ?string $navigationLabel = 'Contact form';

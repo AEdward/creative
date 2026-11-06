@@ -58,7 +58,7 @@ class BankCheckoutController extends Controller
     /** Payment screenshots are private: only admins (and the learner who uploaded it) can open them. */
     public function proof(Request $request, PaymentSubmission $submission): StreamedResponse
     {
-        abort_unless($request->user()->can('administer-academy') || $submission->user_id === $request->user()->id, 403);
+        abort_unless($request->user()->can('staff', 'finance') || $submission->user_id === $request->user()->id, 403);
         abort_unless($submission->proof_path && Storage::disk('local')->exists($submission->proof_path), 404);
 
         // Learner-uploaded files: images may display inline, PDFs always download, and nothing can run scripts.

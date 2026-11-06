@@ -28,7 +28,7 @@ class AssessmentController extends Controller
 {
     private function owner(Course $course): void
     {
-        abort_unless(Gate::allows('administer-academy') || (Gate::allows('instructor') && $course->instructor_id === auth()->id()), 403);
+        abort_unless(Gate::allows('staff', 'content') || (Gate::allows('instructor') && $course->instructor_id === auth()->id()), 403);
     }
 
     private function enrollment(Course $course): Enrollment
@@ -277,7 +277,7 @@ class AssessmentController extends Controller
 
     public function revoke(Request $request, Certificate $certificate): RedirectResponse
     {
-        abort_unless(Gate::allows('administer-academy'), 403);
+        abort_unless(Gate::allows('staff', 'content'), 403);
         $data = $request->validate(['reason' => 'required|string|max:2000']);
         DB::transaction(function () use ($certificate, $data) {
             $certificate = Certificate::whereKey($certificate->id)->lockForUpdate()->firstOrFail();

@@ -67,7 +67,7 @@ class MediaController extends Controller
     {
         $this->owned($course, $asset);
         $data = $request->validate(['lesson_id' => ['required', 'integer'], 'duration_seconds' => ['required', 'integer', 'min:1', 'max:86400']]);
-        $byAdmin = $request->user()->can('administer-academy');
+        $byAdmin = $request->user()->can('staff', 'content');
         DB::transaction(function () use ($course, $asset, $data, $byAdmin): void {
             $locked = Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
             $asset = VideoAsset::whereKey($asset->id)->lockForUpdate()->firstOrFail();

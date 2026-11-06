@@ -38,7 +38,7 @@ class CourseDeletion
 
     public function delete(Course $course, User $admin, string $confirmation): void
     {
-        abort_unless($admin->can('administer-academy'), 403);
+        abort_unless($admin->can('staff', 'content'), 403);
         if (trim($confirmation) !== $course->title) {
             throw ValidationException::withMessages(['confirmation' => __('Type the course title exactly to confirm.')]);
         }
@@ -88,7 +88,7 @@ class CourseDeletion
     /** Hide a course from the website without losing anything (works for courses people bought). */
     public function unpublish(Course $course, User $admin): void
     {
-        abort_unless($admin->can('administer-academy'), 403);
+        abort_unless($admin->can('staff', 'content'), 403);
         $course->update(['status' => 'draft', 'published_at' => null]);
         AuditLog::create(['actor_id' => $admin->id, 'action' => 'course.unpublished', 'subject_type' => 'course', 'subject_id' => $course->id, 'changes' => ['title' => $course->title]]);
     }

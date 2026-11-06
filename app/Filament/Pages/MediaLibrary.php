@@ -40,7 +40,7 @@ class MediaLibrary extends Page
 
     public static function canAccess(): bool
     {
-        return (bool) auth()->user()?->can('administer-academy');
+        return (bool) auth()->user()?->can('staff', 'content');
     }
 
     public function mount(): void

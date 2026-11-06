@@ -3922,3 +3922,14 @@ form[aria-busy="true"] button[disabled]{opacity:.7;cursor:progress}
 .form-field .step-type-option small{font-size:var(--text-ui-xs);line-height:1.35}
 .danger-zone{margin-top:16px;border:1px solid #F5C2CA;border-radius:12px;padding:8px 14px;background:#FFF7F8}.danger-zone summary{color:#C8102E;font-weight:600;cursor:pointer}
 .danger-button{min-height:40px;border:0;border-radius:10px;background:#C8102E;color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.two-factor{display:flex;justify-content:center}
+.two-factor-card{max-width:560px;width:100%;background:#fff;border:1px solid var(--color-line-card);border-radius:20px;padding:32px;display:flex;flex-direction:column;gap:12px}
+.two-factor-card h1{margin:0;font-size:28px}
+.two-factor-steps{display:flex;flex-direction:column;gap:16px;padding-left:20px;margin:8px 0}
+.two-factor-qr{display:block;margin:12px 0;border:1px solid var(--color-line);border-radius:12px;padding:8px;background:#fff}
+.two-factor-key{display:inline-block;margin-top:8px;padding:8px 10px;border-radius:8px;background:#F4F3FA;letter-spacing:.08em;font-size:15px;word-break:break-all}
+.two-factor-form{display:flex;flex-direction:column;gap:10px;margin-top:8px;max-width:280px}
+.two-factor-form input{font-size:22px!important;letter-spacing:.2em;text-align:center}
+.two-factor-codes{list-style:none;padding:0;margin:8px 0 12px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.two-factor-codes code{display:block;padding:10px;border-radius:8px;background:#F4F3FA;text-align:center;font-size:16px}
+.two-factor-card .text-link{border:0;background:none;color:var(--color-brand-primary);font:inherit;font-weight:600;cursor:pointer;padding:0}

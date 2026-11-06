@@ -6,6 +6,7 @@ use App\Filament\Pages\Dashboard;
 use App\Filament\Support\InitialsAvatarProvider;
 use App\Http\Middleware\AuthenticateAdminPanel;
 use App\Http\Middleware\EnsureAccountActive;
+use App\Http\Middleware\RequireTwoFactor;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -75,6 +76,7 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 AuthenticateAdminPanel::class,
                 EnsureAccountActive::class,
+                RequireTwoFactor::class,
             ]);
     }
 }

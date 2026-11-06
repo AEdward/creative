@@ -112,7 +112,7 @@ class CourseEditor extends Component
             throw ValidationException::withMessages(['price' => 'Paid courses require a price greater than zero.']);
         }
         $lines = fn (string $text): array => array_values(array_filter(array_map('trim', preg_split('/\R/u', $text) ?: []), fn ($line) => $line !== ''));
-        $isAdmin = auth()->user()->can('administer-academy');
+        $isAdmin = auth()->user()->can('staff', 'content');
         if ($isAdmin) {
             $this->instructorName = trim($this->instructorName);
             $this->validate([
@@ -146,7 +146,7 @@ class CourseEditor extends Component
 
     private function returnToReview(Course $course): void
     {
-        if (auth()->user()->role !== 'admin' || ! $course->hasReadyCurriculum()) {
+        if (! auth()->user()->can('staff', 'content') || ! $course->hasReadyCurriculum()) {
             Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
         }
     }
@@ -347,7 +347,7 @@ class CourseEditor extends Component
     public function deleteCourse(): void
     {
         $course = $this->editableCourse();
-        abort_unless($course && auth()->user()->can('administer-academy'), 403);
+        abort_unless($course && auth()->user()->can('staff', 'content'), 403);
         app(CourseDeletion::class)->delete($course, auth()->user(), $this->deleteConfirmation);
         session()->flash('status', 'Course deleted.');
         $this->redirect(url('/admin/courses'));

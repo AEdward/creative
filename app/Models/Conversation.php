@@ -41,7 +41,7 @@ class Conversation extends Model
     {
         return $query->where(function (Builder $q) use ($user) {
             $q->where('student_id', $user->id)->orWhere(fn ($i) => $i->where('type', 'instructor')->where('instructor_id', $user->id));
-            if ($user->can('administer-academy')) {
+            if ($user->can('staff', 'support')) {
                 $q->orWhere('type', 'support');
             }
         });
@@ -56,7 +56,7 @@ class Conversation extends Model
     {
         return $this->isStudent($user)
             || ($this->type === 'instructor' && $this->instructor_id === $user->id)
-            || ($this->type === 'support' && $user->can('administer-academy'));
+            || ($this->type === 'support' && $user->can('staff', 'support'));
     }
 
     /** SQL version of isUnreadFor(), so the sidebar badge is one COUNT query. */

@@ -36,7 +36,7 @@ class PaymentSubmissionResource extends Resource
 
     public static function canAccess(): bool
     {
-        return (bool) auth()->user()?->can('administer-academy');
+        return (bool) auth()->user()?->can('staff', 'finance');
     }
 
     public static function table(Table $table): Table

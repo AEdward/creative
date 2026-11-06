@@ -53,7 +53,7 @@ class Certificates extends Page
 
     public static function canAccess(): bool
     {
-        return (bool) auth()->user()?->can('administer-academy');
+        return (bool) auth()->user()?->can('staff', 'content');
     }
 
     protected function getViewData(): array

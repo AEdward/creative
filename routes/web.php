@@ -33,3 +33,4 @@ require __DIR__.'/operations.php';
 require __DIR__.'/engagement.php';
 require __DIR__.'/messages.php';
 require __DIR__.'/instructors.php';
+require __DIR__.'/two-factor.php';

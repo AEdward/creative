@@ -18,7 +18,7 @@ $mediaLabels = collect([
 @php
     $portalOpen = (bool) \App\Support\AcademySettings::get('instructor_portal_enabled');
     // Pages behind the auth middleware use the signed-in sidebar layout; public pages keep the marketing header.
-    $useShell = auth()->check() && auth()->user()->hasVerifiedEmail()
+    $useShell = auth()->check() && auth()->user()->hasVerifiedEmail() && ! request()->routeIs('two-factor.*')
         && (request()->routeIs('learning.show', 'courses.show', 'categories.show')
             || collect(request()->route()?->gatherMiddleware() ?? [])->contains(fn ($m) => is_string($m) && ($m === 'auth' || str_starts_with($m, 'auth:'))));
 @endphp

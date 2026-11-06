@@ -38,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
             }
             config(['session.secure' => true]); // the live site is HTTPS-only
         }
+        // Which part of the admin panel a staff member may use (see User::staffCan).
+        Gate::define('staff', fn (User $user, string $area) => $user->staffCan($area));
         Gate::define('administer-academy', fn (User $user) => $user->role === 'admin' && $user->status === 'active' && $user->hasVerifiedEmail());
         // /up fails (HTTP 500) when the database or writable storage is unavailable, so uptime monitors catch it.
         Event::listen(DiagnosingHealth::class, function (): void {
@@ -47,6 +49,6 @@ class AppServiceProvider extends ServiceProvider
             }
         });
         // Admins can always build courses; instructors only while the instructor portal is switched on.
-        Gate::define('instructor', fn (User $user) => $user->status === 'active' && ($user->role === 'admin' || ($user->role === 'instructor' && (bool) AcademySettings::get('instructor_portal_enabled'))));
+        Gate::define('instructor', fn (User $user) => $user->status === 'active' && ($user->staffCan('content') || ($user->role === 'instructor' && (bool) AcademySettings::get('instructor_portal_enabled'))));
     }
 }

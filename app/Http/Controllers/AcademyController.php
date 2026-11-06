@@ -28,6 +28,7 @@ class AcademyController extends Controller
 
     public function export(Request $request): StreamedResponse
     {
+        abort_unless($request->user()->can('staff', 'enrollments'), 403);
         [$start,$end] = $this->dates($request);
 
         return response()->streamDownload(function () use ($start, $end): void {

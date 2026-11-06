@@ -16,6 +16,11 @@ use Filament\Tables\Table;
 
 class CourseResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return (bool) auth()->user()?->can('staff', 'content');
+    }
+
     protected static ?string $model = Course::class;
 
     protected static ?string $navigationLabel = 'Courses';

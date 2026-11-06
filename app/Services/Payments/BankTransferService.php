@@ -80,7 +80,7 @@ class BankTransferService
             throw $e;
         }
 
-        $admins = User::where('role', 'admin')->where('status', 'active')->get();
+        $admins = User::staffFor('finance');
         if ($admins->isNotEmpty()) {
             Notification::send($admins, new EngagementNotification(['title' => __('Payment to review'), 'body' => $user->name.' · '.$course->title.' · '.$method->name, 'url' => '/admin/payment-submissions']));
         }

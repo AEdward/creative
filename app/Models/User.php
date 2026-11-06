@@ -9,13 +9,14 @@ use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable(['name', 'email', 'phone', 'bio', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -28,6 +29,34 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      *
      * @return array<string, string>
      */
+    /** Admin staff roles. An admin without one (older accounts) is a super admin. */
+    public const STAFF_ROLES = ['super' => 'Super admin', 'content' => 'Content manager', 'support' => 'Support', 'finance' => 'Finance'];
+
+    public function staffRole(): ?string
+    {
+        return $this->role === 'admin' ? ($this->staff_role ?: 'super') : null;
+    }
+
+    /**
+     * Can this staff member use an area of the admin panel? Areas: content, support, finance, super
+     * (staff, settings, logs, site health) and enrollments (shared by support and finance).
+     */
+    public function staffCan(string $area): bool
+    {
+        $role = $this->staffRole();
+        if (! $role || $this->status !== 'active' || ! $this->hasVerifiedEmail()) {
+            return false;
+        }
+
+        return $role === 'super' || $role === $area || ($area === 'enrollments' && in_array($role, ['support', 'finance'], true));
+    }
+
+    /** Active staff who handle an area (super admins included), e.g. who to notify about a payment. */
+    public static function staffFor(string $area): Collection
+    {
+        return static::where('role', 'admin')->where('status', 'active')->whereNotNull('email_verified_at')->get()->filter(fn (User $u) => $u->staffCan($area))->values();
+    }
+
     /** Each role has its own workspace; this is where it starts (and where crossing attempts are sent back). */
     public function homeUrl(): string
     {
@@ -55,6 +84,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 }

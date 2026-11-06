@@ -34,7 +34,7 @@ class EnrollmentResource extends Resource
 
     public static function canAccess(): bool
     {
-        return (bool) auth()->user()?->can('administer-academy');
+        return (bool) auth()->user()?->can('staff', 'enrollments');
     }
 
     /** Give a learner access to a course without a payment (scholarship, partner, manual sale). */

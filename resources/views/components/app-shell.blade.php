@@ -11,18 +11,19 @@
     // Entries: [url, label, icon, route pattern(s) that mark it current].
     $portalOpen = (bool) \App\Support\AcademySettings::get('instructor_portal_enabled');
     if ($user->role === 'admin') {
-        $nav = [
+        $can = fn (string $area) => $user->staffCan($area);
+        $nav = array_values(array_filter([
             [url('/admin'), 'Admin dashboard', 'heroicon-o-home', []],
-            [url('/admin/courses'), 'Courses', 'heroicon-o-book-open', ['instructor.courses.edit', 'instructor.materials', 'instructor.assessments', 'instructor.announcements', 'instructor.learners']],
-            [\App\Filament\Pages\CourseStudio::getUrl(), 'New course', 'heroicon-o-plus-circle', []],
-            [url('/admin/media-library'), 'Media Library', 'heroicon-o-photo', []],
-            [url('/admin/users'), 'Students & users', 'heroicon-o-users', []],
-            [url('/admin/payment-submissions'), 'Payment approvals', 'heroicon-o-banknotes', []],
-            [url('/admin/enrollments'), 'Enrollments', 'heroicon-o-user-plus', []],
+            $can('content') ? [url('/admin/courses'), 'Courses', 'heroicon-o-book-open', ['instructor.courses.edit', 'instructor.materials', 'instructor.assessments', 'instructor.announcements', 'instructor.learners']] : null,
+            $can('content') ? [\App\Filament\Pages\CourseStudio::getUrl(), 'New course', 'heroicon-o-plus-circle', []] : null,
+            $can('content') ? [url('/admin/media-library'), 'Media Library', 'heroicon-o-photo', []] : null,
+            $can('super') ? [url('/admin/users'), 'Students & users', 'heroicon-o-users', []] : null,
+            $can('finance') ? [url('/admin/payment-submissions'), 'Payment approvals', 'heroicon-o-banknotes', []] : null,
+            $can('enrollments') ? [url('/admin/enrollments'), 'Enrollments', 'heroicon-o-user-plus', []] : null,
             [url('/admin/analytics'), 'Analytics', 'heroicon-o-chart-bar', []],
-            [route('messages.index'), 'Support messages', 'heroicon-o-envelope', ['messages.*']],
-            [url('/admin/support-tickets'), 'Support tickets', 'heroicon-o-lifebuoy', ['support.show']],
-        ];
+            $can('support') ? [route('messages.index'), 'Support messages', 'heroicon-o-envelope', ['messages.*']] : null,
+            $can('support') ? [url('/admin/support-tickets'), 'Support tickets', 'heroicon-o-lifebuoy', ['support.show']] : null,
+        ]));
         $account = [
             [route('profile'), 'Profile', 'heroicon-o-user', ['profile']],
             [route('home'), 'Website', 'heroicon-o-globe-alt', []],

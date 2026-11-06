@@ -162,17 +162,19 @@ class AdminCourseManagementTest extends TestCase
         $this->assertSame('Real Account', $course->fresh()->instructor_display_name);
     }
 
-    public function test_admin_creates_users_of_any_role_who_set_their_own_password(): void
+    public function test_admin_creates_learner_accounts_who_set_their_own_password(): void
     {
         Notification::fake();
         $admin = $this->admin();
         $this->actingAs($admin);
-        Livewire::test(ManageUsers::class)->callAction('newUser', ['name' => 'Second Admin', 'email' => 'Boss@Academy.test', 'role' => 'admin'])->assertHasNoActionErrors();
-        $created = User::where('email', 'boss@academy.test')->firstOrFail();
-        $this->assertSame(['admin', 'active'], [$created->role, $created->status]);
+        Livewire::test(ManageUsers::class)->callAction('newUser', ['name' => 'New Learner', 'email' => 'Learner@Academy.test', 'role' => 'student'])->assertHasNoActionErrors();
+        $created = User::where('email', 'learner@academy.test')->firstOrFail();
+        $this->assertSame(['student', 'active'], [$created->role, $created->status]);
         $this->assertTrue($created->hasVerifiedEmail());
         Notification::assertSentTo($created, AccountInvitation::class, fn ($note) => str_contains($note->toMail($created)->actionUrl, '/reset-password/'));
-        Livewire::test(ManageUsers::class)->callAction('newUser', ['name' => 'Dup', 'email' => 'boss@academy.test', 'role' => 'student'])->assertHasActionErrors(['email']);
+        Livewire::test(ManageUsers::class)->callAction('newUser', ['name' => 'Dup', 'email' => 'learner@academy.test', 'role' => 'student'])->assertHasActionErrors(['email']);
+        // Staff accounts are not created here (Staff page).
+        Livewire::test(ManageUsers::class)->callAction('newUser', ['name' => 'X', 'email' => 'x@academy.test', 'role' => 'admin'])->assertHasActionErrors(['role']);
 
         Livewire::test(ManageUsers::class)->callTableAction('changeRole', $created, ['role' => 'instructor']);
         $this->assertSame('instructor', $created->fresh()->role);

@@ -10,7 +10,7 @@ class CoursePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->status === 'active' && ($user->role === 'admin' || ($user->role === 'instructor' && (bool) AcademySettings::get('instructor_portal_enabled')));
+        return $user->status === 'active' && ($user->staffCan('content') || ($user->role === 'instructor' && (bool) AcademySettings::get('instructor_portal_enabled')));
     }
 
     public function create(User $user): bool
@@ -20,7 +20,7 @@ class CoursePolicy
 
     public function update(User $user, Course $course): bool
     {
-        return $this->viewAny($user) && ($user->role === 'admin' || $course->instructor_id === $user->id);
+        return $this->viewAny($user) && ($user->staffCan('content') || $course->instructor_id === $user->id);
     }
 
     public function view(User $user, Course $course): bool
@@ -35,6 +35,6 @@ class CoursePolicy
 
     public function publish(User $user, Course $course): bool
     {
-        return $user->status === 'active' && $user->role === 'admin';
+        return $user->staffCan('content');
     }
 }

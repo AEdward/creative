@@ -30,7 +30,7 @@ class RefundService
             AuditLog::create(['actor_id' => $user->id, 'action' => 'order.refund_requested', 'subject_type' => 'order', 'subject_id' => $order->id, 'changes' => ['reason' => $reason]]);
         });
 
-        $admins = User::where('role', 'admin')->where('status', 'active')->get();
+        $admins = User::staffFor('finance');
         if ($admins->isNotEmpty()) {
             Notification::send($admins, new EngagementNotification(['title' => __('Refund requested'), 'body' => $user->name.' · '.$order->items()->value('title_snapshot'), 'url' => '/admin/orders']));
         }

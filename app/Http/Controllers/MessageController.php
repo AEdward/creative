@@ -98,7 +98,7 @@ class MessageController extends Controller
     {
         if ($conversation->isStudent($sender)) {
             $recipients = $conversation->type === 'support'
-                ? User::where('role', 'admin')->where('status', 'active')->get()
+                ? User::staffFor('support')
                 : User::whereKey($conversation->instructor_id)->get();
         } else {
             $recipients = User::whereKey($conversation->student_id)->get();

@@ -7,7 +7,7 @@
         <a class="inline-link" href="{{ route('certificates.verify', $certificate->reference) }}">{{ __('Verify this certificate') }}</a>
         <p class="small">{{ __('Use your browser’s Print command and choose “Save as PDF” to download this certificate.') }}</p>
     </div>
-    @if(auth()->user()->role === 'admin' && ! $certificate->revoked_at)
+    @if(auth()->user()->can('staff', 'content') && ! $certificate->revoked_at)
         <form method="post" action="{{ route('certificates.revoke', $certificate) }}" class="editor-panel">@csrf<label>{{ __('Revocation reason') }}<textarea required name="reason" maxlength="2000"></textarea></label><button class="button" type="submit">{{ __('Revoke certificate') }}</button></form>
     @endif
 </div></section>

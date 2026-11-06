@@ -28,7 +28,7 @@ class CheckStorageUsage extends Command
         $alerted = (bool) ($state->value['alerted'] ?? false);
 
         if ($percent >= (int) $settings['storage_alert_percent'] && ! $alerted) {
-            $admins = User::where('role', 'admin')->where('status', 'active')->get();
+            $admins = User::staffFor('content');
             Notification::send($admins, new EngagementNotification([
                 'title' => __('Video storage at :percent%', ['percent' => $percent]),
                 'body' => __(':used of your :limit storage budget is used. Remove unused videos or raise the budget in Site settings.', ['used' => Number::fileSize($used, 1), 'limit' => Number::fileSize($limit)]),

@@ -38,7 +38,7 @@ class SupportTicketResource extends Resource
 
     public static function canAccess(): bool
     {
-        return (bool) auth()->user()?->can('administer-academy');
+        return (bool) auth()->user()?->can('staff', 'support');
     }
 
     public static function table(Table $table): Table

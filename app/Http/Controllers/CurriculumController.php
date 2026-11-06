@@ -90,7 +90,7 @@ class CurriculumController extends Controller
     /** Instructor changes go back to review; admins publish directly, so their edits keep the course live. */
     private function draft(Course $course): void
     {
-        if (auth()->user()?->can('administer-academy')) {
+        if (auth()->user()?->can('staff', 'content')) {
             return;
         }
         Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
