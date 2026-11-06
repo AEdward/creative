@@ -284,3 +284,46 @@ window.addEventListener("pageshow", (event) => {
         form.querySelectorAll("button, input[type=submit]").forEach((button) => (button.disabled = false));
     });
 });
+
+// Assignment uploads straight to Cloudflare R2 (large files and videos never pass through the
+// web server): get an upload link, PUT the file with progress, then submit the form with the token.
+document.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.dataset.workUpload || form.dataset.uploaded) return;
+    const input = form.querySelector('input[type="file"]');
+    const file = input?.files?.[0];
+    if (!file) return;
+    event.preventDefault();
+    const bar = form.querySelector("[data-work-progress]");
+    const status = form.querySelector("[data-work-status]");
+    const button = form.querySelector('button[type="submit"], button:not([type])');
+    if (button) button.disabled = true;
+    try {
+        const start = await api(form.dataset.workUpload, { filename: file.name, bytes: file.size });
+        bar.hidden = false;
+        await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("PUT", start.upload.url);
+            Object.entries(start.upload.headers || {}).forEach(([key, values]) => {
+                if (key.toLowerCase() !== "host") xhr.setRequestHeader(key, Array.isArray(values) ? values.join(", ") : values);
+            });
+            xhr.upload.onprogress = (e) => {
+                if (!e.lengthComputable) return;
+                bar.value = Math.round((e.loaded / e.total) * 100);
+                status.textContent = `${mediaText("Uploading:")} ${bar.value}%`;
+            };
+            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(mediaText("Upload failed. Please retry."))));
+            xhr.onerror = () => reject(new Error(mediaText("Upload connection failed. Please retry.")));
+            xhr.send(file);
+        });
+        form.querySelector('[name="upload_token"]').value = start.token;
+        input.removeAttribute("name");
+        form.dataset.uploaded = "true";
+        status.textContent = mediaText("Verifying…");
+        form.submit();
+    } catch (error) {
+        status.textContent = error.message;
+        bar.hidden = true;
+        if (button) button.disabled = false;
+    }
+});

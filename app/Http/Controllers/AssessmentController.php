@@ -14,15 +14,14 @@ use App\Models\Lesson;
 use App\Models\NotificationPreference;
 use App\Notifications\EngagementNotification;
 use App\Services\CourseProgress;
+use App\Services\StudentWork;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssessmentController extends Controller
 {
@@ -137,40 +136,35 @@ class AssessmentController extends Controller
         return back()->with('status', $passed ? 'Attempt scored. Your result is below.' : 'Not quite — review the lesson and try again.');
     }
 
-    public function submit(Request $request, Course $course, Assessment $assessment): RedirectResponse
+    /** Step 1 of a direct-to-R2 upload (JSON): returns the upload link and a token for the submit form. */
+    public function uploadUrl(Request $request, Course $course, Assessment $assessment, StudentWork $work): JsonResponse
+    {
+        $enrollment = $this->enrolled($course);
+        $this->matching($course, $assessment, 'assignment');
+        $this->ensureReached($course, $enrollment, $assessment);
+        abort_unless($work->directUploads(), 503, 'Direct uploads are not available.');
+        $data = $request->validate(['filename' => ['required', 'string', 'max:200'], 'bytes' => ['required', 'integer', 'min:1']]);
+
+        return response()->json($work->startUpload($assessment, $enrollment, $data['filename'], (int) $data['bytes']));
+    }
+
+    public function submit(Request $request, Course $course, Assessment $assessment, StudentWork $work): RedirectResponse
     {
         $enrollment = $this->enrolled($course);
         $this->matching($course, $assessment, 'assignment');
         $step = $this->ensureReached($course, $enrollment, $assessment);
-        $request->validate(['file' => 'required|file|mimes:pdf,jpg,jpeg,png,zip|max:10240']);
-        $file = $request->file('file');
-        $path = $file->store('assignments', 'local');
-        abort_unless(is_string($path) && $path !== '', 500, 'Unable to save this submission. Please try again.');
-        // One live submission per learner and assignment: a new upload replaces a pending one, and nothing replaces an accepted one.
-        try {
-            $replaced = DB::transaction(function () use ($assessment, $enrollment, $file, $path) {
-                Enrollment::whereKey($enrollment->id)->lockForUpdate()->firstOrFail();
-                $existing = AssignmentSubmission::where('assessment_id', $assessment->id)->where('enrollment_id', $enrollment->id)->latest('id')->first();
-                if ($existing?->status === 'accepted') {
-                    throw ValidationException::withMessages(['file' => 'This assignment has already been accepted.']);
-                }
-                $name = basename($file->getClientOriginalName());
-                if ($existing) {
-                    $old = $existing->path;
-                    $existing->update(['path' => $path, 'original_name' => $name, 'status' => 'pending', 'feedback' => null, 'reviewer_id' => null]);
 
-                    return $old;
-                }
-                AssignmentSubmission::create(['assessment_id' => $assessment->id, 'enrollment_id' => $enrollment->id, 'path' => $path, 'original_name' => $name]);
-
-                return null;
-            });
-        } catch (\Throwable $e) {
-            Storage::disk('local')->delete($path);
-            throw $e;
-        }
-        if ($replaced) {
-            Storage::disk('local')->delete($replaced);
+        if ($request->filled('upload_token')) {
+            // The file is already in Cloudflare R2; confirm it and record it.
+            $request->validate(['upload_token' => ['required', 'string', 'max:4000']]);
+            $work->finishUpload($assessment, $enrollment, $request->input('upload_token'));
+        } else {
+            // Small upload stored on the server (used when R2 isn't connected).
+            $request->validate(['file' => 'required|file|mimes:pdf,jpg,jpeg,png,webp,zip|max:'.StudentWork::MAX_LOCAL_KB]);
+            $file = $request->file('file');
+            $path = $file->store('assignments', 'local');
+            abort_unless(is_string($path) && $path !== '', 500, 'Unable to save this submission. Please try again.');
+            $work->record($assessment, $enrollment, 'local', $path, basename($file->getClientOriginalName()), $file->getSize(), $file->getMimeType());
         }
 
         // "Submitting is enough" assignments unlock the next step now; "wait for the grade" ones on acceptance.
@@ -183,7 +177,7 @@ class AssessmentController extends Controller
         return back()->with('status', 'Assignment submitted for review.');
     }
 
-    public function download(AssignmentSubmission $submission): StreamedResponse
+    public function download(AssignmentSubmission $submission, StudentWork $work)
     {
         $enrollment = Enrollment::findOrFail($submission->enrollment_id);
         $course = Course::findOrFail($enrollment->course_id);
@@ -193,7 +187,7 @@ class AssessmentController extends Controller
             $this->enrolled($course);
         }
 
-        return Storage::disk('local')->download($submission->path, $submission->original_name, ['X-Content-Type-Options' => 'nosniff']);
+        return $work->download($submission);
     }
 
     public function review(Request $request, AssignmentSubmission $submission): RedirectResponse
@@ -201,14 +195,7 @@ class AssessmentController extends Controller
         $assessment = Assessment::findOrFail($submission->assessment_id);
         $this->owner(Course::findOrFail($assessment->course_id));
         $data = $request->validate(['status' => 'required|in:accepted,revision-needed', 'feedback' => 'required|string|max:10000']);
-        DB::transaction(function () use ($assessment, $submission, $data): void {
-            Course::whereKey($assessment->course_id)->lockForUpdate()->firstOrFail();
-            $submission->update($data + ['reviewer_id' => auth()->id()]);
-        });
-        // "Wait for the grade" assignments unlock the next step once the work is accepted.
-        if ($data['status'] === 'accepted' && ($step = $this->stepFor($assessment)) && ($enrollment = Enrollment::find($submission->enrollment_id))) {
-            app(CourseProgress::class)->complete($enrollment, $step);
-        }
+        app(StudentWork::class)->review($submission, $request->user(), $data['status'], $data['feedback']);
 
         return back()->with('status', 'Review saved.');
     }

@@ -53,4 +53,26 @@ class R2Storage implements MediaStorage
     {
         Storage::disk('r2')->delete($key);
     }
+
+    public function uploadUrl(string $key, string $mime, \DateTimeInterface $expires): array
+    {
+        $upload = Storage::disk('r2')->temporaryUploadUrl($key, $expires, ['ContentType' => $mime]);
+        $upload['headers']['Content-Type'] = [$mime];
+
+        return $upload;
+    }
+
+    public function objectSize(string $key): ?int
+    {
+        $disk = Storage::disk('r2');
+
+        return $disk->exists($key) ? (int) $disk->size($key) : null;
+    }
+
+    public function downloadUrl(string $key, string $filename, string $mime): string
+    {
+        $safe = preg_replace('/[^A-Za-z0-9._-]+/', '-', $filename) ?: 'download';
+
+        return Storage::disk('r2')->temporaryUrl($key, now()->addMinutes(5), ['ResponseContentType' => $mime, 'ResponseContentDisposition' => 'attachment; filename="'.$safe.'"']);
+    }
 }

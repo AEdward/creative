@@ -62,10 +62,14 @@
     @elseif($lesson->type === 'assignment' && $assignment)
         <div class="lesson-text preserve-lines">{{ $assignment->instructions }}</div>
         <p class="step-meta">{{ $assignment->advance_on === 'submit' ? __('Submitting your work unlocks the next step.') : __('The next step unlocks once your work is reviewed and accepted.') }}</p>
+        @php $direct = app(\App\Services\StudentWork::class)->directUploads(); @endphp
+        @if($submission?->file_deleted_at)<p class="small">{{ __('Your file was removed to save space. Your grade and feedback are kept.') }}</p>@endif
         @if($submission)<p class="notice {{ $submission->status === 'revision-needed' ? 'notice-error' : '' }}" role="status">{{ ['pending' => __('Submitted — waiting for review.'), 'accepted' => __('Accepted.'), 'revision-needed' => __('Changes requested. Upload a new version below.')][$submission->status] ?? $submission->status }}@if($submission->feedback) — {{ $submission->feedback }}@endif</p>@endif
         @if($enrollment && $submission?->status !== 'accepted')
-            <form method="POST" action="{{ route('assignments.submit', [$course, $assignment]) }}" enctype="multipart/form-data" class="step-quiz">@csrf
-                <div class="form-field"><label for="step-file">{{ __('Your work (PDF, image or ZIP, up to 10 MB)') }}</label><input id="step-file" type="file" name="file" required accept=".pdf,.jpg,.jpeg,.png,.zip">@error('file')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror</div>
+            <form method="POST" action="{{ route('assignments.submit', [$course, $assignment]) }}" enctype="multipart/form-data" class="step-quiz" @if($direct) data-work-upload="{{ route('assignments.upload-url', [$course, $assignment]) }}" @endif>@csrf
+                <input type="hidden" name="upload_token" value="">
+                <div class="form-field"><label for="step-file">{{ $direct ? __('Your work (PDF, image, ZIP or video, up to 500 MB)') : __('Your work (PDF, image or ZIP, up to 10 MB)') }}</label><input id="step-file" type="file" name="file" required accept="{{ $direct ? '.pdf,.jpg,.jpeg,.png,.webp,.zip,.mp4,.mov,.webm' : '.pdf,.jpg,.jpeg,.png,.webp,.zip' }}">@error('file')<p class="field-error" role="alert">{{ __($message) }}</p>@enderror</div>
+                <progress class="upload-progress" max="100" value="0" hidden data-work-progress></progress><p class="small" role="status" aria-live="polite" data-work-status></p>
                 <button class="button" data-busy-label="{{ __('Submitting…') }}">{{ $submission ? __('Upload new version') : __('Submit work') }}</button>
             </form>
         @endif
