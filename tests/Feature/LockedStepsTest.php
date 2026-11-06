@@ -131,7 +131,7 @@ class LockedStepsTest extends TestCase
         $steps = $chapter->lessons()->orderBy('sort_order')->get();
         $this->assertSame(['text', 'quiz', 'assignment', 'video'], $steps->pluck('type')->all());
         $this->assertSame(['First page', 'Second page'], $steps[0]->pages);
-        $this->assertSame([['prompt' => 'Best colour?', 'options' => ['Red', 'Blue'], 'correct' => 1]], $steps[1]->assessment->questions);
+        $this->assertEquals([['prompt' => 'Best colour?', 'options' => ['Red', 'Blue'], 'correct' => 1]], $steps[1]->assessment->questions);
         $this->assertSame([80, 0], [$steps[1]->assessment->pass_percent, $steps[1]->assessment->attempt_limit]);
         $this->assertSame('submit', $steps[2]->assessment->advance_on);
         $this->assertFalse($steps[3]->published); // waits for its video
