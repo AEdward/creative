@@ -41,6 +41,8 @@ class Settings extends Page
             'settings.bank_checkout_enabled' => ['boolean'],
             'settings.vat_enabled' => ['boolean'],
             'settings.vat_percent' => ['required', 'numeric', 'min:0', 'max:50'],
+            'settings.google_site_verification' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9_\-]*$/'],
+            'settings.bing_site_verification' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9_\-]*$/'],
             'settings.storage_limit_gb' => ['required', 'integer', 'min:1', 'max:100000'],
             'settings.storage_alert_percent' => ['required', 'integer', 'min:10', 'max:100'],
             'settings.privacy' => ['nullable', 'string', 'max:30000'],

@@ -1,4 +1,4 @@
-@props(['title' => 'Creative skills. Real possibilities.', 'description' => 'Creative Lab Academy — learn video editing, graphic design, motion design, 3D and digital marketing.', 'dark' => false])
+@props(['title' => 'Creative skills. Real possibilities.', 'description' => 'Creative Lab Academy — learn video editing, graphic design, motion design, 3D and digital marketing online, in English and Amharic.', 'dark' => false, 'image' => null, 'type' => 'website', 'jsonLd' => [], 'noindex' => false])
 @php
 $mediaLabels = collect([
     'Please retry later.',
@@ -31,11 +31,12 @@ $mediaLabels = collect([
 <head>
     <meta charset="utf-8"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }} · Creative Lab Academy</title>
-    <meta name="description" content="{{ $description }}"><meta name="theme-color" content="#0B1025">
+    <meta name="theme-color" content="#0B1025">
+    <x-seo-head :title="$title" :description="$description" :image="$image" :type="$type" :noindex="$noindex || request()->routeIs('login', 'register', 'password.*', 'verification.*', 'two-factor.*', 'checkout.*')"
+        :json-ld="request()->routeIs('home') ? array_merge([\App\Support\Seo::organization(), \App\Support\Seo::website()], $jsonLd) : $jsonLd" />
     @if(file_exists(public_path('images/brand/favicon-32.png')))<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/brand/favicon-32.png') }}"><link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/brand/favicon-192.png') }}"><link rel="apple-touch-icon" href="{{ asset('images/brand/apple-touch-icon.png') }}">@endif
-    <link rel="canonical" href="{{ url()->current() }}">
-    <meta property="og:title" content="{{ $title }}"><meta property="og:description" content="{{ $description }}"><meta property="og:type" content="website"><meta property="og:url" content="{{ url()->current() }}">
-    @livewireStyles
+    @if(request()->routeIs('home'))<link rel="preload" as="image" href="{{ asset('images/home/hero.webp') }}" imagesrcset="{{ asset('images/home/hero-1000.webp') }} 1000w, {{ asset('images/home/hero.webp') }} 1862w" imagesizes="100vw" fetchpriority="high">@endif
+    {{-- Public pages use no Livewire components, so its scripts aren't loaded here (signed-in pages load them). --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="{{ $dark ? 'home-page' : '' }}">
@@ -90,7 +91,6 @@ $mediaLabels = collect([
 </dialog>
 @endunless @endguest
 <div hidden id="media-localization" data-messages="{{ json_encode($mediaLabels, JSON_UNESCAPED_UNICODE) }}"></div>
-@livewireScripts
 <x-chat-widget />
 </body></html>
 @endif

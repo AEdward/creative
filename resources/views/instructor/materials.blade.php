@@ -1,8 +1,84 @@
-<x-dynamic-component :component="($embedded ?? false) ? 'bare' : 'layout'" :title="__('Curriculum and files')">@unless($embedded ?? false)<section class="page-banner"><div class="container"><p class="eyebrow">{{ __('Your teaching studio') }}</p><h1>{{ __('Shape the learning path.') }}</h1><p>{{ $course->title }}</p><a class="inline-link" href="{{ route('instructor.courses.edit',$course->slug) }}">{{ __('Back to course editor') }}</a></div></section>@endunless<section class="section"><div class="container editor-main">
-@if(session('status'))<div class="notice" role="status">{{ __(session('status')) }}</div>@endif
-@if($errors->any())<div class="alert" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ __($error) }}</li>@endforeach</ul></div>@endif
-<section class="editor-panel"><h2>{{ __('Course image') }}</h2><p>{{ __('Use a JPEG, PNG or WebP up to 2 MB. Curriculum and file changes return this course to draft.') }}</p>@if($course->thumbnail_key)<img src="{{ route('courses.thumbnail',$course->slug) }}" alt="{{ __('Current course thumbnail') }}" style="width:240px;max-width:100%;border-radius:12px">@endif<form method="POST" enctype="multipart/form-data" action="{{ route('courses.thumbnail.store',$course->slug) }}">@csrf<div class="form-field"><label for="thumbnail">{{ __('Course thumbnail') }}</label><input id="thumbnail" type="file" name="image" accept="image/jpeg,image/png,image/webp" required></div><button class="filter-apply">{{ __('Save thumbnail') }}</button></form></section>
-@forelse($course->modules as $module)<section class="editor-panel"><h2>{{ $module->title }}</h2><form method="POST" action="{{ route('curriculum.module',[$course->slug,$module->id]) }}">@csrf @method('PUT')<div class="form-field"><label for="module-{{ $module->id }}">{{ __('Chapter title') }}</label><input id="module-{{ $module->id }}" name="title" value="{{ $module->title }}" required maxlength="180"></div><button class="filter-apply">{{ __('Rename chapter') }}</button></form><div class="lesson-editor-actions">@foreach(['up'=>'Move chapter up','down'=>'Move chapter down'] as $direction=>$label)<form method="POST" action="{{ route('curriculum.module.move',[$course->slug,$module->id]) }}">@csrf<input type="hidden" name="direction" value="{{ $direction }}"><button class="text-link">{{ __($label) }}</button></form>@endforeach</div>
-@foreach($module->lessons as $lesson)<details class="curriculum"><summary>{{ $lesson->title }} <span>{{ $lesson->published ? __('Visible') : __('Hidden') }}</span></summary><div style="padding:20px"><div class="lesson-editor-actions">@foreach(['up'=>'Move lesson up','down'=>'Move lesson down'] as $direction=>$label)<form method="POST" action="{{ route('curriculum.lesson.move',[$course->slug,$lesson->id]) }}">@csrf<input type="hidden" name="direction" value="{{ $direction }}"><button class="text-link">{{ __($label) }}</button></form>@endforeach</div><h3>{{ __('Files and captions') }}</h3>@foreach($lesson->resources as $resource)<div class="lesson-editor-actions"><span>{{ $resource->title }} · {{ $resource->kind }} · {{ number_format($resource->bytes/1024) }} KB</span><form method="POST" action="{{ route('resources.destroy',[$course->slug,$resource->id]) }}">@csrf @method('DELETE')<button class="text-link">{{ __('Remove') }} {{ $resource->title }}</button></form></div>@endforeach
-<form method="POST" enctype="multipart/form-data" action="{{ route('resources.store',[$course->slug,$lesson->id]) }}">@csrf<div class="form-field"><label for="resource-title-{{ $lesson->id }}">{{ __('File title') }}</label><input id="resource-title-{{ $lesson->id }}" name="title" required maxlength="180"></div><div class="editor-fields"><div class="form-field"><label for="resource-kind-{{ $lesson->id }}">{{ __('File type') }}</label><select id="resource-kind-{{ $lesson->id }}" name="kind"><option value="resource">{{ __('Lesson download') }}</option><option value="caption">{{ __('Video captions (WEBVTT)') }}</option></select></div><div class="form-field"><label for="resource-language-{{ $lesson->id }}">{{ __('Caption language') }}</label><select id="resource-language-{{ $lesson->id }}" name="language"><option value="en">{{ __('English') }}</option><option value="am">{{ __('Amharic') }}</option></select></div></div><div class="form-field"><label for="resource-file-{{ $lesson->id }}">{{ __('File') }}</label><input id="resource-file-{{ $lesson->id }}" type="file" name="file" accept=".pdf,.zip,.txt,.png,.jpg,.jpeg,.vtt" required><p class="small">{{ __('Downloads: PDF, ZIP, text, PNG or JPEG up to 10 MB. Captions: WEBVTT up to 1 MB.') }}</p></div><button class="filter-apply">{{ __('Add file') }}</button></form></div></details>@endforeach</section>@empty<div class="empty-state"><h2>{{ __('Your curriculum starts here.') }}</h2><p>{{ __('Add a module and lesson in the course editor first.') }}</p></div>@endforelse
-</div></section></x-dynamic-component>
+<x-dynamic-component :component="($embedded ?? false) ? 'bare' : 'layout'" :title="__('Curriculum and files')">
+@unless($embedded ?? false)<section class="page-banner">
+<div class="container">
+<p class="eyebrow">{{ __('Your teaching studio') }}</p>
+<h1>{{ __('Shape the learning path.') }}</h1>
+<p>{{ $course->title }}</p><a class="inline-link" href="{{ route('instructor.courses.edit',$course->slug) }}">{{ __('Back to course editor') }}</a>
+</div>
+</section>
+@endunless
+<section class="section">
+<div class="container editor-main">
+@if(session('status'))<div class="notice" role="status">{{ __(session('status')) }}</div>
+@endif
+@if($errors->any())<div class="alert" role="alert">
+<ul>
+@foreach($errors->all() as $error)<li>{{ __($error) }}</li>
+@endforeach
+</ul>
+</div>
+@endif
+<section class="editor-panel">
+<h2>{{ __('Course image') }}</h2>
+<p>{{ __('Use a JPEG, PNG or WebP up to 2 MB. Curriculum and file changes return this course to draft.') }}</p>
+@if($course->thumbnail_key)<img src="{{ route('courses.thumbnail',$course->slug) }}" alt="{{ __('Current course thumbnail') }}" style="width:240px;max-width:100%;border-radius:12px">
+@endif
+<form method="POST" enctype="multipart/form-data" action="{{ route('courses.thumbnail.store',$course->slug) }}">@csrf<div class="form-field">
+<label for="thumbnail">{{ __('Course thumbnail') }}</label><input id="thumbnail" type="file" name="image" accept="image/jpeg,image/png,image/webp" required>
+</div><button class="filter-apply">{{ __('Save thumbnail') }}</button>
+</form>
+</section>
+@forelse($course->modules as $module)<section class="editor-panel">
+<h2>{{ $module->title }}</h2>
+<form method="POST" action="{{ route('curriculum.module',[$course->slug,$module->id]) }}">@csrf @method('PUT')<div class="form-field">
+<label for="module-{{ $module->id }}">{{ __('Chapter title') }}</label><input id="module-{{ $module->id }}" name="title" value="{{ $module->title }}" required maxlength="180">
+</div><button class="filter-apply">{{ __('Rename chapter') }}</button>
+</form>
+<div class="lesson-editor-actions">
+@foreach(['up'=>'Move chapter up','down'=>'Move chapter down'] as $direction=>$label)<form method="POST" action="{{ route('curriculum.module.move',[$course->slug,$module->id]) }}">@csrf<input type="hidden" name="direction" value="{{ $direction }}"><button class="text-link">{{ __($label) }}</button>
+</form>
+@endforeach
+</div>
+@foreach($module->lessons as $lesson)<details class="curriculum">
+<summary>{{ $lesson->title }} <span>{{ $lesson->published ? __('Visible') : __('Hidden') }}</span>
+</summary>
+<div style="padding:20px">
+<div class="lesson-editor-actions">
+@foreach(['up'=>'Move lesson up','down'=>'Move lesson down'] as $direction=>$label)<form method="POST" action="{{ route('curriculum.lesson.move',[$course->slug,$lesson->id]) }}">@csrf<input type="hidden" name="direction" value="{{ $direction }}"><button class="text-link">{{ __($label) }}</button>
+</form>
+@endforeach
+</div>
+<h3>{{ __('Files and captions') }}</h3>
+@foreach($lesson->resources as $resource)<div class="lesson-editor-actions"><span>{{ $resource->title }} · {{ $resource->kind }} · {{ number_format($resource->bytes/1024) }} KB</span>
+<form method="POST" action="{{ route('resources.destroy',[$course->slug,$resource->id]) }}">@csrf @method('DELETE')<button class="text-link">{{ __('Remove') }} {{ $resource->title }}</button>
+</form>
+</div>
+@endforeach
+<form method="POST" enctype="multipart/form-data" action="{{ route('resources.store',[$course->slug,$lesson->id]) }}">@csrf<div class="form-field">
+<label for="resource-title-{{ $lesson->id }}">{{ __('File title') }}</label><input id="resource-title-{{ $lesson->id }}" name="title" required maxlength="180">
+</div>
+<div class="editor-fields">
+<div class="form-field">
+<label for="resource-kind-{{ $lesson->id }}">{{ __('File type') }}</label><select id="resource-kind-{{ $lesson->id }}" name="kind"><option value="resource">{{ __('Lesson download') }}</option><option value="caption">{{ __('Video captions (WEBVTT)') }}</option></select>
+</div>
+<div class="form-field">
+<label for="resource-language-{{ $lesson->id }}">{{ __('Caption language') }}</label><select id="resource-language-{{ $lesson->id }}" name="language"><option value="en">{{ __('English') }}</option><option value="am">{{ __('Amharic') }}</option></select>
+</div>
+</div>
+<div class="form-field">
+<label for="resource-file-{{ $lesson->id }}">{{ __('File') }}</label><input id="resource-file-{{ $lesson->id }}" type="file" name="file" accept=".pdf,.zip,.txt,.png,.jpg,.jpeg,.vtt" required>
+<p class="small">{{ __('Downloads: PDF, ZIP, text, PNG or JPEG up to 10 MB. Captions: WEBVTT up to 1 MB.') }}</p>
+</div><button class="filter-apply">{{ __('Add file') }}</button>
+</form>
+</div>
+</details>
+@endforeach
+</section>
+@empty
+<div class="empty-state">
+<h2>{{ __('Your curriculum starts here.') }}</h2>
+<p>{{ __('Add a module and lesson in the course editor first.') }}</p>
+</div>
+@endforelse
+</div>
+</section></x-dynamic-component>

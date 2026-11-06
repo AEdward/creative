@@ -35,3 +35,4 @@ require __DIR__.'/messages.php';
 require __DIR__.'/instructors.php';
 require __DIR__.'/two-factor.php';
 require __DIR__.'/chat.php';
+require __DIR__.'/seo.php';

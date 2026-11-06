@@ -17,6 +17,9 @@ class AcademySettings
         'instructor_portal_enabled' => false,
         'vat_enabled' => false,
         'vat_percent' => 15,
+        // Search engine ownership checks (the content value of the meta tag Google / Bing give you).
+        'google_site_verification' => '',
+        'bing_site_verification' => '',
         'storage_limit_gb' => 10,
         'storage_alert_percent' => 80,
         'privacy' => '',

@@ -36,6 +36,18 @@
         </div>
     </section>
     <section class="cla-card">
+        <header><h2><x-filament::icon icon="heroicon-o-magnifying-glass" />{{ __('Search engines') }}</h2></header>
+        <div class="cla-form">
+            <p class="cla-muted">{{ __('To prove you own the site in Google Search Console: add the property https://creativelabet.com, choose “HTML tag”, and paste only the code inside content="…" here. Then submit the sitemap: :url', ['url' => route('sitemap')]) }}</p>
+            <label for="st-google">{{ __('Google verification code') }}</label>
+            <input id="st-google" type="text" wire:model="settings.google_site_verification" maxlength="120" placeholder="e.g. AbC123xyz…">
+            @error('settings.google_site_verification')<p class="cla-error">{{ $message }}</p>@enderror
+            <label for="st-bing">{{ __('Bing verification code (optional)') }}</label>
+            <input id="st-bing" type="text" wire:model="settings.bing_site_verification" maxlength="120">
+            @error('settings.bing_site_verification')<p class="cla-error">{{ $message }}</p>@enderror
+        </div>
+    </section>
+    <section class="cla-card">
         <header><h2><x-filament::icon icon="heroicon-o-megaphone" />{{ __('Website content') }}</h2></header>
         <div class="cla-form">
             <label for="st-banner">{{ __('Announcement banner (shown at the top of every public page; leave empty to hide)') }}</label>
