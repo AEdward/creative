@@ -73,7 +73,7 @@
 </div>
 @if(! $isFree)<div class="form-field">
 <label for="price">{{ __('Price in ETB') }}</label><input id="price" wire:model="price" inputmode="decimal" placeholder="0.00">
-<p class="small">{{ __('You can prepare a paid course. Checkout remains disabled until the payment provider is verified.') }}</p>
+<p class="small">{{ __('The price learners pay, including VAT when VAT is turned on in Site settings. They pay by bank transfer and get access once a payment is approved.') }}</p>
 </div>
 @endif
 <div class="form-field">
