@@ -259,3 +259,6 @@ body.fi-body,.fi-body{background:#F5F6FB;font-family:Poppins,ui-sans-serif,syste
 .cla-studio .workspace-note h2{font-size:15px}
 .cla-studio details:not(.curriculum){border:1px solid var(--cla-line);border-radius:12px;padding:8px 14px;margin:0 0 10px}
 @media (max-width:1100px){.cla-studio .editor-grid{grid-template-columns:1fr}.cla-studio .editor-sidebar{position:static}}
+.cla-studio .danger-zone{margin-top:16px;border:1px solid #F5C2CA;border-radius:12px;padding:8px 14px;background:#FFF7F8}
+.cla-studio .danger-zone summary{color:#C8102E;font-weight:600;cursor:pointer}
+.cla-studio .danger-button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;border:0;border-radius:10px;background:#C8102E;color:#fff;font:inherit;font-weight:600;cursor:pointer}

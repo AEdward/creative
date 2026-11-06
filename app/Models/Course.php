@@ -23,9 +23,17 @@ class Course extends Model
 
     public function hasReadyCurriculum(): bool
     {
-        $lessons = $this->lessons()->where('published', true)->with('videoAsset')->get();
+        $lessons = $this->lessons()->where('published', true)->with(['videoAsset', 'assessment'])->get();
 
-        return $lessons->isNotEmpty() && $lessons->every(fn (Lesson $lesson) => $lesson->type === 'text' ? filled(trim($lesson->body ?? '')) : ($lesson->type === 'video' && $lesson->videoAsset?->status === 'ready' && $lesson->videoAsset->course_id === $this->id && app(MediaStorage::class)->available()));
+        // Every visible step must be complete: text has content, a video is uploaded and verified,
+        // a quiz has questions, an assignment has its brief.
+        return $lessons->isNotEmpty() && $lessons->every(fn (Lesson $lesson) => match ($lesson->type) {
+            'text' => collect($lesson->textPages())->contains(fn ($page) => filled(trim($page))),
+            'video' => $lesson->videoAsset?->status === 'ready' && $lesson->videoAsset->course_id === $this->id && app(MediaStorage::class)->available(),
+            'quiz' => $lesson->assessment?->course_id === $this->id && ! empty($lesson->assessment->questions),
+            'assignment' => $lesson->assessment?->course_id === $this->id && filled(trim((string) $lesson->assessment->instructions)),
+            default => false,
+        });
     }
 
     public function enrollments(): HasMany

@@ -3920,3 +3920,5 @@ form[aria-busy="true"] button[disabled]{opacity:.7;cursor:progress}
 .form-field .step-type-option{display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin:0;font-weight:400}
 .form-field .step-type-option b{font-size:var(--text-ui-lg)}
 .form-field .step-type-option small{font-size:var(--text-ui-xs);line-height:1.35}
+.danger-zone{margin-top:16px;border:1px solid #F5C2CA;border-radius:12px;padding:8px 14px;background:#FFF7F8}.danger-zone summary{color:#C8102E;font-weight:600;cursor:pointer}
+.danger-button{min-height:40px;border:0;border-radius:10px;background:#C8102E;color:#fff;font:inherit;font-weight:600;cursor:pointer}

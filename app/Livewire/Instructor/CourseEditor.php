@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Course;
 use App\Models\User;
+use App\Services\CourseDeletion;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -329,6 +330,27 @@ class CourseEditor extends Component
             $course->lessons()->findOrFail($lessonId)->update(['published' => false]);
             $this->returnToReview($course);
         });
+    }
+
+    /** Typed course title, required before deleting. */
+    public string $deleteConfirmation = '';
+
+    public function unpublishCourse(): void
+    {
+        $course = $this->editableCourse();
+        abort_unless($course, 422);
+        $this->authorize('publish', $course);
+        app(CourseDeletion::class)->unpublish($course, auth()->user());
+        session()->flash('editor-status', 'Course unpublished. It is hidden from the website until you publish it again.');
+    }
+
+    public function deleteCourse(): void
+    {
+        $course = $this->editableCourse();
+        abort_unless($course && auth()->user()->can('administer-academy'), 403);
+        app(CourseDeletion::class)->delete($course, auth()->user(), $this->deleteConfirmation);
+        session()->flash('status', 'Course deleted.');
+        $this->redirect(url('/admin/courses'));
     }
 
     public function publish(): void

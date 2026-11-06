@@ -41,7 +41,7 @@ class LocalFileController extends Controller
             DB::transaction(function () use ($course, $lesson, $data, $key, $mime, $extension, $file): void {
                 Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
                 LessonResource::create(['lesson_id' => $lesson->id, 'title' => $data['title'], 'kind' => $data['kind'], 'language' => $data['language'] ?? 'en', 'object_key' => $key, 'mime' => $mime, 'extension' => $extension, 'bytes' => $file->getSize()]);
-                Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
+                $this->backToReview($course);
             });
         } catch (Throwable $error) {
             Storage::disk('local')->delete($key);
@@ -72,7 +72,7 @@ class LocalFileController extends Controller
         DB::transaction(function () use ($course, $resource): void {
             Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
             $resource->delete();
-            Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
+            $this->backToReview($course);
         });
         Storage::disk('local')->delete($key);
 
@@ -101,7 +101,8 @@ class LocalFileController extends Controller
         Gate::authorize('update', $course);
         $key = $this->image($request, 'thumbnails');
         $old = $course->thumbnail_key;
-        Course::whereKey($course->id)->update(['thumbnail_key' => $key, 'status' => 'draft', 'published_at' => null]);
+        Course::whereKey($course->id)->update(['thumbnail_key' => $key]);
+        $this->backToReview($course);
         if ($old && str_starts_with($old, 'thumbnails/')) {
             Storage::disk('local')->delete($old);
         }
@@ -128,5 +129,13 @@ class LocalFileController extends Controller
         abort_unless($key && Storage::disk('local')->exists($key), 404);
 
         return response()->file(Storage::disk('local')->path($key), ['X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'no-store, private'])->setPrivate();
+    }
+
+    /** Instructor edits go back to review; admins publish directly, so their edits keep the course live. */
+    private function backToReview(Course $course): void
+    {
+        if (! auth()->user()?->can('administer-academy')) {
+            Course::whereKey($course->id)->update(['status' => 'draft', 'published_at' => null]);
+        }
     }
 }
