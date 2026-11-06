@@ -32,7 +32,7 @@ return new class extends Migration
             $table->string('rejection_reason', 500)->nullable();
             $table->timestamps();
             // The same bank transaction can't be claimed twice.
-            $table->unique(['payment_method_id', 'transaction_reference']);
+            $table->unique(['payment_method_id', 'transaction_reference'], 'payment_submissions_method_reference_unique');
         });
     }
 

@@ -50,4 +50,5 @@ Videos live in R2 and payment screenshots in `storage/app/private/payment-proofs
 
 | Rehearsal date | Backup file | Duration | Result |
 |---|---|---|---|
+| 2026-11-06 (local, XAMPP MariaDB 10.4, demo data) | db-2026-11-06-104036.sql.gz (10 KB) | backup 8 s, restore 54 s | 3 users, 8 courses, 168 lessons, 2 enrollments match; app reads restored DB |
 | | | | |

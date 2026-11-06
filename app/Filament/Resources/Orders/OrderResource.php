@@ -42,17 +42,17 @@ class OrderResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->modifyQueryUsing(fn ($query) => $query->with(['user', 'items', 'payment']))->columns([
-            TextColumn::make('created_at')->label('Date')->dateTime('M j, Y H:i')->sortable(),
+            TextColumn::make('created_at')->label('Date')->dateTime('M j, Y H:i')->sortable()->description(fn (Order $record) => $record->reference),
             TextColumn::make('user.name')->label('Learner')->description(fn (Order $record) => $record->user?->email)->searchable(),
-            TextColumn::make('items.title_snapshot')->label('Course')->limit(40),
+            TextColumn::make('items.title_snapshot')->label('Course')->limit(30)->tooltip(fn (Order $record) => $record->items->pluck('title_snapshot')->join(', ')),
             TextColumn::make('total_minor')->label('Total')->formatStateUsing(fn (Order $record) => $record->totalLabel())
                 ->description(fn (Order $record) => $record->vat_minor ? 'VAT '.$record->money($record->vat_minor) : null),
-            TextColumn::make('status')->badge()->color(fn (string $state) => ['paid' => 'success', 'awaiting_payment' => 'warning', 'refunded' => 'gray'][$state] ?? 'danger'),
-            TextColumn::make('payment.provider')->label('Paid via')->formatStateUsing(fn (?string $state) => $state ? str_replace('_', ' ', $state) : null)->placeholder('—'),
+            TextColumn::make('status')->badge()->color(fn (string $state) => ['paid' => 'success', 'awaiting_payment' => 'warning', 'refunded' => 'gray'][$state] ?? 'danger')
+                ->description(fn (Order $record) => $record->payment?->provider ? str_replace('_', ' ', $record->payment->provider) : null),
             TextColumn::make('refund_status')->label('Refund')->badge()->placeholder('—')
                 ->color(fn (?string $state) => ['requested' => 'warning', 'refunded' => 'gray', 'declined' => 'danger'][$state] ?? 'gray')
                 ->description(fn (Order $record) => $record->refund_status === 'requested' ? $record->refund_reason : $record->refund_note)->wrap(),
-            TextColumn::make('reference')->searchable()->toggleable()->copyable()->size('xs'),
+            TextColumn::make('reference')->searchable()->hidden(),
         ])->filters([
             SelectFilter::make('status')->options(['awaiting_payment' => 'Awaiting payment', 'paid' => 'Paid', 'failed' => 'Failed', 'refunded' => 'Refunded', 'cancelled' => 'Cancelled', 'expired' => 'Expired']),
             SelectFilter::make('refund_status')->label('Refund')->options(['requested' => 'Requested', 'refunded' => 'Refunded', 'declined' => 'Declined']),

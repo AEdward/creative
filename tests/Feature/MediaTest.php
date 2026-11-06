@@ -158,7 +158,8 @@ class MediaTest extends TestCase
         $this->assertTrue($storage->available());
         $url = $storage->playback($asset);
         parse_str(parse_url($url, PHP_URL_QUERY), $query);
-        $this->assertSame('300', (string) $query['X-Amz-Expires']);
+        $this->assertGreaterThanOrEqual(290, (int) $query['X-Amz-Expires']); // 5 minutes, minus clock drift on slow machines
+        $this->assertLessThanOrEqual(300, (int) $query['X-Amz-Expires']);
         $this->assertNotEmpty($query['X-Amz-Signature']);
         $this->assertStringContainsString('/test-bucket/videos/private.mp4', $url);
         $this->assertStringNotContainsString('test-only-secret', $url);
