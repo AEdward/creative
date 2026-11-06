@@ -38,7 +38,13 @@ class HealthAndBackupTest extends TestCase
 
     public function test_backup_refuses_non_mysql_databases(): void
     {
-        config(['database.default' => 'sqlite']); // CI runs the suite on MySQL; this checks the non-MySQL guard
-        $this->artisan('academy:backup')->assertFailed();
+        // CI runs the suite on MySQL; point only this command at a throwaway SQLite connection.
+        $original = config('database.default');
+        config(['database.connections.backup_guard' => ['driver' => 'sqlite', 'database' => ':memory:'], 'database.default' => 'backup_guard']);
+        try {
+            $this->artisan('academy:backup')->assertFailed();
+        } finally {
+            config(['database.default' => $original]);
+        }
     }
 }
