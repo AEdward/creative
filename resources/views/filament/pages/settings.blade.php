@@ -63,7 +63,7 @@
         <header><h2><x-filament::icon icon="heroicon-o-scale" />{{ __('Legal pages') }}</h2></header>
         <div class="cla-form">
             <p class="cla-muted">{{ __('Paste the approved text. Blank lines start new paragraphs. While a page is empty it shows a “Pending legal review” notice. Have these reviewed by a lawyer before launch.') }}</p>
-            @foreach(['privacy' => 'Privacy policy', 'terms' => 'Terms of service', 'refund-policy' => 'Refund policy'] as $field => $label)
+            @foreach(['privacy' => 'Privacy policy', 'terms' => 'Terms of service', 'refund-policy' => 'Refund policy', 'cookies' => 'Cookie policy'] as $field => $label)
                 <label for="st-{{ $field }}">{{ __($label) }}</label>
                 <textarea id="st-{{ $field }}" wire:model="settings.{{ $field }}" rows="8" maxlength="30000"></textarea>
                 @error('settings.'.$field)<p class="cla-error">{{ $message }}</p>@enderror

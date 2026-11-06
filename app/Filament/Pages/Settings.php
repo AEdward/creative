@@ -48,6 +48,7 @@ class Settings extends Page
             'settings.privacy' => ['nullable', 'string', 'max:30000'],
             'settings.terms' => ['nullable', 'string', 'max:30000'],
             'settings.refund-policy' => ['nullable', 'string', 'max:30000'],
+            'settings.cookies' => ['nullable', 'string', 'max:30000'],
         ])['settings'];
         $content = $this->validate([
             'content.banner' => ['nullable', 'string', 'max:300'],

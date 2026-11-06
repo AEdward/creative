@@ -25,9 +25,10 @@ class AcademySettings
         'privacy' => '',
         'terms' => '',
         'refund-policy' => '',
+        'cookies' => '',
     ];
 
-    public const LEGAL_PAGES = ['privacy', 'terms', 'refund-policy'];
+    public const LEGAL_PAGES = ['privacy', 'terms', 'refund-policy', 'cookies'];
 
     /** Read once per request (several checkout and layout lookups share it); save() clears it. */
     public static function all(): array

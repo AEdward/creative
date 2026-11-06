@@ -4004,3 +4004,17 @@ form[aria-busy="true"] button[disabled]{opacity:.7;cursor:progress}
 .notes-settings{margin-top:24px;background:#fff;border:1px solid var(--color-line);border-radius:14px;padding:4px 16px}
 .notes-settings summary{cursor:pointer;font-weight:600;padding:12px 0}
 .notes-settings label{display:flex;gap:8px;align-items:center;margin:8px 0}
+
+/* Policy pages */
+.legal-text{max-width:760px}
+.legal-text h2{font-size:1.25rem;margin:1.8em 0 .6em}
+.legal-text ul,.legal-text ol{margin:0 0 1em;padding-left:1.4em;line-height:1.7}
+.legal-text li{margin:.3em 0}
+.legal-text a{color:var(--color-brand-primary)}
+.legal-updated{color:var(--color-ink-faint);font-size:var(--text-ui-sm)}
+.legal-table{overflow-x:auto;margin:0 0 1em}
+.legal-table table{width:100%;border-collapse:collapse;font-size:var(--text-ui-md)}
+.legal-table th,.legal-table td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--color-line)}
+.legal-table th{background:#f6f4fc}
+.footer-bottom a{color:#c9cfe0;text-decoration:underline;text-underline-offset:2px}
+.footer-bottom a:hover{color:#fff}

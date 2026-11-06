@@ -36,14 +36,14 @@ class BusinessRulesTest extends TestCase
 
     public function test_admin_settings_save_and_legal_pages_publish_admin_text(): void
     {
-        $this->get('/privacy')->assertSee('Pending legal review');
+        $this->get('/privacy')->assertSee('Personal Data Protection Proclamation');
         $this->actingAs(User::factory()->create(['role' => 'admin']));
         Livewire::test(Settings::class)
             ->set('settings.contact_email', 'hello@academy.test')->set('settings.contact_phone', '+251 911 000000')
             ->set('settings.privacy', "We keep your data safe.\n\nSecond paragraph.")
             ->call('save')->assertHasNoErrors();
-        $this->get('/privacy')->assertOk()->assertSee('We keep your data safe.')->assertDontSee('Pending legal review');
-        $this->get('/terms')->assertSee('Pending legal review');
+        $this->get('/privacy')->assertOk()->assertSee('We keep your data safe.')->assertDontSee('Personal Data Protection Proclamation');
+        $this->get('/terms')->assertSee('lifetime access');
         $this->get('/contact')->assertSee('hello@academy.test')->assertSee('+251 911 000000');
         Livewire::test(Settings::class)->set('settings.vat_percent', 90)->call('save')->assertHasErrors('settings.vat_percent');
         $this->actingAs(User::factory()->create(['role' => 'instructor']))->get('/admin/settings')->assertRedirect(route('instructor.dashboard'));

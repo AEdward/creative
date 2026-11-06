@@ -103,9 +103,12 @@ class CatalogTest extends TestCase
         foreach (['about', 'contact', 'faq'] as $page) {
             $this->get('/'.$page)->assertOk();
         }
-        foreach (['privacy', 'terms', 'refund-policy'] as $page) {
-            $this->get('/'.$page)->assertOk()->assertSee('Pending legal review');
+        // Each policy has built-in text (admins can replace it in Site settings) and is linked in the footer.
+        foreach (['privacy' => 'Information we collect', 'terms' => 'Acceptable use', 'refund-policy' => 'How to ask', 'cookies' => 'Cookies we use'] as $page => $heading) {
+            $this->get('/'.$page)->assertOk()->assertSee($heading)->assertDontSee('Pending legal review')->assertSee(route('cookies'), false);
         }
+        $this->get('/')->assertSee('<a href="https://paraibatech.com/" target="_blank" rel="noopener">Paraiba Technology PLC</a>', false);
+        $this->get('/sitemap.xml')->assertSee(route('cookies'));
     }
 
     public function test_paid_courses_offer_bank_transfer_checkout_to_signed_in_learners(): void
