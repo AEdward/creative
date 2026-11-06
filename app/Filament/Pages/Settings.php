@@ -45,6 +45,8 @@ class Settings extends Page
             'settings.bing_site_verification' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9_\-]*$/'],
             'settings.storage_limit_gb' => ['required', 'integer', 'min:1', 'max:100000'],
             'settings.storage_alert_percent' => ['required', 'integer', 'min:10', 'max:100'],
+            'settings.maintenance_enabled' => ['boolean'],
+            'settings.maintenance_message' => ['nullable', 'string', 'max:500'],
             'settings.privacy' => ['nullable', 'string', 'max:30000'],
             'settings.terms' => ['nullable', 'string', 'max:30000'],
             'settings.refund-policy' => ['nullable', 'string', 'max:30000'],

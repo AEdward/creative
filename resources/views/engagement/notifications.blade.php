@@ -4,7 +4,7 @@
     <div class="notes-head">
         <h1>{{ __('Notifications') }}</h1>
         @if($unreadCount)
-            <form method="post" action="{{ route('notifications.read-all') }}">@csrf<button class="button button-secondary">{{ __('Mark all as read') }}</button></form>
+            <form method="post" action="{{ route('notifications.read-all') }}">@csrf<button class="button button-outline">{{ __('Mark all as read') }}</button></form>
         @endif
     </div>
     @include('engagement.status')

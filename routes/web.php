@@ -37,3 +37,6 @@ require __DIR__.'/instructors.php';
 require __DIR__.'/two-factor.php';
 require __DIR__.'/chat.php';
 require __DIR__.'/seo.php';
+
+// Unknown addresses go through the normal web stack (session, language, maintenance) so the 404 page knows who you are.
+Route::fallback(fn () => abort(404));

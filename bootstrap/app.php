@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnforceRoleWorkspace;
 use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\KeepAdminHostForAdmin;
+use App\Http\Middleware\MaintenanceMode;
 use App\Http\Middleware\RequireTwoFactor;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
@@ -18,7 +19,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [EnsureAccountActive::class, SetLocale::class, SecurityHeaders::class, RequireTwoFactor::class, EnforceRoleWorkspace::class, KeepAdminHostForAdmin::class]);
+        $middleware->web(append: [EnsureAccountActive::class, SetLocale::class, MaintenanceMode::class, SecurityHeaders::class, RequireTwoFactor::class, EnforceRoleWorkspace::class, KeepAdminHostForAdmin::class]);
         // Payment providers post signed evidence without a session; the gateway adapter authenticates it.
         $middleware->validateCsrfTokens(except: ['payments/webhook']);
     })

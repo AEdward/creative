@@ -4027,3 +4027,14 @@ form[aria-busy="true"] button[disabled]{opacity:.7;cursor:progress}
     .app-bell-panel{position:fixed;left:12px;right:12px;top:calc(100% + 6px);width:auto;max-height:calc(100dvh - 96px);display:flex;flex-direction:column}
     .app-bell-panel ul{max-height:none;flex:1;min-height:0}
 }
+
+/* 404 page */
+.error-page{min-height:60vh;display:flex;align-items:center}
+.error-inner{max-width:680px;text-align:center}
+.error-code{font-size:clamp(5rem,18vw,9rem);font-weight:800;line-height:1;margin:0 0 8px;background:linear-gradient(90deg,#2563eb,#7c3aed);-webkit-background-clip:text;background-clip:text;color:transparent}
+.error-lead{color:var(--color-ink-soft);margin:0 auto 24px;max-width:520px}
+.error-search{display:flex;gap:8px;max-width:520px;margin:0 auto 22px}
+.error-search input{flex:1;min-width:0;min-height:48px;border:1px solid var(--color-line);border-radius:12px;padding:0 14px;font:inherit}
+.error-links{display:flex;flex-wrap:wrap;gap:12px 18px;justify-content:center;align-items:center}
+.maintenance-staff-bar{background:#fff4d6;color:#6b4a00;text-align:center;padding:8px 12px;font-size:var(--text-ui-sm);font-weight:600}
+@media (max-width:520px){.error-search{flex-direction:column}}

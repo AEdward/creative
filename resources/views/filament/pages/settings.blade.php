@@ -60,9 +60,19 @@
         </div>
     </section>
     <section class="cla-card">
+        <header><h2><x-filament::icon icon="heroicon-o-wrench-screwdriver" />{{ __('Maintenance mode') }}</h2></header>
+        <div class="cla-form">
+            <label class="cla-check"><input type="checkbox" wire:model="settings.maintenance_enabled"> {{ __('Put the website in maintenance mode') }}</label>
+            <p class="cla-muted">{{ __('Visitors and learners see a “We’ll be back soon” page. Staff can still sign in, use the admin panel and browse the site (with a reminder bar). Sign-in and password pages stay open so staff can get in.') }}</p>
+            <label for="st-maint">{{ __('Message for visitors (optional)') }}</label>
+            <textarea id="st-maint" wire:model="settings.maintenance_message" rows="3" maxlength="500" placeholder="{{ __('We’re making improvements and will be back shortly.') }}"></textarea>
+            @error('settings.maintenance_message')<p class="cla-error">{{ $message }}</p>@enderror
+        </div>
+    </section>
+    <section class="cla-card">
         <header><h2><x-filament::icon icon="heroicon-o-scale" />{{ __('Legal pages') }}</h2></header>
         <div class="cla-form">
-            <p class="cla-muted">{{ __('Paste the approved text. Blank lines start new paragraphs. While a page is empty it shows a “Pending legal review” notice. Have these reviewed by a lawyer before launch.') }}</p>
+            <p class="cla-muted">{{ __('Paste the approved text. Blank lines start new paragraphs. While a page is empty, the built-in policy text is shown. Have these reviewed by a lawyer before launch.') }}</p>
             @foreach(['privacy' => 'Privacy policy', 'terms' => 'Terms of service', 'refund-policy' => 'Refund policy', 'cookies' => 'Cookie policy'] as $field => $label)
                 <label for="st-{{ $field }}">{{ __($label) }}</label>
                 <textarea id="st-{{ $field }}" wire:model="settings.{{ $field }}" rows="8" maxlength="30000"></textarea>

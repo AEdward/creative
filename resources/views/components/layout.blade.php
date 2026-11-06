@@ -41,6 +41,7 @@ $mediaLabels = collect([
 </head>
 <body class="{{ $dark ? 'home-page' : '' }}">
 @if($banner = (\App\Models\SiteSetting::content()['banner'] ?? null))<div class="notice site-banner" role="status">{{ $banner }}</div>@endif
+@if(\App\Support\AcademySettings::get('maintenance_enabled'))<div class="maintenance-staff-bar" role="status">{{ __('Maintenance mode is on: visitors see the “back soon” page. Turn it off in Site settings.') }}</div>@endif
 <a class="skip-link" href="#main">{{ __('Skip to content') }}</a>
 <header class="site-header {{ $dark ? 'header-dark' : '' }}">
     <div class="container header-inner">

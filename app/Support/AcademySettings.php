@@ -22,6 +22,9 @@ class AcademySettings
         'bing_site_verification' => '',
         'storage_limit_gb' => 10,
         'storage_alert_percent' => 80,
+        // Maintenance: visitors see a 'back soon' page; staff can still sign in and use everything.
+        'maintenance_enabled' => false,
+        'maintenance_message' => '',
         'privacy' => '',
         'terms' => '',
         'refund-policy' => '',
