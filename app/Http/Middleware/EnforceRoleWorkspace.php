@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Filament\Pages\CourseStudio;
 use App\Support\AcademySettings;
 use Closure;
 use Illuminate\Http\Request;
@@ -35,12 +36,33 @@ class EnforceRoleWorkspace
         if ($user->role !== 'student' && $request->routeIs(self::STUDENT_ONLY)) {
             return $this->home($request, $user->homeUrl());
         }
-        // Admins build courses with the course builder, but their "home" is the admin panel.
-        if ($user->role === 'admin' && $request->routeIs('instructor.dashboard')) {
-            return $this->home($request, url('/admin/courses'));
+        // Admins build courses in the admin panel's Course studio, never on the instructor screens.
+        if ($user->role === 'admin' && $request->isMethod('GET') && ($url = $this->studioUrl($request))) {
+            return $this->home($request, $url);
         }
 
         return $next($request);
+    }
+
+    private function studioUrl(Request $request): ?string
+    {
+        if ($request->routeIs('instructor.dashboard')) {
+            return url('/admin/courses');
+        }
+        if ($request->routeIs('instructor.courses.create')) {
+            return CourseStudio::getUrl();
+        }
+        $tab = ['instructor.courses.edit' => 'build', 'instructor.materials' => 'files', 'instructor.assessments' => 'quizzes', 'instructor.announcements' => 'announcements', 'instructor.learners' => 'learners'];
+        foreach ($tab as $route => $name) {
+            if ($request->routeIs($route)) {
+                $course = $request->route('course');
+                $slug = is_object($course) ? $course->slug : (string) $course;
+
+                return CourseStudio::getUrl(['course' => $slug, 'tab' => $name]);
+            }
+        }
+
+        return null;
     }
 
     private function home(Request $request, string $url): Response

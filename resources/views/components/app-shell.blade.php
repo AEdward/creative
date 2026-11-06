@@ -14,7 +14,7 @@
         $nav = [
             [url('/admin'), 'Admin dashboard', 'heroicon-o-home', []],
             [url('/admin/courses'), 'Courses', 'heroicon-o-book-open', ['instructor.courses.edit', 'instructor.materials', 'instructor.assessments', 'instructor.announcements', 'instructor.learners']],
-            [route('instructor.courses.create'), 'New course', 'heroicon-o-plus-circle', ['instructor.courses.create']],
+            [\App\Filament\Pages\CourseStudio::getUrl(), 'New course', 'heroicon-o-plus-circle', []],
             [url('/admin/media-library'), 'Media Library', 'heroicon-o-photo', []],
             [url('/admin/users'), 'Students & users', 'heroicon-o-users', []],
             [url('/admin/payment-submissions'), 'Payment approvals', 'heroicon-o-banknotes', []],

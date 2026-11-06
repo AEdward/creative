@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Instructor;
 
+use App\Filament\Pages\CourseStudio;
 use App\Models\Assessment;
 use App\Models\AuditLog;
 use App\Models\Category;
@@ -20,6 +21,10 @@ class CourseEditor extends Component
 {
     #[Locked]
     public ?int $courseId = null;
+
+    /** Shown inside the admin panel's Course studio (no site banner; tabs live in the studio header). */
+    #[Locked]
+    public bool $embedded = false;
 
     public string $title = '';
 
@@ -120,16 +125,22 @@ class CourseEditor extends Component
             $data['instructor_id'] = $this->instructorId ?: auth()->id();
             $data['instructor_name'] = $this->instructorId ? null : $this->instructorName;
         }
-        DB::transaction(function () use ($course, $data) {
+        $createdSlug = null;
+        DB::transaction(function () use ($course, $data, &$createdSlug) {
             if ($course) {
                 $course->update($data);
                 $this->returnToReview($course);
             } else {
                 $created = Course::create($data + ['instructor_id' => auth()->id(), 'currency' => 'ETB', 'status' => 'draft']); // $data wins for admins
                 $this->courseId = $created->id;
+                $createdSlug = $created->slug;
             }
         });
         session()->flash('editor-status', 'Course saved. Instructor changes remain in draft until an administrator publishes them.');
+        // A brand-new course in the studio: reload with the course in the address so the other tabs work.
+        if ($this->embedded && $createdSlug) {
+            $this->redirect(CourseStudio::getUrl(['course' => $createdSlug]));
+        }
     }
 
     private function returnToReview(Course $course): void

@@ -198,3 +198,64 @@ body.fi-body,.fi-body{background:#F5F6FB;font-family:Poppins,ui-sans-serif,syste
 .cla-meter-sm{display:inline-block;width:80px;height:6px;margin:0 8px 0 0;vertical-align:middle}
 @media (max-width:1100px){.cla-stats-6{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media (max-width:640px){.cla-stats-6{grid-template-columns:1fr!important}}
+
+/* ---- Course studio: workspace screens shown inside the admin panel (scoped to .cla-studio) ---- */
+.cla-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--cla-line);margin-bottom:18px}
+.cla-tabs a{padding:10px 14px;font-size:14px;font-weight:600;color:#5B5F7A;border-bottom:2px solid transparent;margin-bottom:-1px}
+.cla-tabs a[aria-current="page"]{color:var(--cla-primary);border-bottom-color:var(--cla-primary)}
+.cla-tabs a:hover{color:var(--cla-navy)}
+.cla-tabs .cla-tabs-view{margin-left:auto;color:var(--cla-primary);font-weight:500}
+.cla-studio{font-size:14px;color:var(--cla-navy)}
+.cla-studio .container,.cla-studio .section{max-width:none;padding:0;margin:0}
+.cla-studio .feature-page>h1,.cla-studio .feature-page>.eyebrow{display:none}
+.cla-studio h2{font-size:18px;font-weight:700;margin:0 0 12px}
+.cla-studio h3{font-size:15px;font-weight:700;margin:14px 0 8px}
+.cla-studio .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cla-primary);font-weight:700;margin:0 0 6px}
+.cla-studio .small,.cla-studio small{color:#5B5F7A;font-size:13px}
+.cla-studio .editor-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.cla-studio .editor-main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.cla-studio .editor-panel,.cla-studio .learning-card,.cla-studio article{background:#fff;border:1px solid var(--cla-line);border-radius:16px;padding:20px 22px}
+.cla-studio .editor-sidebar{position:sticky;top:90px}
+.cla-studio .editor-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.cla-studio .form-field{display:flex;flex-direction:column;gap:6px;margin:0 0 14px}
+.cla-studio .form-field>label,.cla-studio label:not(.checkbox-label):not(.step-type-option):not(.quiz-option){font-size:13px;font-weight:600}
+.cla-studio input:not([type=checkbox]):not([type=radio]):not([type=file]),.cla-studio select,.cla-studio textarea{width:100%;box-sizing:border-box;min-height:42px;border:1px solid var(--cla-line);border-radius:10px;padding:8px 12px;font:inherit;font-size:14px;background:#fff;color:inherit}
+.cla-studio textarea{min-height:90px;resize:vertical}
+.cla-studio input:focus,.cla-studio select:focus,.cla-studio textarea:focus{outline:2px solid #7138f566;outline-offset:1px;border-color:var(--cla-primary)}
+.cla-studio .checkbox-label{display:flex;gap:8px;align-items:center;font-weight:500}
+.cla-studio .form-extra{margin:4px 0 14px}
+.cla-studio .button,.cla-studio .filter-apply,.cla-studio .form-wide-button,.cla-studio form>button:not(.text-link):not(.logout-button){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border:0;border-radius:10px;background:var(--cla-primary);color:#fff;font:inherit;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
+.cla-studio .form-wide-button{width:100%}
+.cla-studio .logout-button{min-height:40px;padding:0 14px;border:1.5px solid var(--cla-line);border-radius:10px;background:#fff;color:var(--cla-primary);font:inherit;font-weight:600;cursor:pointer;margin-left:8px}
+.cla-studio .text-link{border:0;background:none;color:var(--cla-primary);font:inherit;font-weight:600;cursor:pointer}
+.cla-studio .inline-link{color:var(--cla-primary);font-weight:600}
+.cla-studio .direction-icon{width:14px;height:14px}
+.cla-studio .notice{padding:10px 14px;border-radius:10px;background:#DDF6E8;color:#11865A;margin:0 0 14px}
+.cla-studio .alert{padding:12px 16px;border-radius:10px;background:#FFE5E8;color:#C8102E;margin:0 0 14px}
+.cla-studio .field-error{color:#C8102E;font-size:12px;margin:0}
+.cla-studio .empty-state{padding:20px;border:1px dashed var(--cla-line);border-radius:14px;text-align:center;color:#5B5F7A}
+.cla-studio .curriculum{border:1px solid var(--cla-line);border-radius:12px;padding:6px 14px;margin:0 0 10px}
+.cla-studio .curriculum summary{font-weight:700;padding:8px 0;cursor:pointer;display:flex;justify-content:space-between}
+.cla-studio .curriculum summary span{color:#5B5F7A;font-weight:500}
+.cla-studio .curriculum ol{list-style:none;margin:0;padding:0}
+.cla-studio .curriculum li{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #F0F1F6}
+.cla-studio .curriculum li>span:nth-child(2){font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cla-studio .lesson-editor-actions{display:flex;gap:4px}
+.cla-studio .lesson-editor-actions .text-link{padding:4px 8px;border-radius:8px}
+.cla-studio .lesson-editor-actions .text-link:hover:not([disabled]){background:#7138f514}
+.cla-studio .lesson-editor-actions button[disabled]{opacity:.35}
+.cla-studio .builder-subform{border-top:1px solid #F0F1F6;margin-top:16px;padding-top:16px}
+.cla-studio .step-type{display:inline-block;min-width:78px;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;text-align:center;background:#EEF1FF;color:#3054F5}
+.cla-studio .step-type-video{background:#FFF1DC;color:#A65C00}.cla-studio .step-type-quiz{background:#EFE9FF;color:var(--cla-primary)}.cla-studio .step-type-assignment{background:#DDF6E8;color:#11865A}
+.cla-studio .step-type-picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.cla-studio .step-type-option{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border:1.5px solid var(--cla-line);border-radius:12px;cursor:pointer;position:relative}
+.cla-studio .step-type-option:has(input:checked){border-color:var(--cla-primary);background:#7138f50d}
+.cla-studio .step-type-option input{position:absolute;opacity:0;pointer-events:none}
+.cla-studio .field-label{font-size:13px;font-weight:600;margin-bottom:6px}
+.cla-studio .quiz-question{border:1px solid var(--cla-line);border-radius:12px;padding:12px 14px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
+.cla-studio .quiz-option{display:flex;gap:10px;align-items:center}.cla-studio .quiz-option input[type=radio]{width:18px;height:18px;flex:none}
+.cla-studio .upload-progress{width:100%;height:10px;accent-color:var(--cla-primary)}
+.cla-studio .workspace-note{background:#F4F3FA;border-radius:12px;padding:14px 16px;margin-top:14px}
+.cla-studio .workspace-note h2{font-size:15px}
+.cla-studio details:not(.curriculum){border:1px solid var(--cla-line);border-radius:12px;padding:8px 14px;margin:0 0 10px}
+@media (max-width:1100px){.cla-studio .editor-grid{grid-template-columns:1fr}.cla-studio .editor-sidebar{position:static}}

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\CourseStudio;
 use App\Filament\Pages\Instructors;
 use App\Filament\Pages\MediaLibrary;
 use App\Filament\Resources\Users\Pages\ManageUsers;
@@ -40,7 +41,8 @@ class AdminCourseManagementTest extends TestCase
         $this->get(route('instructor.courses.edit', $course->slug))->assertForbidden();
         $this->get(route('instructor.assessments', $course))->assertForbidden();
         $this->actingAs($this->admin())->get('/instructor')->assertRedirect(url('/admin/courses'));
-        $this->get(route('instructor.courses.create'))->assertOk();
+        $this->get(route('instructor.courses.create'))->assertRedirect(CourseStudio::getUrl());
+        $this->get(CourseStudio::getUrl())->assertOk()->assertSee('The essentials');
 
         AcademySettings::save(['instructor_portal_enabled' => true]);
         $this->actingAs($instructor)->get(route('instructor.courses.edit', $course->slug))->assertOk();
@@ -66,7 +68,27 @@ class AdminCourseManagementTest extends TestCase
         $this->actingAs($teacher);
         Livewire::test(CourseEditor::class, ['course' => $course])->set('instructorId', $admin->id)->call('save');
         $this->assertSame($teacher->id, $course->fresh()->instructor_id);
-        $this->actingAs($admin)->get('/admin/courses')->assertOk()->assertSee('New course')->assertSee(route('instructor.materials', $course->slug), false);
+        $this->actingAs($admin)->get('/admin/courses')->assertOk()->assertSee('New course')->assertSee(e(CourseStudio::getUrl(['course' => $course->slug])), false);
+    }
+
+    public function test_course_studio_opens_every_tab_inside_the_admin_panel(): void
+    {
+        $course = Course::factory()->create(['title' => 'Studio Course']);
+        $course->modules()->create(['title' => 'Chapter One'])->lessons()->create(['title' => 'Intro', 'type' => 'text', 'body' => 'Hi', 'published' => true]);
+        $this->actingAs($this->admin());
+        foreach (['build' => 'Chapter One', 'files' => 'Intro', 'quizzes' => 'Studio Course', 'announcements' => 'Studio Course', 'learners' => 'Studio Course'] as $tab => $text) {
+            $this->get(CourseStudio::getUrl(['course' => $course->slug, 'tab' => $tab]))
+                ->assertOk()->assertSee('class="fi', false)->assertSee('Files &amp; captions', false)->assertSee($text)->assertDontSee('site-footer');
+        }
+        // Old builder addresses land on the matching tab.
+        $this->get(route('instructor.materials', $course->slug))->assertRedirect(CourseStudio::getUrl(['course' => $course->slug, 'tab' => 'files']));
+
+        // A course created in the studio reopens with its tabs.
+        $category = Category::factory()->create(['active' => true]);
+        Livewire::test(CourseEditor::class, ['embedded' => true])->set('title', 'Fresh Course')->set('summary', 'S')->set('description', 'D')
+            ->set('categoryId', $category->id)->set('instructorName', 'Guest Teacher')->set('instructorId', null)->call('save')
+            ->assertRedirect(CourseStudio::getUrl(['course' => 'fresh-course']));
+        $this->actingAs(User::factory()->create())->get(CourseStudio::getUrl())->assertRedirect(route('dashboard'));
     }
 
     public function test_instructors_page_lists_instructors_and_switches_the_workspace(): void
@@ -97,7 +119,8 @@ class AdminCourseManagementTest extends TestCase
         }
         // Admin pages outside Filament show the admin sidebar, never the learner one.
         $this->get(route('messages.index'))->assertOk()->assertSee('Admin dashboard')->assertSee('Media Library')->assertDontSee('My learning');
-        $this->get(route('instructor.courses.create'))->assertOk()->assertSee('Admin dashboard')->assertDontSee('Wishlist');
+        // The course builder lives in the admin panel's Course studio for admins.
+        $this->get(route('instructor.courses.create'))->assertRedirect(CourseStudio::getUrl());
 
         $student = User::factory()->create();
         $this->actingAs($student)->get('/dashboard')->assertOk()->assertDontSee('Instructor workspace')->assertDontSee('Admin dashboard');
