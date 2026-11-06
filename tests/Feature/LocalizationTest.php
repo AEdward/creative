@@ -42,7 +42,7 @@ class LocalizationTest extends TestCase
         foreach ([route('instructor.profile.edit') => 'የአስተማሪ መገለጫዎ።', route('instructor.materials', $course) => 'የትምህርት ምስል', route('instructor.assessments', $course) => 'ምዘና ይፍጠሩ', route('instructor.courses.edit', $course) => 'ትምህርት ያስቀምጡ'] as $url => $label) {
             $this->get($url)->assertOk()->assertSee($label)->assertDontSee('academy.home');
         }
-        $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/academy-admin')->assertOk()->assertSee('የሪፖርት ጊዜ');
+        $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/academy-admin')->assertRedirect('/admin/enrollments');
     }
 
     public function test_learning_keeps_course_content_and_localizes_private_controls(): void

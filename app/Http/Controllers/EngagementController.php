@@ -62,27 +62,6 @@ class EngagementController extends Controller
         return back()->with('status', 'Review submitted. Reviews may require moderation before publication.');
     }
 
-    public function moderation(): View
-    {
-        return view('engagement.moderation', ['reviews' => CourseReview::with(['user', 'course'])->latest()->paginate(20), 'moderation' => DB::table('review_settings')->value('moderation_required') ?? true]);
-    }
-
-    public function moderate(Request $request, CourseReview $review): RedirectResponse
-    {
-        $data = $request->validate(['status' => ['required', Rule::in(['pending', 'approved', 'rejected'])]]);
-        $review->update($data);
-
-        return back()->with('status', 'Review moderation saved.');
-    }
-
-    public function reviewSettings(Request $request): RedirectResponse
-    {
-        $data = $request->validate(['moderation_required' => ['required', 'boolean']]);
-        DB::table('review_settings')->updateOrInsert(['id' => 1], $data + ['updated_at' => now(), 'created_at' => now()]);
-
-        return back()->with('status', 'Review policy saved.');
-    }
-
     public function announcements(Request $request, Course $course): View
     {
         $this->active($request);
@@ -187,11 +166,6 @@ class EngagementController extends Controller
         $this->active($request);
 
         return view('engagement.tickets', ['tickets' => SupportTicket::where('user_id', $request->user()->id)->latest()->paginate(20), 'admin' => false]);
-    }
-
-    public function adminTickets(): View
-    {
-        return view('engagement.tickets', ['tickets' => SupportTicket::with('user')->latest()->paginate(20), 'admin' => true]);
     }
 
     public function ticketCreate(Request $request): RedirectResponse

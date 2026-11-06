@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\Analytics;
+use App\Filament\Pages\Settings;
+use App\Filament\Resources\Enrollments\Pages\ManageEnrollments;
 use App\Models\Coupon;
 use App\Models\Course;
 use App\Models\Enrollment;
@@ -12,6 +15,7 @@ use App\Services\Payments\PaymentGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class OperationsTest extends TestCase
@@ -22,18 +26,36 @@ class OperationsTest extends TestCase
     {
         $student = User::factory()->create();
         $enrollment = Enrollment::factory()->create(['user_id' => $student->id]);
-        $this->actingAs($student)->get('/academy-admin')->assertForbidden();
-        $this->post('/academy-admin/settings', ['banner' => 'Welcome creators'])->assertForbidden();
+        $this->actingAs($student)->get('/admin/enrollments')->assertRedirect(route('dashboard'));
+        $this->get('/academy-admin/export?from=2026-01-01&to=2026-12-31')->assertForbidden();
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->actingAs($admin)->get('/academy-admin')->assertOk()->assertSee('Public site content');
-        $this->actingAs($admin)->post('/academy-admin/settings', ['banner' => 'Welcome creators', 'about' => 'Our learning space', 'faq' => 'Ask us a question', 'contact_email' => 'help@example.test'])->assertRedirect();
+        $this->actingAs($admin)->get('/academy-admin')->assertRedirect('/admin/enrollments');
+        $this->get('/admin/enrollments')->assertOk()->assertSee($student->name);
+
+        Livewire::test(Settings::class)->set('content.banner', 'Welcome creators')->set('content.about', 'Our learning space')->call('save')->assertHasNoErrors();
         $this->get('/')->assertOk()->assertSee('Welcome creators');
-        $this->post('/academy-admin/enrollments/'.$enrollment->id.'/revoke')->assertRedirect();
+        $this->get('/about')->assertSee('Our learning space');
+
+        Livewire::test(ManageEnrollments::class)->callTableAction('revoke', $enrollment);
         $this->assertSame('revoked', $enrollment->fresh()->status);
         $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'enrollment.revoked']);
+        Livewire::test(ManageEnrollments::class)->callTableAction('restore', $enrollment);
+        $this->assertSame('active', $enrollment->fresh()->status);
+        $this->get('/admin/audit-logs')->assertOk()->assertSee('enrollment.revoked');
+
         $student->forceFill(['name' => '=HYPERLINK("bad")'])->save();
         $response = $this->get('/academy-admin/export?from=2026-01-01&to=2026-12-31')->assertOk()->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
         $this->assertStringContainsString("'=HYPERLINK", $response->streamedContent());
+    }
+
+    public function test_admin_can_enroll_a_learner_without_payment(): void
+    {
+        $learner = User::factory()->create();
+        $course = Course::factory()->create(['is_free' => false, 'price_minor' => 50000]);
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        Livewire::test(ManageEnrollments::class)->callAction('grant', ['user_id' => $learner->id, 'course_id' => $course->id])->assertHasNoActionErrors();
+        $this->assertDatabaseHas('enrollments', ['user_id' => $learner->id, 'course_id' => $course->id, 'status' => 'active', 'source' => 'admin']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'enrollment.granted']);
     }
 
     public function test_coupon_discount_is_integer_and_limits_and_expiry_are_enforced(): void
@@ -83,13 +105,16 @@ class OperationsTest extends TestCase
         $this->post('/locale', ['locale' => 'invalid'])->assertSessionHasErrors('locale');
     }
 
-    public function test_reporting_chart_uses_inclusive_nairobi_day_boundaries(): void
+    public function test_analytics_uses_inclusive_nairobi_day_boundaries(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        Enrollment::factory()->create(['enrolled_at' => '2026-09-30 21:30:00']);
-        Enrollment::factory()->create(['enrolled_at' => '2026-10-01 21:00:00']);
-        $this->actingAs($admin)->get('/academy-admin?from=2026-10-01&to=2026-10-01')->assertOk()->assertSee('data-enrollment-count="1"', false)->assertSee('2026-10-01');
-        $this->withHeader('Referer', 'http://localhost/academy-admin?from=invalid')->get('/academy-admin?from=invalid')->assertRedirect(route('academy-admin'));
-        $this->getJson('/academy-admin?from[]=invalid')->assertUnprocessable();
+        Enrollment::factory()->create(['enrolled_at' => '2026-09-30 21:30:00']); // 00:30 on Oct 1 in Nairobi
+        Enrollment::factory()->create(['enrolled_at' => '2026-10-01 21:00:00']); // 00:00 on Oct 2 in Nairobi
+        $this->actingAs($admin);
+        Livewire::test(Analytics::class)->set('from', '2026-10-01')->set('to', '2026-10-01')
+            ->assertSee('peak 1 / day')->assertSeeHtml('<td>1</td>')
+            ->set('to', 'not-a-date')->assertHasErrors('to');
+        $this->get('/admin/analytics')->assertOk()->assertSee('Daily activity');
+        $this->actingAs(User::factory()->create())->get('/admin/analytics')->assertRedirect(route('dashboard'));
     }
 }

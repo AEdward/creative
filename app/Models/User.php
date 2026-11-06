@@ -10,6 +10,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -36,6 +37,12 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             $this->role === 'instructor' => route('instructor.closed'),
             default => route('dashboard'),
         };
+    }
+
+    /** Courses this account is the assigned instructor of. */
+    public function courses(): HasMany
+    {
+        return $this->hasMany(Course::class, 'instructor_id');
     }
 
     public function canAccessPanel(Panel $panel): bool

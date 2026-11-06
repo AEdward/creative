@@ -20,9 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/support/{ticket}/replies', [Engagement::class, 'reply'])->middleware('throttle:20,1,support-reply')->name('support.reply');
     Route::post('/support/{ticket}/status', [Engagement::class, 'ticketStatus'])->name('support.status');
     Route::middleware('can:administer-academy')->prefix('academy-admin')->group(function () {
-        Route::get('/reviews', [Engagement::class, 'moderation'])->name('admin.reviews');
-        Route::post('/reviews/settings', [Engagement::class, 'reviewSettings'])->name('admin.reviews.settings');
-        Route::post('/reviews/{review}', [Engagement::class, 'moderate'])->name('admin.reviews.moderate');
-        Route::get('/support', [Engagement::class, 'adminTickets'])->name('admin.support');
+        Route::get('/reviews', fn () => redirect('/admin/reviews'))->name('admin.reviews');
+        Route::get('/support', fn () => redirect('/admin/support-tickets'))->name('admin.support');
     });
 });

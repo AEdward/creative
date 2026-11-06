@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\Instructors;
 use App\Filament\Pages\MediaLibrary;
 use App\Filament\Resources\Users\Pages\ManageUsers;
 use App\Livewire\Instructor\CourseEditor;
@@ -68,6 +69,25 @@ class AdminCourseManagementTest extends TestCase
         $this->actingAs($admin)->get('/admin/courses')->assertOk()->assertSee('New course')->assertSee(route('instructor.materials', $course->slug), false);
     }
 
+    public function test_instructors_page_lists_instructors_and_switches_the_workspace(): void
+    {
+        config(['academy.instructor_portal_default' => false]);
+        Notification::fake();
+        $teacher = User::factory()->create(['role' => 'instructor', 'name' => 'Hana Teacher']);
+        Course::factory()->count(2)->create(['instructor_id' => $teacher->id]);
+        $this->actingAs($this->admin())->get('/admin/instructors')->assertOk()->assertSee('Hana Teacher')->assertSee('Instructor workspace');
+
+        Livewire::test(Instructors::class)->assertSet('portalOpen', false)->set('portalOpen', true);
+        $this->assertTrue(AcademySettings::get('instructor_portal_enabled'));
+        $this->assertDatabaseHas('audit_logs', ['action' => 'settings.instructor_portal']);
+        Livewire::test(Instructors::class)->assertSet('portalOpen', true)->set('portalOpen', false);
+        $this->assertFalse(AcademySettings::get('instructor_portal_enabled'));
+
+        Livewire::test(Instructors::class)->callAction('newInstructor', ['name' => 'New Teacher', 'email' => 'new.teacher@academy.test'])->assertHasNoActionErrors();
+        $this->assertSame('instructor', User::where('email', 'new.teacher@academy.test')->value('role'));
+        $this->actingAs(User::factory()->create())->get('/admin/instructors')->assertRedirect(route('dashboard'));
+    }
+
     public function test_roles_stay_in_their_own_workspace(): void
     {
         config(['academy.instructor_portal_default' => false]);
@@ -76,7 +96,7 @@ class AdminCourseManagementTest extends TestCase
             $this->actingAs($admin)->get($page)->assertRedirect(url('/admin'));
         }
         // Admin pages outside Filament show the admin sidebar, never the learner one.
-        $this->get('/academy-admin')->assertOk()->assertSee('Admin dashboard')->assertSee('Media Library')->assertDontSee('My learning');
+        $this->get(route('messages.index'))->assertOk()->assertSee('Admin dashboard')->assertSee('Media Library')->assertDontSee('My learning');
         $this->get(route('instructor.courses.create'))->assertOk()->assertSee('Admin dashboard')->assertDontSee('Wishlist');
 
         $student = User::factory()->create();

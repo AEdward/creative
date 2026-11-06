@@ -26,13 +26,6 @@
         </section>
     </div>
     <section class="cla-card">
-        <header><h2><x-filament::icon icon="heroicon-o-academic-cap" />{{ __('Instructors') }}</h2></header>
-        <div class="cla-form">
-            <label class="cla-check"><input type="checkbox" wire:model="settings.instructor_portal_enabled"> {{ __('Open the instructor workspace') }}</label>
-            <p class="cla-muted">{{ __('Off: only admins create and edit courses (you still pick the instructor shown on each course). On: instructor accounts can also edit their own courses; their changes wait for an admin to publish.') }}</p>
-        </div>
-    </section>
-    <section class="cla-card">
         <header><h2><x-filament::icon icon="heroicon-o-circle-stack" />{{ __('Video storage') }}</h2></header>
         @php $percent = min(100, (int) round($usedBytes / $limitBytes * 100)); @endphp
         <p class="cla-muted">{{ __(':used of :limit used (:percent%)', ['used' => \Illuminate\Support\Number::fileSize($usedBytes, 1), 'limit' => \Illuminate\Support\Number::fileSize($limitBytes), 'percent' => $percent]) }}</p>
@@ -40,6 +33,18 @@
         <div class="cla-form cla-two">
             <div><label for="st-limit">{{ __('Storage budget (GB)') }}</label><input id="st-limit" type="text" inputmode="numeric" wire:model="settings.storage_limit_gb">@error('settings.storage_limit_gb')<p class="cla-error">{{ $message }}</p>@enderror</div>
             <div><label for="st-alert">{{ __('Alert admins at (% of budget)') }}</label><input id="st-alert" type="text" inputmode="numeric" wire:model="settings.storage_alert_percent">@error('settings.storage_alert_percent')<p class="cla-error">{{ $message }}</p>@enderror</div>
+        </div>
+    </section>
+    <section class="cla-card">
+        <header><h2><x-filament::icon icon="heroicon-o-megaphone" />{{ __('Website content') }}</h2></header>
+        <div class="cla-form">
+            <label for="st-banner">{{ __('Announcement banner (shown at the top of every public page; leave empty to hide)') }}</label>
+            <input id="st-banner" type="text" wire:model="content.banner" maxlength="300">
+            @error('content.banner')<p class="cla-error">{{ $message }}</p>@enderror
+            <label for="st-about">{{ __('Extra text on the About page') }}</label>
+            <textarea id="st-about" wire:model="content.about" rows="4" maxlength="10000"></textarea>
+            <label for="st-faq">{{ __('Extra text on the FAQ page') }}</label>
+            <textarea id="st-faq" wire:model="content.faq" rows="4" maxlength="10000"></textarea>
         </div>
     </section>
     <section class="cla-card">

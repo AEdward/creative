@@ -53,10 +53,6 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::SIDEBAR_LOGO_AFTER, fn () => '<span class="cla-panel-tag">ADMIN PANEL</span>')
             ->navigationGroups(['Platform'])
             ->navigationItems([
-                NavigationItem::make('Instructors')->url(fn () => url('/admin/users?tableFilters[role][value]=instructor'))->icon('heroicon-o-identification')->sort(4),
-                NavigationItem::make('Enrollments & coupons')->url(fn () => route('academy-admin'))->icon('heroicon-o-user-plus')->sort(5),
-                NavigationItem::make('Reviews')->url(fn () => route('admin.reviews'))->icon('heroicon-o-star')->sort(11),
-                NavigationItem::make('Support queue')->url(fn () => route('admin.support'))->icon('heroicon-o-chat-bubble-left-right')->sort(12),
                 NavigationItem::make('Website')->url(fn () => route('home'), shouldOpenInNewTab: true)->icon('heroicon-o-globe-alt')->group('Platform'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

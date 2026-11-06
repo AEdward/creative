@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Reviews\Pages\ManageReviews;
 use App\Models\Course;
 use App\Models\CourseReview;
 use App\Models\Enrollment;
@@ -13,6 +14,7 @@ use App\Models\SupportTicket;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class EngagementTest extends TestCase
@@ -42,9 +44,10 @@ class EngagementTest extends TestCase
         $this->get($url)->assertOk()->assertSee('No approved reviews')->assertDontSee('Useful course');
         $review = CourseReview::first();
         $this->post($url, ['rating' => 1, 'body' => 'Duplicate review'])->assertSessionHasErrors();
-        $this->post('/academy-admin/reviews/'.$review->id, ['status' => 'approved'])->assertForbidden();
+        $this->get('/admin/reviews')->assertRedirect(route('dashboard'));
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->actingAs($admin)->post('/academy-admin/reviews/'.$review->id, ['status' => 'approved'])->assertRedirect();
+        $this->actingAs($admin);
+        Livewire::test(ManageReviews::class)->callTableAction('approve', $review);
         $this->get($url)->assertSee('Useful course')->assertSee('5.0');
     }
 
@@ -121,10 +124,9 @@ class EngagementTest extends TestCase
         $module = Module::factory()->create(['course_id' => $course->id]);
         $lesson = Lesson::factory()->create(['module_id' => $module->id, 'published' => true]);
         LessonProgress::create(['enrollment_id' => $enrollment->id, 'lesson_id' => $lesson->id, 'completed_at' => now()]);
-        $this->actingAs($student)->get('/academy-admin/reviews')->assertForbidden();
-        $this->post('/academy-admin/reviews/settings', ['moderation_required' => 0])->assertForbidden();
-        $this->actingAs($admin)->get('/academy-admin/reviews')->assertOk();
-        $this->post('/academy-admin/reviews/settings', ['moderation_required' => 0])->assertRedirect();
+        $this->actingAs($student)->get('/admin/reviews')->assertRedirect(route('dashboard'));
+        $this->actingAs($admin)->get('/admin/reviews')->assertOk()->assertSee('Reviews need approval: On');
+        Livewire::test(ManageReviews::class)->callAction('policy');
         $this->actingAs($student)->post('/courses/'.$course->slug.'/reviews', ['rating' => 4, 'body' => 'Helpful course'])->assertRedirect();
         $this->assertDatabaseHas('course_reviews', ['status' => 'approved', 'rating' => 4]);
     }
@@ -136,10 +138,11 @@ class EngagementTest extends TestCase
         $stranger = User::factory()->create();
         $this->actingAs($owner)->post('/support', ['subject' => 'Private thread', 'body' => 'Only our staff should see this']);
         $ticket = SupportTicket::first();
-        $this->actingAs($stranger)->get('/academy-admin/support')->assertForbidden();
+        $this->actingAs($stranger)->get('/admin/support-tickets')->assertRedirect(route('dashboard'));
         $this->post('/support/'.$ticket->id.'/status', ['status' => 'closed'])->assertNotFound();
         $this->actingAs($owner)->post('/notification-preferences', ['announcements' => 1, 'support' => 0])->assertRedirect();
-        $this->actingAs($admin)->get('/academy-admin/support')->assertOk()->assertSee('Private thread');
+        $this->actingAs($admin)->get('/admin/support-tickets')->assertOk()->assertSee('Private thread');
+        $this->get('/academy-admin/support')->assertRedirect('/admin/support-tickets');
         $this->get('/support/'.$ticket->id)->assertOk();
         $this->post('/support/'.$ticket->id.'/replies', ['body' => 'A private response'])->assertRedirect();
         $this->assertCount(0, $owner->notifications);

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Coupons\Pages\ManageCoupons;
 use App\Filament\Resources\Orders\Pages\ManageOrders;
 use App\Filament\Resources\PaymentSubmissions\Pages\ManagePaymentSubmissions;
 use App\Models\Conversation;
@@ -99,8 +100,10 @@ class ReviewFixesTest extends TestCase
     {
         [$method, $course, $learner, $admin] = $this->setUpShop();
         $code = str_repeat('A', CouponService::MAX_CODE_LENGTH);
-        $this->actingAs($admin)->post('/academy-admin/coupons', ['code' => $code, 'percent' => 10, 'max_uses' => 5, 'per_user_limit' => 1])->assertSessionHasNoErrors();
-        $this->post('/academy-admin/coupons', ['code' => $code.'B', 'percent' => 10, 'max_uses' => 5, 'per_user_limit' => 1])->assertSessionHasErrors('code');
+        $this->actingAs($admin);
+        Livewire::test(ManageCoupons::class)->callAction('newCoupon', ['code' => strtolower($code), 'percent' => 10, 'max_uses' => 5, 'per_user_limit' => 1])->assertHasNoActionErrors();
+        $this->assertDatabaseHas('coupons', ['code' => $code]);
+        Livewire::test(ManageCoupons::class)->callAction('newCoupon', ['code' => $code.'B', 'percent' => 10, 'max_uses' => 5, 'per_user_limit' => 1])->assertHasActionErrors(['code']);
 
         $this->actingAs($learner)->get(route('checkout.bank', [$course->slug, 'method' => $method->id, 'coupon' => strtolower($code)]))->assertSee('Coupon applied.');
         $this->post(route('checkout.bank.submit', $course->slug), ['payment_method_id' => $method->id, 'transaction_reference' => 'LONG1', 'coupon' => $code])->assertSessionHasNoErrors();

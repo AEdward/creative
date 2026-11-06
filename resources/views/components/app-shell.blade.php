@@ -18,10 +18,10 @@
             [url('/admin/media-library'), 'Media Library', 'heroicon-o-photo', []],
             [url('/admin/users'), 'Students & users', 'heroicon-o-users', []],
             [url('/admin/payment-submissions'), 'Payment approvals', 'heroicon-o-banknotes', []],
-            [route('academy-admin'), 'Enrollments & coupons', 'heroicon-o-user-plus', ['academy-admin']],
+            [url('/admin/enrollments'), 'Enrollments', 'heroicon-o-user-plus', []],
+            [url('/admin/analytics'), 'Analytics', 'heroicon-o-chart-bar', []],
             [route('messages.index'), 'Support messages', 'heroicon-o-envelope', ['messages.*']],
-            [route('admin.support'), 'Support queue', 'heroicon-o-chat-bubble-left-right', ['admin.support']],
-            [route('admin.reviews'), 'Reviews', 'heroicon-o-star', ['admin.reviews']],
+            [url('/admin/support-tickets'), 'Support tickets', 'heroicon-o-lifebuoy', ['support.show']],
         ];
         $account = [
             [route('profile'), 'Profile', 'heroicon-o-user', ['profile']],

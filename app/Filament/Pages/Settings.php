@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\AuditLog;
+use App\Models\SiteSetting;
 use App\Models\VideoAsset;
 use App\Support\AcademySettings;
 use Filament\Notifications\Notification;
@@ -20,10 +21,14 @@ class Settings extends Page
 
     public array $settings = [];
 
+    /** Announcement banner and extra About / FAQ text shown on the public site. */
+    public array $content = ['banner' => '', 'about' => '', 'faq' => ''];
+
     public function mount(): void
     {
         abort_unless(static::canAccess(), 403);
         $this->settings = AcademySettings::all();
+        $this->content = array_merge($this->content, array_intersect_key(SiteSetting::content(), $this->content));
     }
 
     public function save(): void
@@ -34,7 +39,6 @@ class Settings extends Page
             'settings.contact_phone' => ['nullable', 'string', 'max:40', 'regex:/^\+?[0-9 ()-]{0,40}$/'],
             'settings.contact_address' => ['nullable', 'string', 'max:255'],
             'settings.bank_checkout_enabled' => ['boolean'],
-            'settings.instructor_portal_enabled' => ['boolean'],
             'settings.vat_enabled' => ['boolean'],
             'settings.vat_percent' => ['required', 'numeric', 'min:0', 'max:50'],
             'settings.storage_limit_gb' => ['required', 'integer', 'min:1', 'max:100000'],
@@ -43,6 +47,12 @@ class Settings extends Page
             'settings.terms' => ['nullable', 'string', 'max:30000'],
             'settings.refund-policy' => ['nullable', 'string', 'max:30000'],
         ])['settings'];
+        $content = $this->validate([
+            'content.banner' => ['nullable', 'string', 'max:300'],
+            'content.about' => ['nullable', 'string', 'max:10000'],
+            'content.faq' => ['nullable', 'string', 'max:10000'],
+        ])['content'];
+        SiteSetting::updateOrCreate(['key' => 'site_content'], ['value' => array_merge(SiteSetting::content(), array_map(fn ($v) => (string) $v, $content))]);
         $data['vat_percent'] = (float) $data['vat_percent'];
         $data['storage_limit_gb'] = (int) $data['storage_limit_gb'];
         $data['storage_alert_percent'] = (int) $data['storage_alert_percent'];
