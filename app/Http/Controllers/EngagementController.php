@@ -105,7 +105,10 @@ class EngagementController extends Controller
     {
         $this->active($request);
 
-        return view('engagement.notifications', ['notifications' => $request->user()->notifications()->paginate(20), 'preferences' => NotificationPreference::firstOrNew(['user_id' => $request->user()->id], ['announcements' => true, 'support' => true, 'learning' => true, 'email' => true])]);
+        $unreadOnly = $request->query('show') === 'unread';
+        $user = $request->user();
+
+        return view('engagement.notifications', ['unreadOnly' => $unreadOnly, 'unreadCount' => $user->unreadNotifications()->count(), 'notifications' => ($unreadOnly ? $user->unreadNotifications() : $user->notifications())->paginate(20)->withQueryString(), 'preferences' => NotificationPreference::firstOrNew(['user_id' => $request->user()->id], ['announcements' => true, 'support' => true, 'learning' => true, 'email' => true])]);
     }
 
     public function read(Request $request, string $notification): RedirectResponse

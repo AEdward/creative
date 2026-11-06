@@ -41,4 +41,17 @@ class NotificationMenuTest extends TestCase
         $owner->notifyNow(new EngagementNotification(['title' => 'Private', 'body' => 'x', 'url' => '/']));
         $this->actingAs(User::factory()->create())->get(route('notifications.open', $owner->notifications()->first()->id))->assertNotFound();
     }
+
+    public function test_notifications_page_lists_all_or_unread_with_settings_tucked_away(): void
+    {
+        $user = User::factory()->create();
+        $user->notifyNow(new EngagementNotification(['title' => 'Old news', 'body' => 'a', 'url' => '/my-learning']));
+        $user->notifications()->first()->markAsRead();
+        $user->notifyNow(new EngagementNotification(['title' => 'Fresh news', 'body' => 'b', 'url' => '/my-learning']));
+
+        $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee('Old news')->assertSee('Fresh news')->assertSee('Mark all as read')->assertSee('Notification settings');
+        $this->get(route('notifications.index', ['show' => 'unread']))->assertOk()->assertViewHas('notifications', fn ($page) => $page->pluck('data.title')->all() === ['Fresh news']);
+        $this->post(route('notifications.read-all'));
+        $this->get(route('notifications.index', ['show' => 'unread']))->assertSee('No unread notifications');
+    }
 }

@@ -129,7 +129,9 @@ return [
 
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
+        // '-shared': browsers that signed in before the admin subdomain still hold an old host-only cookie
+        // with the previous name; a new name stops the two cookies clashing (which broke sign-in on those PCs).
+        Str::slug((string) env('APP_NAME', 'laravel')).'-session-shared'
     ),
 
     /*
