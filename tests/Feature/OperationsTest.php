@@ -104,6 +104,12 @@ class OperationsTest extends TestCase
         $this->get('/robots.txt')->assertOk()->assertSee('Disallow: /my-learning')->assertDontSee('Disallow: /admin'."\n", false);
         config(['academy.admin_path' => '/hub-k7m2x9/']);
         $this->assertSame(url('hub-k7m2x9/courses'), Admin::url('courses'));
+        // An admin subdomain wins over the path, and website pages opened on it go back to the main site.
+        config(['academy.admin_domain' => 'creativeadmin2026.creativelabet.com', 'app.url' => 'https://creativelabet.com']);
+        $this->assertSame('https://creativeadmin2026.creativelabet.com/courses', Admin::url('courses'));
+        $this->assertSame('', Admin::path());
+        $this->get('http://creativeadmin2026.creativelabet.com/about')->assertRedirect('https://creativelabet.com/about');
+        $this->get('http://creativelabet.com/about')->assertOk();
         $this->post('/locale', ['locale' => 'am'])->assertRedirect();
         $this->get('/')->assertSee('lang="am"', false);
         $this->post('/locale', ['locale' => 'invalid'])->assertSessionHasErrors('locale');

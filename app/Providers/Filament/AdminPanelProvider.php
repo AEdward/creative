@@ -34,6 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path(Admin::path())
+            ->domain(Admin::domain())
             ->login()
             ->brandName('Creative Lab Academy')
             ->brandLogo(fn () => asset('images/brand/wordmark-on-light-60.webp'))
