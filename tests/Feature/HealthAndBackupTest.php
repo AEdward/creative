@@ -38,6 +38,7 @@ class HealthAndBackupTest extends TestCase
 
     public function test_backup_refuses_non_mysql_databases(): void
     {
+        config(['database.default' => 'sqlite']); // CI runs the suite on MySQL; this checks the non-MySQL guard
         $this->artisan('academy:backup')->assertFailed();
     }
 }
