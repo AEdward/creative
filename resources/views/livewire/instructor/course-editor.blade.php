@@ -1,0 +1,246 @@
+<div>
+@unless($embedded)<section class="page-banner">
+<div class="container dashboard-top">
+<div>
+<p class="eyebrow">{{ __('Your teaching studio') }}</p>
+<h1>{{ __($course ? 'Shape your course.' : 'Start with an idea.') }}</h1>
+<p>{{ __('Save your course, build its curriculum, and prepare it for publication.') }}</p>
+</div><a class="inline-link" href="{{ route('instructor.dashboard') }}">{{ __('All your courses') }} <x-heroicon-o-arrow-up-right class="direction-icon" aria-hidden="true" /></a>
+</div>
+</section>
+@endunless
+<section class="section">
+<div class="container editor-grid">
+<div class="editor-main">
+@if(session('editor-status'))<div class="notice" role="status">{{ __(session('editor-status')) }}</div>
+@endif
+@if($errors->any())<div class="alert" role="alert"><strong>{{ __('Please check the following') }}</strong>
+<ul>
+@foreach($errors->all() as $error)<li>{{ __($error) }}</li>
+@endforeach
+</ul>
+</div>
+@endif
+<form wire:submit="save" class="editor-panel">
+<h2>{{ __('The essentials') }}</h2>
+@can('staff', 'content')<div class="form-field">
+<label for="course-instructor">{{ __('Instructor shown on this course') }}</label><select id="course-instructor" wire:model.live="instructorId"><option value="">{{ __('No account — type a name below') }}</option>
+@foreach($this->instructorOptions() as $person)<option value="{{ $person->id }}">{{ $person->name }}{{ $person->role === 'admin' ? ' · '.__('admin') : '' }}</option>
+@endforeach
+</select>
+<p class="small">{{ __('Choose an account, or leave “No account” and type the name learners should see.') }}</p>
+@error('instructorId')<p class="field-error" role="alert">{{ __($message) }}</p>
+@enderror
+</div>
+@if(! $instructorId)<div class="form-field">
+<label for="course-instructor-name">{{ __('Instructor name') }}</label><input id="course-instructor-name" wire:model="instructorName" maxlength="120" placeholder="{{ __('e.g. Abebe Kebede') }}">
+@error('instructorName')<p class="field-error" role="alert">{{ __($message) }}</p>
+@enderror
+</div>
+@endif @endcan
+<div class="form-field">
+<label for="course-title">{{ __('Course title') }}</label><input id="course-title" wire:model="title" required maxlength="180">
+</div>
+<div class="form-field">
+<label for="course-slug">{{ __('Page address') }}</label><input id="course-slug" wire:model="slug" placeholder="{{ __('Generated from the title if left blank') }}" maxlength="180">
+<p class="small">{{ __('Use words separated by hyphens. This becomes your course’s public address.') }}</p>
+</div>
+<div class="form-field">
+<label for="summary">{{ __('Short introduction') }}</label><textarea id="summary" wire:model="summary" rows="2" maxlength="500" required></textarea>
+</div>
+<div class="form-field">
+<label for="description">{{ __('About this course') }}</label><textarea id="description" wire:model="description" rows="7" maxlength="30000" required></textarea>
+</div>
+<div class="editor-fields">
+<div class="form-field">
+<label for="category">{{ __('Creative path') }}</label><select id="category" wire:model="categoryId" required><option value="">{{ __('Choose a category') }}</option>
+@foreach($categories as $category)<option value="{{ $category->id }}">{{ $category->name }}</option>
+@endforeach
+</select>
+</div>
+<div class="form-field">
+<label for="level">{{ __('Level') }}</label><select id="level" wire:model="level">
+@foreach(['beginner','intermediate','advanced'] as $level)<option value="{{ $level }}">{{ ucfirst($level) }}</option>
+@endforeach
+</select>
+</div>
+<div class="form-field">
+<label for="language">{{ __('Course language') }}</label><select id="language" wire:model="language"><option value="en">{{ __('English') }}</option><option value="am">{{ __('Amharic') }}</option></select>
+</div>
+</div>
+<div class="form-extra">
+<label class="checkbox-label"><input type="checkbox" wire:model.live="isFree">{{ __('This course is free') }}</label>
+</div>
+@if(! $isFree)<div class="form-field">
+<label for="price">{{ __('Price in ETB') }}</label><input id="price" wire:model="price" inputmode="decimal" placeholder="0.00">
+<p class="small">{{ __('The price learners pay, including VAT when VAT is turned on in Site settings. They pay by bank transfer and get access once a payment is approved.') }}</p>
+</div>
+@endif
+<div class="form-field">
+<label for="outcomes">{{ __('What students will learn') }}</label><textarea id="outcomes" wire:model="outcomesText" rows="4" placeholder="{{ __('One learning outcome per line') }}"></textarea>
+</div>
+<div class="form-field">
+<label for="requirements">{{ __('Before students begin') }}</label><textarea id="requirements" wire:model="requirementsText" rows="3" placeholder="{{ __('One requirement per line') }}"></textarea>
+</div><button class="button" wire:loading.attr="disabled" wire:target="save">{{ __('Save course') }} <span aria-hidden="true"><x-heroicon-o-arrow-up-right class="direction-icon" aria-hidden="true" /></span></button><span wire:loading wire:target="save" role="status" class="small">{{ __('Saving…') }}</span>
+</form>
+@if($course)<section class="editor-panel">
+<h2>{{ __('Build the learning path') }}</h2>
+@unless($embedded)<a class="inline-link" href="{{ route('instructor.materials',$course->slug) }}">{{ __('Arrange curriculum, images and lesson files →') }}</a>
+<p><a class="inline-link" href="{{ route('instructor.assessments',$course) }}">{{ __('Manage quizzes, assignments and certificates →') }}</a>
+</p>
+<p><a class="inline-link" href="{{ route('instructor.announcements',$course) }}">{{ __('Announcements for enrolled learners →') }}</a>
+</p>
+<p><a class="inline-link" href="{{ route('instructor.learners',$course) }}">{{ __('Learners and progress →') }}</a>
+</p>
+@endunless
+@forelse($course->modules as $module)<details class="curriculum" open wire:key="module-{{ $module->id }}">
+<summary>{{ $module->title }} <span>{{ $module->lessons->count() }} {{ __('steps') }}</span>
+</summary>
+<ol>
+@foreach($module->lessons as $lesson)<li wire:key="step-{{ $lesson->id }}"><span class="step-type step-type-{{ $lesson->type }}">{{ ['text' => __('Text'), 'video' => __('Video'), 'quiz' => __('Quiz'), 'assignment' => __('Assignment')][$lesson->type] ?? $lesson->type }}</span><span>{{ $lesson->title }}</span><small>{{ $lesson->type === 'text' && count($lesson->textPages()) > 1 ? count($lesson->textPages()).' '.__('pages').' · ' : '' }}{{ $lesson->type === 'video' && ! $lesson->video_asset_id ? __('No video yet').' · ' : '' }}{{ $lesson->is_preview ? __('Preview').' · ' : '' }}{{ __($lesson->published ? 'Visible' : 'Hidden') }}</small>
+<div class="lesson-editor-actions"><button type="button" wire:click="moveStep({{ $lesson->id }}, 'up')" class="text-link" @disabled($loop->first) aria-label="{{ __('Move :title up', ['title' => $lesson->title]) }}">↑</button><button type="button" wire:click="moveStep({{ $lesson->id }}, 'down')" class="text-link" @disabled($loop->last) aria-label="{{ __('Move :title down', ['title' => $lesson->title]) }}">↓</button><button type="button" wire:click="editLesson({{ $lesson->id }})" class="text-link">{{ __('Edit') }}</button> @if($lesson->published)<button type="button" wire:click="unpublishLesson({{ $lesson->id }})" wire:confirm="{{ __('Hide this step from learners?') }}" class="text-link">{{ __('Unpublish') }}</button>
+@endif
+</div>
+</li>
+@endforeach
+</ol>
+</details>
+@empty
+<p class="small">{{ __('Add your first chapter, then fill it with steps.') }}</p>
+@endforelse
+<form wire:submit="addModule" class="builder-subform">
+<div class="form-field">
+<label for="module-title">{{ __('New chapter title') }}</label><input id="module-title" wire:model="moduleTitle" required maxlength="180">
+</div><button class="filter-apply" wire:loading.attr="disabled">{{ __('Add chapter') }}</button>
+</form>
+@if($course->modules->isNotEmpty())<form wire:submit="addLesson" class="builder-subform">
+<h3>{{ $editingLessonId ? __('Edit step') : __('Add a step') }}</h3>
+<p class="small">{{ __('Learners go through steps in order. Each step unlocks when the one before it is finished.') }}</p>
+@unless($editingLessonId)<div class="form-field"><span class="field-label">{{ __('Step type') }}</span>
+<div class="step-type-picker" role="radiogroup">
+@foreach(['text' => ['Text pages', 'Read every page to continue'], 'video' => ['Video', 'Watch to the end to continue'], 'quiz' => ['Quiz', 'Reach the pass mark to continue'], 'assignment' => ['Assignment', 'Submit work to continue']] as $value => [$label, $hint])<label class="step-type-option"><input type="radio" wire:model.live="stepType" value="{{ $value }}"><b>{{ __($label) }}</b><small>{{ __($hint) }}</small>
+</label>
+@endforeach
+</div>
+</div>
+@endunless
+<div class="form-field">
+<label for="lesson-module">{{ __('Chapter') }}</label><select id="lesson-module" wire:model="lessonModuleId" required><option value="">{{ __('Choose a chapter') }}</option>
+@foreach($course->modules as $module)<option value="{{ $module->id }}">{{ $module->title }}</option>
+@endforeach
+</select>
+</div>
+<div class="form-field">
+<label for="lesson-title">{{ __('Step title') }}</label><input id="lesson-title" wire:model="lessonTitle" required maxlength="180">
+</div>
+@if($stepType === 'text')
+    <div class="form-field">
+<label for="lesson-body">{{ __('Text') }}</label><textarea id="lesson-body" wire:model="lessonBody" rows="10" maxlength="30000"></textarea>
+<p class="small">{{ __('To split this into pages, put a line with only --- between them. Learners read the pages in order.') }}</p>
+</div>
+@elseif($stepType === 'video')
+    <div class="form-field">
+<label for="lesson-body">{{ __('Notes under the video (optional)') }}</label><textarea id="lesson-body" wire:model="lessonBody" rows="4" maxlength="30000"></textarea>
+<p class="small">{{ __('After adding the step, upload its video below or in Admin → Media Library.') }}</p>
+</div>
+@elseif($stepType === 'quiz')
+    <div class="form-field">
+<label for="lesson-body">{{ __('Instructions (optional)') }}</label><textarea id="lesson-body" wire:model="lessonBody" rows="2" maxlength="30000"></textarea>
+</div>
+    <div class="form-field">
+<label for="quiz-pass">{{ __('Pass mark (%)') }}</label><input id="quiz-pass" type="number" min="1" max="100" wire:model="quizPass">
+<p class="small">{{ __('Marked automatically. Learners can retry as often as they need; passing unlocks the next step.') }}</p>
+</div>
+    @foreach($quizQuestions as $q => $question)
+        <fieldset class="quiz-question" wire:key="question-{{ $q }}">
+<legend>{{ __('Question :n', ['n' => $q + 1]) }}</legend>
+            <input wire:model="quizQuestions.{{ $q }}.prompt" maxlength="500" placeholder="{{ __('Question text') }}" aria-label="{{ __('Question :n text', ['n' => $q + 1]) }}">
+            @foreach($question['options'] as $o => $option)<label class="quiz-option"><input type="radio" wire:model="quizQuestions.{{ $q }}.correct" value="{{ $o }}" aria-label="{{ __('Answer :n is correct', ['n' => $o + 1]) }}"><input wire:model="quizQuestions.{{ $q }}.options.{{ $o }}" maxlength="200" placeholder="{{ __('Answer :n', ['n' => $o + 1]) }}">
+</label>
+@endforeach
+            <p class="small">{{ __('Tick the correct answer. Leave unused answers empty.') }}</p>
+            @if(count($quizQuestions) > 1)<button type="button" class="text-link" wire:click="removeQuestion({{ $q }})">{{ __('Remove question') }}</button>
+@endif
+        </fieldset>
+    @endforeach
+    <button type="button" class="logout-button" wire:click="addQuestion">+ {{ __('Add question') }}</button>
+@elseif($stepType === 'assignment')
+    <div class="form-field">
+<label for="lesson-body">{{ __('What should learners submit?') }}</label><textarea id="lesson-body" wire:model="lessonBody" rows="5" maxlength="30000"></textarea>
+</div>
+    <div class="form-field"><span class="field-label">{{ __('When does the next step unlock?') }}</span>
+<label class="checkbox-label"><input type="radio" wire:model="assignmentAdvance" value="submit"> {{ __('As soon as the work is submitted') }}</label>
+<label class="checkbox-label"><input type="radio" wire:model="assignmentAdvance" value="grade"> {{ __('Only after an admin reviews and accepts it') }}</label>
+</div>
+@endif
+<div class="form-extra">
+<label class="checkbox-label"><input type="checkbox" wire:model="lessonPreview">{{ __('Free public preview (visitors can open it without buying)') }}</label>
+</div>
+<button class="filter-apply" wire:loading.attr="disabled">{{ $editingLessonId ? __('Save step') : __('Add step') }}</button>
+@if($editingLessonId)<button type="button" wire:click="cancelLessonEdit" class="logout-button">{{ __('Cancel edit') }}</button>
+@endif
+</form>
+@endif
+</section>
+@endif
+@if($course && $course->lessons()->exists())<section class="editor-panel">
+<h2>{{ __('Add a private video') }}</h2>
+@if(app(\App\Services\Media\MediaStorage::class)->available())
+<form data-video-upload="{{ route('media.store',$course->slug) }}" wire:ignore>
+<p>{{ __('Replace a lesson with an MP4 video up to 1 GB. The course returns to draft for review.') }}</p>
+<div class="form-field">
+<label for="video-lesson">{{ __('Lesson') }}</label><select id="video-lesson" name="lesson_id" required>
+@foreach($course->modules as $module)@foreach($module->lessons as $lesson)<option value="{{ $lesson->id }}">{{ $module->title }} · {{ $lesson->title }}</option>
+@endforeach @endforeach
+</select>
+</div>
+<div class="form-field">
+<label for="video-file">{{ __('MP4 video') }}</label><input id="video-file" type="file" accept="video/mp4,.mp4" required>
+</div>
+<div class="form-field">
+<label for="video-duration">{{ __('Duration in seconds') }}</label><input id="video-duration" name="duration_seconds" type="number" min="1" max="86400" required>
+<p class="small">{{ __('Enter the full video duration so saved positions remain within the lesson.') }}</p>
+</div>
+<button class="filter-apply" type="submit">{{ __('Upload and attach') }}</button><button class="logout-button" type="button" data-cancel-upload>{{ __('Cancel upload') }}</button><progress class="upload-progress" max="100" value="0" hidden data-upload-progress></progress>
+<p class="small" role="status" aria-live="polite">
+</p>
+</form>
+@else
+<p>{{ __('Private video uploads are unavailable until academy storage is configured.') }}</p>
+@endif
+</section>
+@endif
+</div>
+<aside class="editor-panel editor-sidebar">
+<p class="eyebrow">{{ __('Course status') }}</p>
+<h2>{{ $course ? ucfirst($course->status) : 'New draft' }}</h2>
+<p>{{ __('Instructor changes return a published course to draft. An administrator reviews and publishes it.') }}</p>
+@if($course)@can('publish',$course)@if($course->status === 'published')<button type="button" class="logout-button form-wide-button" wire:click="unpublishCourse" wire:confirm="{{ __('Hide this course from the website? Nothing is deleted and you can publish it again.') }}">{{ __('Unpublish course') }}</button>
+@else
+<button class="button form-wide-button" wire:click="publish" wire:loading.attr="disabled">{{ __('Publish course') }} <x-heroicon-o-arrow-up-right class="direction-icon" aria-hidden="true" /></button>
+@endif @error('publication')<p class="field-error" role="alert">{{ __($message) }}</p>
+@enderror @endcan @if($course->status === 'published')<a class="inline-link" href="{{ route('courses.show',$course->slug) }}">{{ __('View public page') }} <x-heroicon-o-arrow-up-right class="direction-icon" aria-hidden="true" /></a>
+@endif @endif@if($course && auth()->user()->can('staff', 'content'))<details class="danger-zone">
+<summary>{{ __('Delete course') }}</summary>
+@if($deleteBlocker = app(\App\Services\CourseDeletion::class)->blocker($course))<p class="small">{{ $deleteBlocker }}</p>
+@else
+<p class="small">{{ __('Permanently removes the course with its chapters, steps, quizzes, files and videos. This can’t be undone.') }}</p>
+@if($deleteImpact = app(\App\Services\CourseDeletion::class)->impact($course))<p class="small" role="alert"><strong>{{ $deleteImpact }}</strong></p>@endif
+<form wire:submit="deleteCourse">
+<div class="form-field">
+<label for="delete-confirm">{{ __('Type the course title to confirm') }}</label><input id="delete-confirm" wire:model="deleteConfirmation" autocomplete="off" placeholder="{{ $course->title }}">
+@error('confirmation')<p class="field-error" role="alert">{{ __($message) }}</p>
+@enderror
+</div><button class="danger-button form-wide-button">{{ __('Delete permanently') }}</button>
+</form>
+@endif
+</details>
+@endif
+<div class="workspace-note">
+<h3>{{ __('A clear path helps.') }}</h3>
+<p class="small">{{ __('Tell students who the course is for, what they’ll learn, and what they need before starting.') }}</p>
+</div>
+</aside>
+</div>
+</section>
+</div>

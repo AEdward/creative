@@ -1,0 +1,279 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Assessment;
+use App\Models\AssessmentAttempt;
+use App\Models\AssignmentSubmission;
+use App\Models\AuditLog;
+use App\Models\Certificate;
+use App\Models\CertificateSetting;
+use App\Models\Course;
+use App\Models\Enrollment;
+use App\Models\Lesson;
+use App\Models\NotificationPreference;
+use App\Notifications\EngagementNotification;
+use App\Services\CourseProgress;
+use App\Services\StudentWork;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
+
+class AssessmentController extends Controller
+{
+    private function owner(Course $course): void
+    {
+        abort_unless(Gate::allows('staff', 'content') || (Gate::allows('instructor') && $course->instructor_id === auth()->id()), 403);
+    }
+
+    private function enrollment(Course $course): Enrollment
+    {
+        abort_unless(Course::published()->whereKey($course->id)->exists(), 404);
+
+        return Enrollment::active()->where('course_id', $course->id)->where('user_id', auth()->id())->firstOrFail();
+    }
+
+    private function enrolled(Course $course): Enrollment
+    {
+        abort_unless(Enrollment::active()->where('course_id', $course->id)->where('user_id', auth()->id())->exists(), 403);
+
+        return $this->enrollment($course);
+    }
+
+    private function matching(Course $course, Assessment $assessment, string $type): void
+    {
+        abort_unless($assessment->course_id === $course->id && $assessment->type === $type, 404);
+    }
+
+    /** The published course step this quiz/assignment sits in (null for a course-level assessment). */
+    private function stepFor(Assessment $assessment): ?Lesson
+    {
+        return Lesson::where('assessment_id', $assessment->id)->where('published', true)->first();
+    }
+
+    /** A quiz or assignment placed as a step can only be taken once the learner reaches that step. */
+    private function ensureReached(Course $course, Enrollment $enrollment, Assessment $assessment): ?Lesson
+    {
+        $step = $this->stepFor($assessment);
+        abort_if($step && ! app(CourseProgress::class)->isUnlocked($course, $enrollment, $step), 403, 'Finish the earlier steps first.');
+
+        return $step;
+    }
+
+    public function index(Course $course): View
+    {
+        $enrollment = $this->enrolled($course);
+        $assessments = Assessment::where('course_id', $course->id)->get();
+        $attempts = AssessmentAttempt::where('enrollment_id', $enrollment->id)->get();
+        $submissions = AssignmentSubmission::where('enrollment_id', $enrollment->id)->latest()->get();
+
+        return view('assessments.index', compact('course', 'assessments', 'attempts', 'submissions'));
+    }
+
+    public function manage(Course $course): View
+    {
+        $this->owner($course);
+        $assessments = Assessment::where('course_id', $course->id)->get();
+        $submissions = AssignmentSubmission::whereIn('assessment_id', $assessments->pluck('id'))->latest()->paginate(20);
+        $enabled = CertificateSetting::where('course_id', $course->id)->value('enabled');
+
+        return view('assessments.manage', compact('course', 'assessments', 'submissions', 'enabled'));
+    }
+
+    public function store(Request $request, Course $course): RedirectResponse
+    {
+        $this->owner($course);
+        $data = $request->validate(['title' => 'required|string|max:200', 'type' => 'required|in:quiz,assignment', 'instructions' => 'nullable|string|max:10000', 'required' => 'sometimes|boolean', 'pass_percent' => 'required_if:type,quiz|integer|min:1|max:100', 'attempt_limit' => 'required_if:type,quiz|integer|min:1|max:20', 'questions' => 'exclude_unless:type,quiz|required|array|min:1|max:50', 'questions.*.prompt' => 'required|string|max:1000', 'questions.*.options' => 'required|array|min:2|max:6', 'questions.*.options.*' => 'required|string|max:500', 'questions.*.correct' => 'required|integer|min:0|max:5']);
+        if ($data['type'] === 'quiz') {
+            foreach ($data['questions'] as $question) {
+                abort_unless(array_is_list($question['options']) && array_key_exists($question['correct'], $question['options']), 422);
+            }
+            $data['questions'] = array_values($data['questions']);
+        }
+        DB::transaction(function () use ($course, $data, $request): void {
+            Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
+            Assessment::create(array_merge($data, ['course_id' => $course->id, 'required' => $request->boolean('required')]));
+        });
+
+        return back()->with('status', 'Assessment created. Existing assessment requirements remain frozen.');
+    }
+
+    public function attempt(Request $request, Course $course, Assessment $assessment): RedirectResponse
+    {
+        $enrollment = $this->enrolled($course);
+        $this->matching($course, $assessment, 'quiz');
+        $step = $this->ensureReached($course, $enrollment, $assessment);
+        $data = $request->validate(['answers' => 'required|array', 'answers.*' => 'required|integer|min:0|max:5']);
+        $passed = DB::transaction(function () use ($enrollment, $assessment, $data) {
+            Enrollment::active()->whereKey($enrollment->id)->lockForUpdate()->firstOrFail();
+            $assessment = Assessment::whereKey($assessment->id)->firstOrFail();
+            // attempt_limit 0 = unlimited retries (the default for quiz steps).
+            abort_if($assessment->attempt_limit > 0 && AssessmentAttempt::where('enrollment_id', $enrollment->id)->where('assessment_id', $assessment->id)->count() >= $assessment->attempt_limit, 422, 'Attempt limit reached.');
+            $questions = $assessment->questions;
+            abort_unless(count($data['answers']) === count($questions), 422);
+            $correct = 0;
+            foreach ($questions as $index => $question) {
+                abort_unless(isset($data['answers'][$index]) && array_key_exists($data['answers'][$index], $question['options']), 422);
+                $correct += (int) ((int) $data['answers'][$index] === (int) $question['correct']);
+            }
+            $score = (int) floor(100 * $correct / count($questions));
+            $attempt = AssessmentAttempt::create(['assessment_id' => $assessment->id, 'enrollment_id' => $enrollment->id, 'snapshot' => ['title' => $assessment->title, 'questions' => $questions, 'pass_percent' => $assessment->pass_percent], 'answers' => $data['answers'], 'score' => $score, 'passed' => $score >= $assessment->pass_percent]);
+
+            return $attempt->passed;
+        });
+
+        // Passing a quiz step unlocks the next step straight away, no admin approval needed.
+        if ($passed && $step) {
+            app(CourseProgress::class)->complete($enrollment, $step);
+
+            return back()->with('status', 'You passed! The next step is unlocked.');
+        }
+
+        return back()->with('status', $passed ? 'Attempt scored. Your result is below.' : 'Not quite — review the lesson and try again.');
+    }
+
+    /** Step 1 of a direct-to-R2 upload (JSON): returns the upload link and a token for the submit form. */
+    public function uploadUrl(Request $request, Course $course, Assessment $assessment, StudentWork $work): JsonResponse
+    {
+        $enrollment = $this->enrolled($course);
+        $this->matching($course, $assessment, 'assignment');
+        $this->ensureReached($course, $enrollment, $assessment);
+        abort_unless($work->directUploads(), 503, 'Direct uploads are not available.');
+        $data = $request->validate(['filename' => ['required', 'string', 'max:200'], 'bytes' => ['required', 'integer', 'min:1']]);
+
+        return response()->json($work->startUpload($assessment, $enrollment, $data['filename'], (int) $data['bytes']));
+    }
+
+    public function submit(Request $request, Course $course, Assessment $assessment, StudentWork $work): RedirectResponse
+    {
+        $enrollment = $this->enrolled($course);
+        $this->matching($course, $assessment, 'assignment');
+        $step = $this->ensureReached($course, $enrollment, $assessment);
+
+        if ($request->filled('upload_token')) {
+            // The file is already in Cloudflare R2; confirm it and record it.
+            $request->validate(['upload_token' => ['required', 'string', 'max:4000']]);
+            $work->finishUpload($assessment, $enrollment, $request->input('upload_token'));
+        } else {
+            // Small upload stored on the server (used when R2 isn't connected).
+            $request->validate(['file' => 'required|file|mimes:pdf,jpg,jpeg,png,webp,zip|max:'.StudentWork::MAX_LOCAL_KB]);
+            $file = $request->file('file');
+            $path = $file->store('assignments', 'local');
+            abort_unless(is_string($path) && $path !== '', 500, 'Unable to save this submission. Please try again.');
+            $work->record($assessment, $enrollment, 'local', $path, basename($file->getClientOriginalName()), $file->getSize(), $file->getMimeType());
+        }
+
+        // "Submitting is enough" assignments unlock the next step now; "wait for the grade" ones on acceptance.
+        if ($step && $assessment->advance_on === 'submit') {
+            app(CourseProgress::class)->complete($enrollment, $step);
+
+            return back()->with('status', 'Work submitted. The next step is unlocked.');
+        }
+
+        return back()->with('status', 'Assignment submitted for review.');
+    }
+
+    public function download(AssignmentSubmission $submission, StudentWork $work)
+    {
+        $enrollment = Enrollment::findOrFail($submission->enrollment_id);
+        $course = Course::findOrFail($enrollment->course_id);
+        if ($enrollment->user_id !== auth()->id()) {
+            $this->owner($course);
+        } else {
+            $this->enrolled($course);
+        }
+
+        return $work->download($submission);
+    }
+
+    public function review(Request $request, AssignmentSubmission $submission): RedirectResponse
+    {
+        $assessment = Assessment::findOrFail($submission->assessment_id);
+        $this->owner(Course::findOrFail($assessment->course_id));
+        $data = $request->validate(['status' => 'required|in:accepted,revision-needed', 'feedback' => 'required|string|max:10000']);
+        app(StudentWork::class)->review($submission, $request->user(), $data['status'], $data['feedback']);
+
+        return back()->with('status', 'Review saved.');
+    }
+
+    public function settings(Request $request, Course $course): RedirectResponse
+    {
+        $this->owner($course);
+        $request->validate(['enabled' => 'sometimes|boolean']);
+        DB::transaction(function () use ($course, $request): void {
+            Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
+            CertificateSetting::updateOrCreate(['course_id' => $course->id], ['enabled' => $request->boolean('enabled')]);
+        });
+
+        return back()->with('status', 'Certificate settings saved.');
+    }
+
+    public function issue(Course $course): RedirectResponse
+    {
+        $enrollment = $this->enrolled($course);
+        $certificate = DB::transaction(function () use ($course, $enrollment) {
+            $course = Course::whereKey($course->id)->lockForUpdate()->firstOrFail();
+            abort_unless(Course::published()->whereKey($course->id)->exists(), 404);
+            Enrollment::active()->whereKey($enrollment->id)->lockForUpdate()->firstOrFail();
+            $existing = Certificate::where('enrollment_id', $enrollment->id)->first();
+            if ($existing) {
+                return $existing;
+            }
+            abort_unless(CertificateSetting::where('course_id', $course->id)->where('enabled', true)->exists(), 422, 'Certificates are disabled for this course.');
+            $lessonIds = $course->lessons()->where('published', true)->pluck('lessons.id');
+            abort_unless($lessonIds->isNotEmpty() && $enrollment->progress()->whereIn('lesson_id', $lessonIds)->whereNotNull('completed_at')->count() === $lessonIds->count(), 422, 'Complete every current published lesson first.');
+            foreach (Assessment::where('course_id', $course->id)->where('required', true)->get() as $assessment) {
+                $passed = $assessment->type === 'quiz' ? AssessmentAttempt::where('enrollment_id', $enrollment->id)->where('assessment_id', $assessment->id)->where('passed', true)->exists() : AssignmentSubmission::where('enrollment_id', $enrollment->id)->where('assessment_id', $assessment->id)->where('status', 'accepted')->exists();
+                abort_unless($passed, 422, 'Pass or receive acceptance for all required assessments first.');
+            }
+
+            return Certificate::create(['enrollment_id' => $enrollment->id, 'reference' => (string) Str::uuid(), 'learner_name' => auth()->user()->name, 'course_title' => $course->title, 'issued_at' => now()]);
+        });
+
+        if ($certificate->wasRecentlyCreated && NotificationPreference::where('user_id', auth()->id())->value('learning') !== false) {
+            auth()->user()->notify(new EngagementNotification(['title' => 'Your completion certificate is ready', 'body' => $certificate->course_title, 'url' => route('certificates.print', $certificate)]));
+        }
+
+        return redirect()->route('certificates.print', $certificate);
+    }
+
+    public function certificates(): View
+    {
+        $certificates = Certificate::query()->when(auth()->user()->role !== 'admin', fn ($query) => $query->whereIn('enrollment_id', Enrollment::where('user_id', auth()->id())->select('id')))->latest()->paginate(20);
+
+        return view('assessments.certificates', compact('certificates'));
+    }
+
+    public function print(Certificate $certificate): View
+    {
+        abort_unless(Enrollment::whereKey($certificate->enrollment_id)->where('user_id', auth()->id())->exists() || Gate::allows('administer-academy'), 403);
+
+        return view('assessments.certificate', compact('certificate'));
+    }
+
+    public function verify(string $reference): View
+    {
+        $certificate = Certificate::where('reference', $reference)->firstOrFail();
+
+        return view('assessments.verify', compact('certificate'));
+    }
+
+    public function revoke(Request $request, Certificate $certificate): RedirectResponse
+    {
+        abort_unless(Gate::allows('staff', 'content'), 403);
+        $data = $request->validate(['reason' => 'required|string|max:2000']);
+        DB::transaction(function () use ($certificate, $data) {
+            $certificate = Certificate::whereKey($certificate->id)->lockForUpdate()->firstOrFail();
+            if (! $certificate->revoked_at) {
+                $certificate->update(['revoked_at' => now(), 'revocation_reason' => $data['reason']]);
+                AuditLog::create(['actor_id' => auth()->id(), 'action' => 'certificate.revoked', 'subject_type' => Certificate::class, 'subject_id' => $certificate->id, 'changes' => ['reason' => $data['reason']]]);
+            }
+        });
+
+        return back()->with('status', 'Certificate revoked.');
+    }
+}
