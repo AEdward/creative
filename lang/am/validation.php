@@ -1,0 +1,43 @@
+<?php
+
+return [
+    'accepted' => ':attribute መቀበል አለበት።',
+    'array' => ':attribute ዝርዝር መሆን አለበት።',
+    'boolean' => ':attribute እውነት ወይም ሐሰት መሆን አለበት።',
+    'confirmed' => 'የ:attribute ማረጋገጫ አይዛመድም።',
+    'current_password' => 'የይለፍ ቃሉ ትክክል አይደለም።',
+    'date' => ':attribute ትክክለኛ ቀን መሆን አለበት።',
+    'email' => ':attribute ትክክለኛ የኢሜይል አድራሻ መሆን አለበት።',
+    'exists' => 'የተመረጠው :attribute ትክክል አይደለም።',
+    'file' => ':attribute ፋይል መሆን አለበት።',
+    'image' => ':attribute ምስል መሆን አለበት።',
+    'in' => 'የተመረጠው :attribute ትክክል አይደለም።',
+    'integer' => ':attribute ሙሉ ቁጥር መሆን አለበት።',
+    'max' => [
+        'array' => ':attribute ከ:max በላይ ንጥሎች ሊኖሩት አይገባም።',
+        'file' => ':attribute ከ:max ኪሎባይት መብለጥ የለበትም።',
+        'numeric' => ':attribute ከ:max መብለጥ የለበትም።',
+        'string' => ':attribute ከ:max ቁምፊዎች መብለጥ የለበትም።',
+    ],
+    'mimes' => ':attribute ከሚከተሉት ዓይነቶች መሆን አለበት፦ :values።',
+    'mimetypes' => ':attribute ከሚከተሉት ዓይነቶች መሆን አለበት፦ :values።',
+    'min' => [
+        'array' => ':attribute ቢያንስ :min ንጥሎች ሊኖሩት ይገባል።',
+        'file' => ':attribute ቢያንስ :min ኪሎባይት መሆን አለበት።',
+        'numeric' => ':attribute ቢያንስ :min መሆን አለበት።',
+        'string' => ':attribute ቢያንስ :min ቁምፊዎች መሆን አለበት።',
+    ],
+    'numeric' => ':attribute ቁጥር መሆን አለበት።',
+    'required' => ':attribute ያስፈልጋል።',
+    'required_if' => ':other :value ሲሆን :attribute ያስፈልጋል።',
+    'string' => ':attribute ጽሑፍ መሆን አለበት።',
+    'unique' => ':attribute አስቀድሞ ተወስዷል።',
+    'uploaded' => ':attribute መስቀል አልተሳካም።',
+    'url' => ':attribute ትክክለኛ የድረ ገጽ አድራሻ መሆን አለበት።',
+    'attributes' => [
+        'name' => 'ስም', 'email' => 'የኢሜይል አድራሻ', 'password' => 'የይለፍ ቃል',
+        'current_password' => 'የአሁኑ የይለፍ ቃል', 'title' => 'ርዕስ', 'subject' => 'ርዕሰ ጉዳይ',
+        'body' => 'ይዘት', 'message' => 'መልዕክት', 'image' => 'ምስል', 'file' => 'ፋይል',
+        'rating' => 'ደረጃ', 'locale' => 'ቋንቋ', 'feedback' => 'አስተያየት',
+    ],
+];

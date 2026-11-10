@@ -1,0 +1,447 @@
+import { api, mediaText, initializeUploads } from "./video-upload";
+
+function initializeMedia() {
+    initializeUploads();
+    document
+        .querySelectorAll("[data-private-video]:not([data-initialized])")
+        .forEach((root) => {
+            root.dataset.initialized = "true";
+            const video = root.querySelector("video");
+            const status = root.querySelector("[data-video-status]");
+            let resume = Number(root.dataset.resume || 0),
+                lastSave = 0,
+                loading = false;
+            const load = async () => {
+                if (loading) return;
+                loading = true;
+                resume = video.currentTime || resume;
+                try {
+                    const data = await api(root.dataset.playback);
+                    video.src = data.url;
+                    status.textContent = mediaText("Ready to watch.");
+                } catch {
+                    status.textContent =
+                        mediaText("Playback is unavailable. Refresh playback to retry.");
+                } finally {
+                    loading = false;
+                }
+            };
+            video.addEventListener("loadedmetadata", () => {
+                if (resume > 0 && Number.isFinite(video.duration))
+                    video.currentTime = Math.min(
+                        resume,
+                        Math.max(0, video.duration - 1),
+                    );
+            });
+            // Signed links last 5 minutes; when one expires mid-lesson, fetch a fresh one and continue from the same second.
+            let renewals = 0;
+            video.addEventListener("playing", () => (renewals = 0));
+            video.addEventListener("error", () => {
+                const wasPlaying = !video.paused || video.currentTime > 0;
+                if (renewals < 3) {
+                    renewals++;
+                    status.textContent = mediaText("Reconnecting…");
+                    load().then(() => {
+                        if (wasPlaying) video.play().catch(() => {});
+                    });
+                    return;
+                }
+                status.textContent =
+                    mediaText("Playback stopped or the link expired. Refresh playback to continue from your place.");
+            });
+            // Locked course steps: the learner can rewatch anything but not skip past the furthest point
+            // they've actually watched. The server applies the same rule, so this is just the friendly part.
+            let maxWatched = Number(root.dataset.maxWatched || 0);
+            const save = async (position) => {
+                if (!root.dataset.progress) return null;
+                lastSave = Date.now();
+                try {
+                    return await api(root.dataset.progress, {
+                        position_seconds: Math.floor(position),
+                    });
+                } catch {
+                    status.textContent =
+                        mediaText("Your place could not be saved. Check your connection.");
+                    return null;
+                }
+            };
+            video.addEventListener("seeking", () => {
+                if (video.currentTime > maxWatched + 1) {
+                    video.currentTime = maxWatched;
+                    status.textContent = mediaText("You can’t skip ahead. Keep watching to unlock the rest.");
+                }
+            });
+            video.addEventListener("timeupdate", () => {
+                // Normal playback moves forward a fraction of a second at a time; jumps are handled by "seeking".
+                if (!video.seeking && video.currentTime <= maxWatched + 2)
+                    maxWatched = Math.max(maxWatched, video.currentTime);
+                if (Date.now() - lastSave >= 15000) save(video.currentTime);
+            });
+            video.addEventListener("pause", () => {
+                if (!video.ended) save(video.currentTime);
+            });
+            video.addEventListener("ended", async () => {
+                const result = await save(video.duration);
+                // Reload to show the unlocked "Next" step once the server agrees the video was watched.
+                if (result?.completed) window.location.reload();
+            });
+            root.querySelector("[data-reload-video]").addEventListener(
+                "click",
+                load,
+            );
+            load();
+        });
+}
+document.addEventListener("DOMContentLoaded", initializeMedia);
+document.addEventListener("livewire:navigated", initializeMedia);
+let mediaHookRegistered = false;
+function registerMediaHook() {
+    if (mediaHookRegistered || !window.Livewire) return;
+    mediaHookRegistered = true;
+    window.Livewire.hook("morph.updated", () =>
+        queueMicrotask(initializeMedia),
+    );
+}
+registerMediaHook();
+document.addEventListener("livewire:initialized", registerMediaHook);
+
+// Sign-in / sign-up popup: links with data-login-open ("login" or "register") open it on that tab.
+// Without JS those links fall back to the /login and /register pages.
+function showAuthPanel(dialog, name, focus = false) {
+    dialog.querySelectorAll("[data-auth-tab]").forEach((tab) => {
+        const active = tab.dataset.authTab === name;
+        tab.setAttribute("aria-selected", String(active));
+        tab.tabIndex = active ? 0 : -1;
+    });
+    dialog.querySelectorAll("[data-auth-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.authPanel !== name;
+    });
+    if (focus) {
+        const panel = dialog.querySelector(`[data-auth-panel="${name}"]`);
+        (panel.querySelector('[aria-invalid="true"]') || panel.querySelector("input:not([type=hidden])"))?.focus();
+    }
+}
+function openLoginDialog(dialog, name = "login") {
+    document.querySelectorAll(".mobile-menu[open]").forEach((menu) => menu.removeAttribute("open"));
+    if (!dialog.open) dialog.showModal();
+    showAuthPanel(dialog, name, true);
+}
+// Remember where a press started so a drag out of the card (e.g. selecting text) doesn't close it.
+let pressTarget = null;
+document.addEventListener("pointerdown", (event) => (pressTarget = event.target), true);
+document.addEventListener("click", (event) => {
+    const dialog = document.getElementById("login-dialog");
+    if (!dialog) return;
+    // Clicking the backdrop (outside the card) closes the dialog.
+    if (event.target === dialog) {
+        if (pressTarget === null || pressTarget === dialog) dialog.close();
+        return;
+    }
+    const tab = event.target.closest("[data-auth-tab]");
+    if (tab) return showAuthPanel(dialog, tab.dataset.authTab, true);
+    const switcher = event.target.closest("[data-auth-switch]");
+    if (switcher && dialog.contains(switcher)) {
+        event.preventDefault();
+        return showAuthPanel(dialog, switcher.dataset.authSwitch, true);
+    }
+    const link = event.target.closest("[data-login-open]");
+    if (!link || event.metaKey || event.ctrlKey || event.shiftKey) return;
+    event.preventDefault();
+    openLoginDialog(dialog, link.dataset.loginOpen || "login");
+});
+// Arrow keys move between the two tabs.
+document.addEventListener("keydown", (event) => {
+    const tab = event.target.closest?.("[data-auth-tab]");
+    if (!tab || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    const next = tab.dataset.authTab === "login" ? "register" : "login";
+    const dialog = document.getElementById("login-dialog");
+    showAuthPanel(dialog, next);
+    dialog.querySelector(`[data-auth-tab="${next}"]`).focus();
+});
+function initializeLoginDialog() {
+    const dialog = document.getElementById("login-dialog");
+    if (dialog?.dataset.openOnLoad) openLoginDialog(dialog, dialog.dataset.openOnLoad);
+}
+
+// Show/hide password buttons.
+document.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-password-toggle]");
+    if (!toggle) return;
+    const input = document.getElementById(toggle.getAttribute("aria-controls"));
+    if (!input) return;
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    toggle.setAttribute("aria-pressed", String(show));
+    toggle.setAttribute("aria-label", show ? toggle.dataset.labelHide : toggle.dataset.labelShow);
+});
+
+document.addEventListener("DOMContentLoaded", initializeLoginDialog);
+document.addEventListener("livewire:navigated", initializeLoginDialog);
+
+// Header search dropdown: focus the box when opened; close on Escape or outside click.
+document.addEventListener(
+    "toggle",
+    (event) => {
+        const search = event.target;
+        if (search.matches?.("[data-nav-search]") && search.open) search.querySelector("input")?.focus();
+    },
+    true,
+);
+// The mobile menu behaves the same way.
+const dropdowns = "[data-nav-search][open], .mobile-menu[open]";
+document.addEventListener("click", (event) => {
+    document.querySelectorAll(dropdowns).forEach((search) => {
+        if (!search.contains(event.target)) search.removeAttribute("open");
+    });
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(dropdowns).forEach((search) => {
+        search.removeAttribute("open");
+        search.querySelector("summary")?.focus();
+    });
+});
+
+// Signed-in sidebar drawer: the menu button is a label, so give it keyboard support and close on Escape.
+document.addEventListener("keydown", (event) => {
+    const toggle = document.getElementById("app-nav-toggle");
+    if (!toggle) return;
+    if (event.target.closest?.(".app-menu-button") && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        toggle.checked = !toggle.checked;
+        // Opening from the keyboard: move focus to the first menu link once the drawer is visible.
+        if (toggle.checked) requestAnimationFrame(() => document.querySelector(".app-sidebar a")?.focus());
+    } else if (event.key === "Escape" && toggle.checked) {
+        toggle.checked = false;
+        document.querySelector(".app-menu-button")?.focus();
+    }
+});
+
+// Protected player: no context menu, fullscreen on the wrapper so the watermark stays visible,
+// and the watermark drifts to a new spot every few seconds so it can't be cropped out of a recording.
+function initializeSecurePlayers() {
+    document.querySelectorAll("[data-secure-player]:not([data-secured])").forEach((player) => {
+        player.dataset.secured = "true";
+        const video = player.querySelector("video");
+        const marks = player.querySelectorAll(".video-watermark");
+        player.addEventListener("contextmenu", (event) => event.preventDefault());
+        video.addEventListener("dragstart", (event) => event.preventDefault());
+        const move = () => marks.forEach((mark) => {
+            mark.style.left = `${5 + Math.random() * 55}%`;
+            mark.style.top = `${8 + Math.random() * 70}%`;
+        });
+        move();
+        setInterval(move, 7000);
+        // If the native fullscreen button targets the bare <video>, swap to the wrapper.
+        document.addEventListener("fullscreenchange", () => {
+            if (document.fullscreenElement === video) {
+                document.exitFullscreen().then(() => player.requestFullscreen?.()).catch(() => {});
+            }
+        });
+        video.addEventListener("webkitbeginfullscreen", () => player.classList.add("ios-fullscreen"));
+    });
+}
+document.addEventListener("DOMContentLoaded", initializeSecurePlayers);
+document.addEventListener("livewire:navigated", initializeSecurePlayers);
+
+// Copy-to-clipboard buttons (e.g. bank account numbers at checkout).
+document.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-copy]");
+    if (!button) return;
+    const source = document.querySelector(button.dataset.copy);
+    if (!source || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(source.textContent.trim());
+    const label = button.textContent;
+    button.textContent = "✓";
+    setTimeout(() => (button.textContent = label), 1500);
+});
+
+// Double-submit guard for ordinary POST forms (slow mobile connections invite a second tap).
+// Buttons are disabled on the next tick so their own name/value is still sent with the first submit.
+document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.method.toLowerCase() !== "post") return;
+    if (form.matches('[data-video-upload], [wire\\:submit], [data-no-guard]') || form.target === "_blank" || event.defaultPrevented) return;
+    if (form.dataset.submitting) {
+        event.preventDefault();
+        return;
+    }
+    form.dataset.submitting = "true";
+    form.setAttribute("aria-busy", "true");
+    setTimeout(() => {
+        form.querySelectorAll('button[type="submit"], button:not([type]), input[type="submit"]').forEach((button) => {
+            button.disabled = true;
+            if (button.dataset.busyLabel) button.textContent = button.dataset.busyLabel;
+        });
+    });
+});
+// Back/forward cache restores the page as it was; re-enable forms so they can be used again.
+window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    document.querySelectorAll("form[data-submitting]").forEach((form) => {
+        delete form.dataset.submitting;
+        form.removeAttribute("aria-busy");
+        form.querySelectorAll("button, input[type=submit]").forEach((button) => (button.disabled = false));
+    });
+});
+
+// Assignment uploads straight to Cloudflare R2 (large files and videos never pass through the
+// web server): get an upload link, PUT the file with progress, then submit the form with the token.
+document.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.dataset.workUpload || form.dataset.uploaded) return;
+    const input = form.querySelector('input[type="file"]');
+    const file = input?.files?.[0];
+    if (!file) return;
+    event.preventDefault();
+    const bar = form.querySelector("[data-work-progress]");
+    const status = form.querySelector("[data-work-status]");
+    const button = form.querySelector('button[type="submit"], button:not([type])');
+    if (button) button.disabled = true;
+    try {
+        const start = await api(form.dataset.workUpload, { filename: file.name, bytes: file.size });
+        bar.hidden = false;
+        await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("PUT", start.upload.url);
+            Object.entries(start.upload.headers || {}).forEach(([key, values]) => {
+                if (key.toLowerCase() !== "host") xhr.setRequestHeader(key, Array.isArray(values) ? values.join(", ") : values);
+            });
+            xhr.upload.onprogress = (e) => {
+                if (!e.lengthComputable) return;
+                bar.value = Math.round((e.loaded / e.total) * 100);
+                status.textContent = `${mediaText("Uploading:")} ${bar.value}%`;
+            };
+            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(mediaText("Upload failed. Please retry."))));
+            xhr.onerror = () => reject(new Error(mediaText("Upload connection failed. Please retry.")));
+            xhr.send(file);
+        });
+        form.querySelector('[name="upload_token"]').value = start.token;
+        input.removeAttribute("name");
+        form.dataset.uploaded = "true";
+        status.textContent = mediaText("Verifying…");
+        form.submit();
+    } catch (error) {
+        status.textContent = error.message;
+        bar.hidden = true;
+        if (button) button.disabled = false;
+    }
+});
+
+// Live support chat bubble. No websockets on shared hosting: poll every 4 s while open, every 60 s
+// (for the unread badge) while closed. Help search runs before chatting.
+(function initChat() {
+    const root = document.querySelector("[data-chat]");
+    if (!root) return;
+    const labels = JSON.parse(document.getElementById("chat-labels")?.dataset.labels || "{}");
+    const panel = root.querySelector(".chat-panel");
+    const thread = root.querySelector("[data-chat-thread]");
+    const articles = root.querySelector("[data-chat-articles]");
+    const search = root.querySelector("[data-chat-search]");
+    const form = root.querySelector("[data-chat-form]");
+    const input = root.querySelector("[data-chat-input]");
+    const status = root.querySelector("[data-chat-status]");
+    const hint = root.querySelector("[data-chat-hint]");
+    const badge = root.querySelector("[data-chat-badge]");
+    let lastId = 0;
+    let timer = null;
+    let open = false;
+    let unseen = 0;
+    const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    const escape = (s) => String(s).replace(/[&<>"']/g, (c) => entities[c]);
+
+    const render = (messages) => {
+        messages.forEach((m) => {
+            if (m.id <= lastId) return;
+            lastId = m.id;
+            const li = document.createElement("li");
+            li.className = m.mine ? "mine" : "staff";
+            li.innerHTML = `<span class="chat-who">${escape(m.mine ? labels.you : m.name)} · ${escape(m.at)}</span><p>${escape(m.body)}</p>`;
+            thread.appendChild(li);
+            if (!open && !m.mine) unseen++;
+        });
+        thread.hidden = thread.children.length === 0;
+        root.querySelector("[data-chat-help]").hidden = thread.children.length > 0 && !search.value;
+        badge.hidden = unseen === 0;
+        badge.textContent = unseen;
+        if (open) thread.lastElementChild?.scrollIntoView({ block: "end" });
+    };
+    const poll = async () => {
+        try {
+            const data = await api(`${root.dataset.stateUrl}?after=${lastId}`);
+            status.className = `chat-status ${data.online ? "on" : ""}`;
+            status.innerHTML = `<i></i>${escape(data.online ? labels.online : labels.offline)}`;
+            if (hint) hint.textContent = data.online ? "" : labels.offlineHint;
+            if (data.messages) render(data.messages);
+        } catch {
+            // Offline or server busy: try again on the next tick.
+        }
+    };
+    const schedule = () => {
+        clearInterval(timer);
+        timer = setInterval(poll, open ? 4000 : 60000);
+    };
+    const helpSearch = async () => {
+        try {
+            const data = await api(`${root.dataset.helpUrl}?q=${encodeURIComponent(search.value)}`);
+            articles.innerHTML = data.articles.length
+                ? data.articles.map((a) => `<li><details><summary>${escape(a.q)}</summary><p>${escape(a.a)}</p>${a.url ? `<a href="${escape(a.url)}">→</a>` : ""}</details></li>`).join("")
+                : `<li class="chat-empty">${escape(labels.noResults)}</li>`;
+        } catch {
+            // Help search is optional; the chat still works.
+        }
+    };
+    let searchTimer;
+    search?.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(helpSearch, 250);
+    });
+    const toggle = () => {
+        open = !open;
+        panel.hidden = !open;
+        root.querySelector(".chat-bubble").setAttribute("aria-expanded", String(open));
+        if (open) {
+            unseen = 0;
+            badge.hidden = true;
+            if (!articles.children.length) helpSearch();
+            poll();
+            (input || search)?.focus();
+        }
+        schedule();
+    };
+    root.querySelectorAll("[data-chat-toggle]").forEach((button) => button.addEventListener("click", toggle));
+    // "Help & Support" links elsewhere open the chat directly.
+    document.querySelectorAll("[data-chat-open]").forEach((link) =>
+        link.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (!open) toggle();
+        }),
+    );
+    form?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const body = input.value.trim();
+        if (!body) return;
+        input.disabled = true;
+        try {
+            await api(root.dataset.sendUrl, { body });
+            input.value = "";
+            search.value = "";
+            await poll();
+        } catch {
+            if (hint) hint.textContent = labels.failed;
+        } finally {
+            input.disabled = false;
+            input.focus();
+        }
+    });
+    input?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            form.requestSubmit();
+        }
+    });
+    if (root.dataset.signedIn === "1") {
+        poll();
+        schedule();
+    }
+})();
