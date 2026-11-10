@@ -119,6 +119,9 @@ class OperationsTest extends TestCase
         $this->assertFalse($this->post('http://creativeadmin2026.creativelabet.com/'.$update, [])->isRedirect(), 'Livewire update was redirected off the admin host');
         // Media Library uploads call these from the admin host; they must not be bounced either.
         $this->assertFalse($this->actingAs(User::factory()->create(['role' => 'admin']))->postJson('http://creativeadmin2026.creativelabet.com/instructor/courses/'.Course::factory()->create()->slug.'/videos', [])->isRedirect(), 'Video upload call was redirected off the admin host');
+        // Course studio forms (thumbnail, files, chapters) post from the admin host too.
+        $studio = Course::factory()->create();
+        $this->post('http://creativeadmin2026.creativelabet.com/instructor/courses/'.$studio->slug.'/thumbnail', [])->assertSessionHasErrors('image');
     }
 
     public function test_analytics_uses_inclusive_nairobi_day_boundaries(): void
