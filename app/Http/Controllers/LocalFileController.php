@@ -110,6 +110,18 @@ class LocalFileController extends Controller
         return back()->with('status', 'Course image updated.');
     }
 
+    public function removeThumbnail(Course $course): RedirectResponse
+    {
+        Gate::authorize('update', $course);
+        $old = $course->thumbnail_key;
+        Course::whereKey($course->id)->update(['thumbnail_key' => null]);
+        if ($old && str_starts_with($old, 'thumbnails/')) {
+            Storage::disk('local')->delete($old);
+        }
+
+        return back()->with('status', 'Course image removed.');
+    }
+
     public function thumbnailImage(Course $course): BinaryFileResponse
     {
         abort_unless(Course::published()->whereKey($course->id)->exists() || (auth()->user()?->hasVerifiedEmail() && Gate::allows('update', $course)), 404);

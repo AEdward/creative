@@ -19,4 +19,5 @@ Route::middleware(['auth', 'verified', 'can:instructor', 'throttle:60,1,curricul
     Route::post('/lessons/{lesson}/resources', [LocalFileController::class, 'store'])->name('resources.store');
     Route::delete('/resources/{resource}', [LocalFileController::class, 'destroy'])->name('resources.destroy');
     Route::post('/thumbnail', [LocalFileController::class, 'thumbnail'])->name('courses.thumbnail.store');
+    Route::delete('/thumbnail', [LocalFileController::class, 'removeThumbnail'])->name('courses.thumbnail.destroy');
 });

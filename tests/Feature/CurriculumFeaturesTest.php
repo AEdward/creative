@@ -82,6 +82,9 @@ class CurriculumFeaturesTest extends TestCase
         $this->actingAs($user)->get('/courses/'.$course->slug.'/thumbnail')->assertNotFound();
         $course->refresh()->update(['status' => 'published', 'published_at' => now()]);
         $this->get('/courses/'.$course->slug.'/thumbnail')->assertOk();
+        $this->actingAs($user)->delete('/instructor/courses/'.$course->slug.'/thumbnail')->assertForbidden();
+        $this->actingAs($course->instructor)->delete('/instructor/courses/'.$course->slug.'/thumbnail')->assertRedirect();
+        $this->assertNull($course->fresh()->thumbnail_key);
     }
 
     public function test_a_concurrent_publication_does_not_leave_instructor_curriculum_changes_published(): void

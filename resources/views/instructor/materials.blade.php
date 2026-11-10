@@ -22,10 +22,11 @@
 <h2>{{ __('Course image') }}</h2>
 <p>{{ __('Use a JPEG, PNG or WebP up to 2 MB. Curriculum and file changes return this course to draft.') }}</p>
 @if($course->thumbnail_key)<img src="{{ route('courses.thumbnail',$course->slug) }}" alt="{{ __('Current course thumbnail') }}" style="width:240px;max-width:100%;border-radius:12px">
+<form method="POST" action="{{ route('courses.thumbnail.destroy',$course->slug) }}" onsubmit="return confirm('{{ __('Remove the course image?') }}')">@csrf @method('DELETE')<button class="button-outline">{{ __('Remove image') }}</button></form>
 @endif
 <form method="POST" enctype="multipart/form-data" action="{{ route('courses.thumbnail.store',$course->slug) }}">@csrf<div class="form-field">
 <label for="thumbnail">{{ __('Course thumbnail') }}</label><input id="thumbnail" type="file" name="image" accept="image/jpeg,image/png,image/webp" required>
-</div><button class="filter-apply">{{ __('Save thumbnail') }}</button>
+</div><button class="filter-apply">{{ $course->thumbnail_key ? __('Replace thumbnail') : __('Save thumbnail') }}</button>
 </form>
 </section>
 @forelse($course->modules as $module)<section class="editor-panel">
